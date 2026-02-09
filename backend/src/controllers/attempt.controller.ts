@@ -1,0 +1,136 @@
+import { Request, Response, NextFunction } from 'express';
+import * as attemptService from '../services/attempt.service';
+import * as responseModel from '../models/response.model';
+
+export async function startAttempt(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { testId, mode, practiceSectionType } = req.body;
+    const attempt = await attemptService.startAttempt(req.user!.id, testId, mode, practiceSectionType);
+    res.status(201).json({ data: attempt });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAttempt(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const attempt = await attemptService.getAttempt(attemptId, req.user!.id);
+    res.json({ data: attempt });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getUserAttempts(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const result = await attemptService.getUserAttempts(req.user!.id, offset, limit);
+    res.json({ data: result.rows, total: result.total, offset, limit });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateSection(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const { sectionType } = req.body;
+    const attempt = await attemptService.updateCurrentSection(attemptId, sectionType);
+    res.json({ data: attempt });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function saveResponses(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const { responses } = req.body;
+    const enriched = responses.map((r: any) => ({ ...r, attemptId }));
+    const saved = await responseModel.batchUpsert(enriched);
+    res.json({ data: saved });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function autoSave(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const { responses } = req.body;
+    const enriched = responses.map((r: any) => ({ ...r, attemptId }));
+    const saved = await responseModel.batchUpsert(enriched);
+    res.json({ data: saved });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function submitSection(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const { sectionType } = req.body;
+    const result = await attemptService.submitSection(attemptId, sectionType);
+    res.json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function submitTest(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const result = await attemptService.submitTest(attemptId);
+    res.json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getResults(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const results = await attemptService.getAttempt(attemptId, req.user!.id);
+    res.json({ data: results });
+  } catch (error) {
+    next(error);
+  }
+}

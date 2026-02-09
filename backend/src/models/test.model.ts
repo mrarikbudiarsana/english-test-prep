@@ -1,0 +1,180 @@
+import { query } from '../config/database';
+
+// ---------- helpers ----------
+
+const fieldMap: Record<string, string> = {
+  title: 'title',
+  description: 'description',
+  testType: 'test_type',
+  isPublished: 'is_published',
+  isFree: 'is_free',
+  durationMinutes: 'duration_minutes',
+};
+
+const SELECT_COLUMNS = `
+  id,
+  title,
+  description,
+  test_type       AS "testType",
+  is_published    AS "isPublished",
+  is_free         AS "isFree",
+  duration_minutes AS "durationMinutes",
+  created_by      AS "createdBy",
+  created_at      AS "createdAt",
+  updated_at      AS "updatedAt"
+`;
+
+// ---------- queries ----------
+
+export async function findById(id: string) {
+  const result = await query(
+    `SELECT ${SELECT_COLUMNS} FROM tests WHERE id = $1`,
+    [id],
+  );
+  return result.rows[0] || null;
+}
+
+export async function findAll(
+  filters: { isPublished?: boolean; testType?: string } = {},
+  offset: number = 0,
+  limit: number = 20,
+) {
+  const conditions: string[] = ['is_published = true'];
+  const values: any[] = [];
+  let paramIndex = 1;
+
+  if (filters.testType !== undefined) {
+    conditions.push(`test_type = $${paramIndex}`);
+    values.push(filters.testType);
+    paramIndex++;
+  }
+
+  if (filters.isPublished !== undefined) {
+    // override the default is_published=true with an explicit filter
+    conditions[0] = `is_published = $${paramIndex}`;
+    values.push(filters.isPublished);
+    paramIndex++;
+  }
+
+  values.push(offset, limit);
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const result = await query(
+    `SELECT ${SELECT_COLUMNS}
+     FROM tests
+     ${whereClause}
+     ORDER BY created_at DESC
+     OFFSET $${paramIndex} LIMIT $${paramIndex + 1}`,
+    values,
+  );
+
+  const countValues = values.slice(0, values.length - 2);
+  const countResult = await query(
+    `SELECT COUNT(*) FROM tests ${whereClause}`,
+    countValues,
+  );
+
+  return {
+    rows: result.rows,
+    total: parseInt(countResult.rows[0].count, 10),
+  };
+}
+
+export async function findAllAdmin(offset: number = 0, limit: number = 20) {
+  const result = await query(
+    `SELECT ${SELECT_COLUMNS}
+     FROM tests
+     ORDER BY created_at DESC
+     OFFSET $1 LIMIT $2`,
+    [offset, limit],
+  );
+
+  const countResult = await query('SELECT COUNT(*) FROM tests');
+  return {
+    rows: result.rows,
+    total: parseInt(countResult.rows[0].count, 10),
+  };
+}
+
+export async function create(data: {
+  title: string;
+  description?: string;
+  testType: string;
+  isFree?: boolean;
+  createdBy?: string;
+}) {
+  const result = await query(
+    `INSERT INTO tests (title, description, test_type, is_free, created_by)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING ${SELECT_COLUMNS}`,
+    [
+      data.title,
+      data.description ?? null,
+      data.testType,
+      data.isFree ?? false,
+      data.createdBy ?? null,
+    ],
+  );
+  return result.rows[0];
+}
+
+export async function update(
+  id: string,
+  data: Partial<{
+    title: string;
+    description: string;
+    testType: string;
+    isPublished: boolean;
+    isFree: boolean;
+    durationMinutes: number;
+  }>,
+) {
+  const entries = Object.entries(data).filter(([, v]) => v !== undefined);
+  if (entries.length === 0) return findById(id);
+
+  const setClauses: string[] = [];
+  const values: any[] = [];
+  let paramIndex = 1;
+
+  for (const [key, value] of entries) {
+    const column = fieldMap[key];
+    if (!column) continue;
+    setClauses.push(`${column} = $${paramIndex}`);
+    values.push(value);
+    paramIndex++;
+  }
+
+  if (setClauses.length === 0) return findById(id);
+
+  setClauses.push(`updated_at = NOW()`);
+  values.push(id);
+
+  const result = await query(
+    `UPDATE tests
+     SET ${setClauses.join(', ')}
+     WHERE id = $${paramIndex}
+     RETURNING ${SELECT_COLUMNS}`,
+    values,
+  );
+  return result.rows[0] || null;
+}
+
+export async function remove(id: string) {
+  const result = await query(
+    'DELETE FROM tests WHERE id = $1 RETURNING id',
+    [id],
+  );
+  return result.rowCount! > 0;
+}
+
+export async function publish(id: string, isPublished: boolean) {
+  const result = await query(
+    `UPDATE tests
+     SET is_published = $1, updated_at = NOW()
+     WHERE id = $2
+     RETURNING ${SELECT_COLUMNS}`,
+    [isPublished, id],
+  );
+  return result.rows[0] || null;
+}
