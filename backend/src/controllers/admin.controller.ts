@@ -59,6 +59,20 @@ export async function getAllTests(
   }
 }
 
+export async function getTestById(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const testId = req.params.testId as string;
+    const test = await adminService.getTestById(testId);
+    res.json({ data: test });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function publishTest(
   req: Request,
   res: Response,
@@ -118,6 +132,20 @@ export async function deleteSection(
 }
 
 // ---------- Question CRUD ----------
+
+export async function getQuestionsBySection(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const sectionId = req.params.sectionId as string;
+    const questions = await adminService.getQuestionsBySection(sectionId);
+    res.json({ data: questions });
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function createQuestion(
   req: Request,

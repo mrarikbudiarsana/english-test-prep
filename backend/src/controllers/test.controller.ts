@@ -11,6 +11,7 @@ export async function getTests(
     const offset = parseInt(req.query.offset as string) || 0;
     const limit = parseInt(req.query.limit as string) || 20;
     const result = await testService.getPublishedTests(offset, limit);
+    console.log('📋 getTests result:', JSON.stringify(result, null, 2));
     res.json({ data: result, offset, limit });
   } catch (error) {
     next(error);

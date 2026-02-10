@@ -8,7 +8,29 @@
       "WebFetch(domain:www.ieltsadvantage.com)",
       "WebFetch(domain:www.aeccglobal.com)",
       "Bash(1 << 'EOF'\nNo\nEOF)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(test:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git config:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git rm:*)",
+      "Bash(for file in \"backend/.env\" \"frontend/.env.local\" \"backend/firebase-service-account.json\")",
+      "Bash(do if [ -f \"$file\" ])",
+      "Bash(then echo \"✅ $file - EXISTS\")",
+      "Bash(else echo \"❌ $file - MISSING\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(git status:*)",
+      "Bash(where:*)",
+      "Bash(psql:*)",
+      "Bash(node create-db.js:*)",
+      "Bash(node:*)",
+      "Bash(if exist .nextdevlock del .nextdevlock)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }

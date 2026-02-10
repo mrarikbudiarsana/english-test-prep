@@ -24,6 +24,8 @@ export async function getQuestionsBySectionId(sectionId: string) {
     questionText: q.questionText,
     questionData: q.questionData,
     points: q.points,
+    groupLabel: q.groupLabel,
+    groupInstructions: q.groupInstructions,
     createdAt: q.createdAt,
     updatedAt: q.updatedAt,
   }));
@@ -67,6 +69,8 @@ export async function createQuestion(
     correctAnswer: any;
     points?: number;
     explanation?: string;
+    groupLabel?: string;
+    groupInstructions?: string;
   },
 ) {
   // Verify the section exists
@@ -88,6 +92,8 @@ export async function createQuestion(
     correctAnswer: data.correctAnswer,
     points: data.points,
     explanation: data.explanation,
+    groupLabel: data.groupLabel,
+    groupInstructions: data.groupInstructions,
   });
 }
 
@@ -104,6 +110,8 @@ export async function updateQuestion(
     correctAnswer: any;
     points: number;
     explanation: string;
+    groupLabel: string;
+    groupInstructions: string;
   }>,
 ) {
   const existing = await questionModel.findById(id);

@@ -52,6 +52,13 @@ export async function getAllTests(offset: number = 0, limit: number = 20) {
 }
 
 /**
+ * Admin: Get a single test by ID with all sections and questions.
+ */
+export async function getTestById(id: string) {
+  return testService.getTestById(id);
+}
+
+/**
  * Admin: Toggle the published status of a test.
  */
 export async function publishTest(id: string) {
@@ -121,6 +128,13 @@ export async function deleteSection(id: string) {
 }
 
 /**
+ * Admin: Get all questions for a section.
+ */
+export async function getQuestionsBySection(sectionId: string) {
+  return questionService.getQuestionsBySectionId(sectionId);
+}
+
+/**
  * Admin: Create a new question in a section.
  */
 export async function createQuestion(
@@ -132,6 +146,8 @@ export async function createQuestion(
     correctAnswer: any;
     points?: number;
     explanation?: string;
+    groupLabel?: string;
+    groupInstructions?: string;
   },
 ) {
   return questionService.createQuestion(sectionId, data);
@@ -150,6 +166,8 @@ export async function updateQuestion(
     correctAnswer: any;
     points: number;
     explanation: string;
+    groupLabel: string;
+    groupInstructions: string;
   }>,
 ) {
   return questionService.updateQuestion(id, data);

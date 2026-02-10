@@ -1,5 +1,3 @@
-import { Request } from 'express';
-
 export interface AuthenticatedUser {
   id: string;
   firebaseUid: string;
@@ -16,3 +14,5 @@ declare global {
     }
   }
 }
+
+export {};

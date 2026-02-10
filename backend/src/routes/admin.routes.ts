@@ -10,6 +10,7 @@ router.use(authMiddleware, adminAuthMiddleware);
 
 // Test CRUD
 router.get('/tests', adminController.getAllTests);
+router.get('/tests/:testId', adminController.getTestById);
 router.post('/tests', adminController.createTest);
 router.put('/tests/:testId', adminController.updateTest);
 router.delete('/tests/:testId', adminController.deleteTest);
@@ -21,8 +22,13 @@ router.put('/sections/:sectionId', adminController.updateSection);
 router.delete('/sections/:sectionId', adminController.deleteSection);
 
 // Question CRUD
+router.get('/tests/:testId/sections/:sectionId/questions', adminController.getQuestionsBySection);
+router.get('/sections/:sectionId/questions', adminController.getQuestionsBySection);
+router.post('/tests/:testId/sections/:sectionId/questions', adminController.createQuestion);
 router.post('/sections/:sectionId/questions', adminController.createQuestion);
+router.put('/tests/:testId/sections/:sectionId/questions/:questionId', adminController.updateQuestion);
 router.put('/questions/:questionId', adminController.updateQuestion);
+router.delete('/tests/:testId/sections/:sectionId/questions/:questionId', adminController.deleteQuestion);
 router.delete('/questions/:questionId', adminController.deleteQuestion);
 
 // Users

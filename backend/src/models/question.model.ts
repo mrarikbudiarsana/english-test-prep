@@ -11,6 +11,8 @@ const fieldMap: Record<string, string> = {
   correctAnswer: 'correct_answer',
   points: 'points',
   explanation: 'explanation',
+  groupLabel: 'group_label',
+  groupInstructions: 'group_instructions',
 };
 
 const SELECT_COLUMNS = `
@@ -23,6 +25,8 @@ const SELECT_COLUMNS = `
   correct_answer   AS "correctAnswer",
   points,
   explanation,
+  group_label      AS "groupLabel",
+  group_instructions AS "groupInstructions",
   created_at       AS "createdAt",
   updated_at       AS "updatedAt"
 `;
@@ -59,6 +63,8 @@ export async function findByTestId(testId: string) {
             q.correct_answer   AS "correctAnswer",
             q.points,
             q.explanation,
+            q.group_label      AS "groupLabel",
+            q.group_instructions AS "groupInstructions",
             q.created_at       AS "createdAt",
             q.updated_at       AS "updatedAt",
             s.section_type     AS "sectionType",
@@ -81,14 +87,16 @@ export async function create(data: {
   correctAnswer: any;
   points?: number;
   explanation?: string;
+  groupLabel?: string;
+  groupInstructions?: string;
 }) {
   const result = await query(
     `INSERT INTO questions (
        section_id, question_number, question_type,
        question_text, question_data, correct_answer,
-       points, explanation
+       points, explanation, group_label, group_instructions
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.sectionId,
@@ -99,6 +107,8 @@ export async function create(data: {
       JSON.stringify(data.correctAnswer),
       data.points ?? 1,
       data.explanation ?? null,
+      data.groupLabel ?? null,
+      data.groupInstructions ?? null,
     ],
   );
   return result.rows[0];
@@ -114,6 +124,8 @@ export async function update(
     correctAnswer: any;
     points: number;
     explanation: string;
+    groupLabel: string;
+    groupInstructions: string;
   }>,
 ) {
   const entries = Object.entries(data).filter(([, v]) => v !== undefined);

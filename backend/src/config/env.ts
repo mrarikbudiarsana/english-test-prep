@@ -16,4 +16,9 @@ export const env = {
   },
   openaiApiKey: process.env.OPENAI_API_KEY || '',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
+    apiKey: process.env.CLOUDINARY_API_KEY || '',
+    apiSecret: process.env.CLOUDINARY_API_SECRET || '',
+  },
 };
