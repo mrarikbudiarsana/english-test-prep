@@ -25,6 +25,11 @@ app.use(express.urlencoded({ extended: true }));
 // API routes
 app.use('/api/v1', routes);
 
+// Welcome route
+app.get('/', (_req, res) => {
+  res.json({ message: 'Welcome to English Test Prep API' });
+});
+
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
