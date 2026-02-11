@@ -181,3 +181,89 @@ export async function countByUserId(userId: string) {
   );
   return parseInt(result.rows[0].count, 10);
 }
+
+export async function countCompletedByUserId(userId: string) {
+  const result = await query(
+    "SELECT COUNT(*) FROM attempts WHERE user_id = $1 AND status = 'completed'",
+    [userId],
+  );
+  return parseInt(result.rows[0].count, 10);
+}
+
+export async function getStatsForUser(userId: string) {
+  // Get completed attempts with test info
+  const attemptsResult = await query(
+    `SELECT
+      a.id,
+      a.user_id AS "userId",
+      a.test_id AS "testId",
+      a.mode,
+      a.practice_section_type AS "practiceSectionType",
+      a.status,
+      a.started_at AS "startedAt",
+      a.completed_at AS "completedAt",
+      a.current_section AS "currentSection",
+      a.section_started_at AS "sectionStartedAt",
+      a.listening_raw AS "listeningRaw",
+      a.listening_band AS "listeningBand",
+      a.reading_raw AS "readingRaw",
+      a.reading_band AS "readingBand",
+      a.writing_band AS "writingBand",
+      a.speaking_band AS "speakingBand",
+      a.overall_band AS "overallBand",
+      a.writing_feedback AS "writingFeedback",
+      a.speaking_feedback AS "speakingFeedback",
+      a.created_at AS "createdAt",
+      a.updated_at AS "updatedAt",
+      t.title AS "testTitle"
+     FROM attempts a
+     JOIN tests t ON a.test_id = t.id
+     WHERE a.user_id = $1 AND a.status = 'completed'
+     ORDER BY a.completed_at DESC
+     LIMIT 10`,
+    [userId],
+  );
+
+  const completedAttempts = attemptsResult.rows;
+
+  // Calculate total completed
+  const totalCompleted = await countCompletedByUserId(userId);
+
+  // Calculate averages
+  const validAttempts = completedAttempts.filter((a: any) => a.overallBand !== null);
+  const avgBand = validAttempts.length > 0
+    ? validAttempts.reduce((sum: number, a: any) => sum + a.overallBand, 0) / validAttempts.length
+    : null;
+
+  const bestBand = validAttempts.length > 0
+    ? Math.max(...validAttempts.map((a: any) => a.overallBand))
+    : null;
+
+  // Calculate section averages
+  const sectionAverages = {
+    listening: calculateSectionAverage(completedAttempts, 'listeningBand'),
+    reading: calculateSectionAverage(completedAttempts, 'readingBand'),
+    writing: calculateSectionAverage(completedAttempts, 'writingBand'),
+    speaking: calculateSectionAverage(completedAttempts, 'speakingBand'),
+  };
+
+  return {
+    totalAttempts: totalCompleted,
+    averageBand: avgBand,
+    bestBand: bestBand,
+    recentAttempts: completedAttempts.map((a: any) => ({
+      id: a.id,
+      testTitle: a.testTitle,
+      overallBand: a.overallBand,
+      status: a.status,
+      completedAt: a.completedAt,
+    })),
+    sectionAverages,
+  };
+}
+
+function calculateSectionAverage(attempts: any[], field: string): number | null {
+  const valid = attempts.filter((a) => a[field] !== null);
+  if (valid.length === 0) return null;
+  return valid.reduce((sum, a) => sum + a[field], 0) / valid.length;
+}

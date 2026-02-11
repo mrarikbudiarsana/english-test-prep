@@ -1,0 +1,174 @@
+'use client';
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    RadarChart,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    Radar,
+} from 'recharts';
+import { sectionTypeLabel } from '@/lib/utils';
+
+interface DashboardChartsProps {
+    recentAttempts: any[];
+    sectionAverages: Record<string, number | null>;
+}
+
+export function DashboardCharts({ recentAttempts, sectionAverages }: DashboardChartsProps) {
+    // Prepare data for Progress Chart (reverse recentAttempts to show oldest to newest)
+    const progressData = [...recentAttempts].reverse().slice(-10).map((attempt, index) => ({
+        name: `Test ${index + 1}`,
+        score: attempt.overallBand || 0,
+        date: new Date(attempt.completedAt).toLocaleDateString(),
+        title: attempt.testTitle,
+    }));
+
+    // Prepare data for Skills Radar Chart
+    const sections = ['listening', 'reading', 'writing', 'speaking'];
+    const skillsData = sections.map((section) => ({
+        subject: sectionTypeLabel(section),
+        score: sectionAverages[section] || 0,
+        fullMark: 9,
+    }));
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Progress Chart - 2/3 width */}
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <div className="mb-6">
+                    <h3 className="text-lg font-bold text-slate-800 mb-1">Score Progression</h3>
+                    <p className="text-sm text-slate-500">Track your improvement over time</p>
+                </div>
+                <div className="h-[300px] w-full">
+                    {progressData.length > 1 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={progressData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                                <defs>
+                                    <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                                        <stop offset="0%" stopColor="#6366f1" />
+                                        <stop offset="100%" stopColor="#a855f7" />
+                                    </linearGradient>
+                                    <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.15} />
+                                        <stop offset="95%" stopColor="#a855f7" stopOpacity={0.01} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis
+                                    dataKey="name"
+                                    tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                                    axisLine={{ stroke: '#e2e8f0' }}
+                                    tickLine={false}
+                                />
+                                <YAxis
+                                    domain={[0, 9]}
+                                    ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
+                                    tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                                    axisLine={{ stroke: '#e2e8f0' }}
+                                    tickLine={false}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        borderRadius: '12px',
+                                        border: '1px solid #e2e8f0',
+                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                                        backgroundColor: 'white',
+                                        padding: '12px'
+                                    }}
+                                    labelStyle={{ fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}
+                                    cursor={{ stroke: '#c7d2fe', strokeWidth: 2 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="score"
+                                    stroke="url(#lineGradient)"
+                                    strokeWidth={3}
+                                    dot={{ r: 5, strokeWidth: 3, fill: '#fff', stroke: '#6366f1' }}
+                                    activeDot={{ r: 7, strokeWidth: 0, fill: '#6366f1' }}
+                                    animationDuration={1500}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+                                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                            </div>
+                            <p className="font-semibold text-slate-600 mb-1">Not enough data</p>
+                            <p className="text-sm text-slate-500">Complete at least 2 tests to see your progress</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Skills Radar Chart - 1/3 width */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <div className="mb-6">
+                    <h3 className="text-lg font-bold text-slate-800 mb-1">Skills Breakdown</h3>
+                    <p className="text-sm text-slate-500">Your performance by section</p>
+                </div>
+                <div className="h-[300px] w-full">
+                    {skillsData.some(s => s.score > 0) ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={skillsData}>
+                                <defs>
+                                    <linearGradient id="radarGradient" x1="0" y1="0" x2="1" y2="1">
+                                        <stop offset="0%" stopColor="#8b5cf6" />
+                                        <stop offset="100%" stopColor="#ec4899" />
+                                    </linearGradient>
+                                </defs>
+                                <PolarGrid stroke="#e2e8f0" strokeWidth={1.5} />
+                                <PolarAngleAxis
+                                    dataKey="subject"
+                                    tick={{ fill: '#475569', fontSize: 13, fontWeight: 600 }}
+                                />
+                                <PolarRadiusAxis
+                                    angle={30}
+                                    domain={[0, 9]}
+                                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                    axisLine={false}
+                                />
+                                <Radar
+                                    name="Band Score"
+                                    dataKey="score"
+                                    stroke="url(#radarGradient)"
+                                    strokeWidth={3}
+                                    fill="url(#radarGradient)"
+                                    fillOpacity={0.25}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        borderRadius: '12px',
+                                        border: '1px solid #e2e8f0',
+                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                                        backgroundColor: 'white',
+                                        padding: '8px 12px'
+                                    }}
+                                    labelStyle={{ fontWeight: 600, color: '#1e293b' }}
+                                />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+                                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                </svg>
+                            </div>
+                            <p className="font-semibold text-slate-600 mb-1 text-center">No data yet</p>
+                            <p className="text-sm text-slate-500 text-center">Take tests to see your skills analysis</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}

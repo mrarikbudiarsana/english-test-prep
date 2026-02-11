@@ -3,17 +3,11 @@ import * as subscriptionModel from '../models/subscription.model';
 
 /**
  * Get dashboard statistics for a user.
- * Returns total attempts, active subscription info, etc.
+ * Returns total completed attempts, averages, best score, recent attempts, etc.
  */
 export async function getStats(userId: string) {
-  const totalAttempts = await attemptModel.countByUserId(userId);
-  const activeSub = await subscriptionModel.findActiveByUserId(userId);
-
-  return {
-    totalAttempts,
-    hasActiveSubscription: !!activeSub,
-    subscription: activeSub,
-  };
+  const stats = await attemptModel.getStatsForUser(userId);
+  return stats;
 }
 
 /**

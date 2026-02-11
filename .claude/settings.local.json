@@ -30,7 +30,10 @@
       "Bash(node:*)",
       "Bash(if exist .nextdevlock del .nextdevlock)",
       "Bash(netstat:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(grep:*)"
     ]
   }
 }

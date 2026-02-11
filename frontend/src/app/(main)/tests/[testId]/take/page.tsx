@@ -5,6 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Section, Question, SectionType } from '@/types/test';
 import { TestSessionProvider, useTestSession } from '@/contexts/TestSessionContext';
+import { HiArrowLeft } from 'react-icons/hi';
 import TestTimer from '@/components/test/TestTimer';
 import QuestionRenderer from '@/components/test/QuestionRenderer';
 import QuestionNavigation from '@/components/test/QuestionNavigation';
@@ -297,7 +298,15 @@ function TestTakingContent() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="w-full px-6 py-2 grid grid-cols-3 items-center">
           {/* Left: Test Title */}
-          <div className="flex items-center justify-start">
+          {/* Left: Test Title */}
+          <div className="flex items-center justify-start space-x-3">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Exit to Dashboard"
+            >
+              <HiArrowLeft className="w-5 h-5" />
+            </button>
             <h1 className="text-sm font-bold text-gray-900 truncate max-w-[300px]" title={testTitle}>
               {testTitle}
             </h1>
@@ -314,13 +323,7 @@ function TestTakingContent() {
 
           {/* Right: Controls */}
           <div className="flex items-center justify-end space-x-4">
-            <button
-              onClick={toggleFocusMode}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
-              title={isFocusMode ? "Exit Focus Mode" : "Enter Focus Mode"}
-            >
-              {isFocusMode ? <ExitFullScreenIcon className="w-5 h-5" /> : <EnterFullScreenIcon className="w-5 h-5" />}
-            </button>
+            {/* Focus Mode button removed as test page is always full screen */}
 
             <TestTimer
               timeRemaining={timer.timeRemaining}
