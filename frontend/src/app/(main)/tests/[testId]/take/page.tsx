@@ -23,6 +23,7 @@ import { sectionTypeLabel } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { useLayout } from '@/contexts/LayoutContext';
 import { EnterFullScreenIcon, ExitFullScreenIcon } from '@radix-ui/react-icons';
+import CongratulationsModal from '@/components/test/CongratulationsModal';
 
 const SECTION_ORDER: SectionType[] = ['listening', 'reading', 'writing', 'speaking'];
 
@@ -43,6 +44,7 @@ function TestTakingContent() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showCongratulationsModal, setShowCongratulationsModal] = useState(false);
   const [submitType, setSubmitType] = useState<'section' | 'test'>('section');
   const [activePartIndex, setActivePartIndex] = useState(0);
 
@@ -236,6 +238,10 @@ function TestTakingContent() {
     timer.stop();
     await submitTest();
     setShowSubmitModal(false);
+    setShowCongratulationsModal(true);
+  };
+
+  const handleViewResults = () => {
     router.push(`/results/${attemptId}`);
   };
 
@@ -916,6 +922,13 @@ function TestTakingContent() {
         onConfirm={submitType === 'section' ? handleSubmitSection : handleSubmitTest}
         type={submitType}
         unansweredCount={unansweredCount}
+      />
+
+      <CongratulationsModal
+        isOpen={showCongratulationsModal}
+        onClose={() => setShowCongratulationsModal(false)}
+        onViewResults={handleViewResults}
+        testTitle={testTitle}
       />
     </div>
   );

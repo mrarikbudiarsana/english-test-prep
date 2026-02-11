@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import AudioUploader from './AudioUploader';
-import ImageUploader from './ImageUploader';
+import ImageUploader from '@/components/ui/ImageUploader';
 import type { Section, SectionType, SpeakingPrompt } from '@/types/test';
 
 interface SectionFormData {

@@ -10,6 +10,7 @@ import {
   signOut,
   sendPasswordResetEmail,
   updateProfile,
+  updatePassword,
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 import api from '@/lib/api';
@@ -24,6 +25,8 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updateUserProfile: (displayName: string, photoUrl?: string) => Promise<void>;
+  updateUserPassword: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -99,6 +102,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await sendPasswordResetEmail(auth, email);
   };
 
+  const updateUserProfile = async (displayName: string, photoUrl?: string) => {
+    if (auth.currentUser) {
+      await updateProfile(auth.currentUser, { displayName, photoURL: photoUrl });
+      const response = await api.put('/auth/me', { displayName, photoUrl });
+      setUser(response.data);
+    }
+  };
+
+  const updateUserPassword = async (password: string) => {
+    if (auth.currentUser) {
+      await updatePassword(auth.currentUser, password);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -110,6 +127,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithGoogle,
         logout,
         resetPassword,
+        updateUserProfile,
+        updateUserPassword,
       }}
     >
       {children}

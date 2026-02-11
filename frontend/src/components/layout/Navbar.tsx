@@ -17,12 +17,11 @@ export default function Navbar() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2 group">
-              <div className="w-9 h-9 bg-[#e4002b] rounded-xl flex items-center justify-center shadow-lg shadow-[#ffe5ea] group-hover:shadow-xl transition-all group-hover:scale-105">
-                <span className="text-white font-bold text-sm">ET</span>
-              </div>
-              <span className="text-xl font-bold text-[#2c3e50]">
-                EnglishTest
-              </span>
+              <img
+                src="https://scobvornehcncgsqngag.supabase.co/storage/v1/object/public/Public/Logo%20fix.svg"
+                alt="EnglishTest"
+                className="w-10 h-10 group-hover:scale-105 transition-all"
+              />
             </Link>
           </div>
 
@@ -43,7 +42,7 @@ export default function Navbar() {
                   Practice Tests
                 </Link>
                 <Link
-                  href="/subscription"
+                  href="/pricing"
                   className="px-4 py-2 text-[#5a6c7d] hover:text-[#e4002b] hover:bg-[#ffe5ea]/30 rounded-xl font-semibold transition-all"
                 >
                   Pricing
@@ -80,6 +79,14 @@ export default function Navbar() {
                             Admin Panel
                           </Link>
                         )}
+                        <Link
+                          href="/settings"
+                          className="flex items-center px-4 py-2.5 text-sm font-semibold text-[#2c3e50] hover:bg-[#ffe5ea]/30 transition-all"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <HiUser className="w-4 h-4 mr-3 text-[#5a6c7d]" />
+                          Settings
+                        </Link>
                         <button
                           onClick={() => {
                             setUserMenuOpen(false);
@@ -150,7 +157,7 @@ export default function Navbar() {
                   Practice Tests
                 </Link>
                 <Link
-                  href="/subscription"
+                  href="/pricing"
                   className="block px-4 py-2.5 text-[#2c3e50] hover:bg-[#ffe5ea]/30 hover:text-[#e4002b] rounded-xl font-semibold transition-all"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -165,6 +172,13 @@ export default function Navbar() {
                     Admin Panel
                   </Link>
                 )}
+                <Link
+                  href="/settings"
+                  className="block px-4 py-2.5 text-[#2c3e50] hover:bg-[#ffe5ea]/30 hover:text-[#e4002b] rounded-xl font-semibold transition-all"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Settings
+                </Link>
                 <div className="pt-2 mt-2 border-t border-[#e8ecef]">
                   <button
                     onClick={() => {

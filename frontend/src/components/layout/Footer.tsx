@@ -10,10 +10,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">ET</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">EnglishTest</span>
+              <img
+                src="https://scobvornehcncgsqngag.supabase.co/storage/v1/object/public/Public/Logo%20fix.svg"
+                alt="EnglishTest"
+                className="w-8 h-8"
+              />
             </div>
             <p className="text-gray-500 text-sm">
               Practice for IELTS and other English proficiency exams with AI-powered feedback.
