@@ -52,7 +52,7 @@ export default function LoginPage() {
           <img
             src="https://scobvornehcncgsqngag.supabase.co/storage/v1/object/public/Public/Logo%20fix.svg"
             alt="EnglishTest"
-            className="w-12 h-12"
+            className="h-14 w-auto"
           />
         </Link>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">

@@ -9,12 +9,14 @@ import {
   HiClipboardList,
   HiUsers,
   HiArrowLeft,
+  HiCurrencyDollar,
 } from 'react-icons/hi';
 
 const adminNavItems = [
   { href: '/admin', label: 'Dashboard', icon: HiHome, exact: true },
   { href: '/admin/tests', label: 'Manage Tests', icon: HiClipboardList },
   { href: '/admin/users', label: 'Users', icon: HiUsers },
+  { href: '/admin/pricing', label: 'Pricing', icon: HiCurrencyDollar },
 ];
 
 export default function AdminSidebar() {

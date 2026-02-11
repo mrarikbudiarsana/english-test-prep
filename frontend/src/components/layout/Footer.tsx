@@ -13,7 +13,7 @@ export default function Footer() {
               <img
                 src="https://scobvornehcncgsqngag.supabase.co/storage/v1/object/public/Public/Logo%20fix.svg"
                 alt="EnglishTest"
-                className="w-8 h-8"
+                className="h-8 w-auto"
               />
             </div>
             <p className="text-gray-500 text-sm">

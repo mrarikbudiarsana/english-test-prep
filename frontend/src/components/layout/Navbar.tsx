@@ -20,7 +20,7 @@ export default function Navbar() {
               <img
                 src="https://scobvornehcncgsqngag.supabase.co/storage/v1/object/public/Public/Logo%20fix.svg"
                 alt="EnglishTest"
-                className="w-10 h-10 group-hover:scale-105 transition-all"
+                className="h-12 w-auto group-hover:scale-105 transition-all"
               />
             </Link>
           </div>

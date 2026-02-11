@@ -12,7 +12,7 @@ const upload = multer({
 const router = Router();
 
 router.post('/audio', authMiddleware, upload.single('audio'), uploadController.uploadAudio);
-router.post('/image', authMiddleware, adminAuthMiddleware, upload.single('image'), uploadController.uploadImage);
+router.post('/image', authMiddleware, upload.single('image'), uploadController.uploadImage);
 router.post('/presigned-url', authMiddleware, adminAuthMiddleware, uploadController.getPresignedUrl);
 
 export default router;
