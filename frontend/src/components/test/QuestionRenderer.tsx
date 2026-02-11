@@ -50,7 +50,7 @@ export default function QuestionRenderer({
             answer={answer}
             onChange={handleChange}
             readOnly={readOnly}
-            correctAnswer={readOnly ? question.correctAnswer : undefined}
+            correctAnswer={readOnly ? (question.correctAnswer as string | string[] | undefined) : undefined}
           />
         );
 
@@ -61,7 +61,7 @@ export default function QuestionRenderer({
             answer={answer}
             onChange={handleChange}
             readOnly={readOnly}
-            correctAnswer={readOnly ? question.correctAnswer : undefined}
+            correctAnswer={readOnly ? (question.correctAnswer as string | undefined) : undefined}
           />
         );
 
@@ -72,7 +72,7 @@ export default function QuestionRenderer({
             answer={answer}
             onChange={handleChange}
             readOnly={readOnly}
-            correctAnswer={readOnly ? question.correctAnswer : undefined}
+            correctAnswer={readOnly ? (question.correctAnswer as string | undefined) : undefined}
           />
         );
 
@@ -83,7 +83,7 @@ export default function QuestionRenderer({
             answer={answer}
             onChange={handleChange}
             readOnly={readOnly}
-            correctAnswer={readOnly ? question.correctAnswer : undefined}
+            correctAnswer={readOnly ? (question.correctAnswer as string | undefined) : undefined}
             questionNumber={resolvedNumber}
           />
         );
@@ -95,7 +95,7 @@ export default function QuestionRenderer({
             answer={answer}
             onChange={handleChange}
             readOnly={readOnly}
-            correctAnswer={readOnly ? question.correctAnswer : undefined}
+            correctAnswer={readOnly ? (question.correctAnswer as Record<string, string> | undefined) : undefined}
           />
         );
 
@@ -106,7 +106,7 @@ export default function QuestionRenderer({
             answer={answer}
             onChange={handleChange}
             readOnly={readOnly}
-            correctAnswer={readOnly ? question.correctAnswer : undefined}
+            correctAnswer={readOnly ? (question.correctAnswer as Record<string, string> | undefined) : undefined}
           />
         );
 
