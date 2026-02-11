@@ -50,6 +50,8 @@ export interface SpeakingPrompt {
   followUp?: string;
 }
 
+export type AnswerData = string | string[] | Record<string, string> | number | boolean | null;
+
 export interface Question {
   id: string;
   sectionId: string;
@@ -59,7 +61,7 @@ export interface Question {
   questionData: QuestionData;
   points: number;
   explanation?: string | null;
-  correctAnswer?: any; // Only available in results view
+  correctAnswer?: AnswerData; // Only available in results view
   groupLabel?: string | null; // e.g., "Questions 1-7"
   groupInstructions?: string | null; // Shared instructions for the group
 }
@@ -160,11 +162,11 @@ export interface UserResponse {
   attemptId: string;
   questionId: string;
   sectionId: string;
-  answerData: any;
+  answerData: AnswerData;
   writingText: string | null;
   wordCount: number | null;
   audioUrl: string | null;
   isCorrect: boolean | null;
   score: number | null;
-  aiFeedback: any | null;
+  aiFeedback: Record<string, unknown> | null;
 }
