@@ -54,8 +54,16 @@ export default function Navbar() {
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center space-x-2 px-3 py-2 text-[#2c3e50] hover:bg-[#f5f7f9] rounded-xl transition-all"
                   >
-                    <div className="w-9 h-9 bg-[#ffe5ea] rounded-xl flex items-center justify-center border border-[#e4002b]/20">
-                      <HiUser className="w-5 h-5 text-[#e4002b]" />
+                    <div className="w-9 h-9 bg-[#ffe5ea] rounded-xl flex items-center justify-center border border-[#e4002b]/20 overflow-hidden">
+                      {user.photoUrl ? (
+                        <img
+                          src={user.photoUrl}
+                          alt={user.displayName || 'User'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <HiUser className="w-5 h-5 text-[#e4002b]" />
+                      )}
                     </div>
                     <span className="font-semibold text-sm max-w-[150px] truncate">
                       {user.displayName || user.email}

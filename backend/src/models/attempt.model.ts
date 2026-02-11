@@ -60,14 +60,28 @@ export async function findByUserId(userId: string, offset: number = 0, limit: nu
             ) as test
      FROM attempts a
      JOIN tests t ON a.test_id = t.id
+     LEFT JOIN (
+       SELECT attempt_id, COUNT(*) as response_count
+       FROM responses
+       GROUP BY attempt_id
+     ) r ON a.id = r.attempt_id
      WHERE a.user_id = $1
+       AND (a.status != 'in_progress' OR COALESCE(r.response_count, 0) > 0)
      ORDER BY a.created_at DESC
      OFFSET $2 LIMIT $3`,
     [userId, offset, limit],
   );
 
   const countResult = await query(
-    'SELECT COUNT(*) FROM attempts WHERE user_id = $1',
+    `SELECT COUNT(*)
+     FROM attempts a
+     LEFT JOIN (
+       SELECT attempt_id, COUNT(*) as response_count
+       FROM responses
+       GROUP BY attempt_id
+     ) r ON a.id = r.attempt_id
+     WHERE a.user_id = $1
+       AND (a.status != 'in_progress' OR COALESCE(r.response_count, 0) > 0)`,
     [userId],
   );
 

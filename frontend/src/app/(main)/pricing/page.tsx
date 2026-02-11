@@ -28,7 +28,7 @@ export default function PricingPage() {
 
     const fetchPlans = async () => {
         try {
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/pricing`);
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/pricing`);
             setPlans(response.data);
         } catch (error) {
             console.error('Error fetching pricing plans:', error);
@@ -49,32 +49,32 @@ export default function PricingPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen pt-24 flex justify-center items-center bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div className="min-h-screen pt-24 flex justify-center items-center bg-[#f8f9fa]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e4002b]"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pt-24 pb-20">
+        <div className="min-h-screen bg-[#f8f9fa] pt-24 pb-20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="text-center max-w-3xl mx-auto mb-16">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-4 sm:text-5xl">
+                    <h1 className="text-4xl font-bold text-[#2c3e50] mb-4 sm:text-5xl">
                         Simple, Transparent Pricing
                     </h1>
-                    <p className="text-xl text-gray-600 mb-8">
+                    <p className="text-xl text-[#5a6c7d] mb-8">
                         Choose the plan that best fits your needs. Upgrade or downgrade at any time.
                     </p>
 
                     {/* Billing Toggle */}
                     <div className="flex items-center justify-center space-x-4">
-                        <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>
+                        <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-[#2c3e50]' : 'text-[#5a6c7d]'}`}>
                             Monthly
                         </span>
                         <button
                             onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-                            className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-gray-200"
+                            className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#e4002b] focus:ring-offset-2 bg-[#e8ecef]"
                             role="switch"
                             aria-checked={billingCycle === 'yearly'}
                         >
@@ -84,8 +84,8 @@ export default function PricingPage() {
                                     }`}
                             />
                         </button>
-                        <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-gray-900' : 'text-gray-500'}`}>
-                            Yearly <span className="text-green-600 font-bold ml-1">(Save 20%)</span>
+                        <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-[#2c3e50]' : 'text-[#5a6c7d]'}`}>
+                            Yearly <span className="text-emerald-600 font-bold ml-1">(Save 20%)</span>
                         </span>
                     </div>
                 </div>
@@ -95,30 +95,30 @@ export default function PricingPage() {
                     {plans.map((plan) => (
                         <div
                             key={plan.id}
-                            className={`relative bg-white rounded-2xl shadow-sm border p-8 flex flex-col ${plan.isPopular ? 'border-primary ring-2 ring-primary ring-opacity-50' : 'border-gray-200'
+                            className={`relative bg-white rounded-2xl shadow-sm border p-8 flex flex-col ${plan.isPopular ? 'border-[#e4002b] ring-2 ring-[#e4002b] ring-opacity-50' : 'border-[#e8ecef]'
                                 }`}
                         >
                             {plan.isPopular && (
                                 <div className="absolute top-0 transform -translate-y-1/2 left-1/2 -translate-x-1/2">
-                                    <span className="inline-block bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
+                                    <span className="inline-block bg-[#e4002b] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
                                         Most Popular
                                     </span>
                                 </div>
                             )}
 
                             <div className="mb-6">
-                                <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                                <p className="mt-2 text-sm text-gray-500">{plan.description}</p>
+                                <h3 className="text-xl font-bold text-[#2c3e50]">{plan.name}</h3>
+                                <p className="mt-2 text-sm text-[#5a6c7d]">{plan.description}</p>
                             </div>
 
                             <div className="mb-6">
-                                <span className="text-4xl font-bold text-gray-900">
+                                <span className="text-4xl font-bold text-[#2c3e50]">
                                     {formatPrice(
                                         billingCycle === 'monthly' ? plan.priceMonthly : plan.priceYearly,
                                         plan.currency
                                     )}
                                 </span>
-                                <span className="text-gray-500 ml-2">
+                                <span className="text-[#5a6c7d] ml-2">
                                     /{billingCycle === 'monthly' ? 'month' : 'year'}
                                 </span>
                             </div>
@@ -126,8 +126,8 @@ export default function PricingPage() {
                             <ul className="space-y-4 mb-8 flex-1">
                                 {plan.perks.map((perk, index) => (
                                     <li key={index} className="flex items-start">
-                                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mr-3" />
-                                        <span className="text-gray-600 text-sm">{perk}</span>
+                                        <Check className="h-5 w-5 text-emerald-600 flex-shrink-0 mr-3" />
+                                        <span className="text-[#5a6c7d] text-sm">{perk}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -148,31 +148,31 @@ export default function PricingPage() {
 
                 {/* FAQ Section */}
                 <div className="mt-24 max-w-3xl mx-auto">
-                    <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+                    <h2 className="text-3xl font-bold text-center text-[#2c3e50] mb-12">
                         Frequently Asked Questions
                     </h2>
                     <div className="space-y-8">
                         <div>
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            <h3 className="text-lg font-medium text-[#2c3e50] mb-2">
                                 Can I cancel my subscription at any time?
                             </h3>
-                            <p className="text-gray-600">
+                            <p className="text-[#5a6c7d]">
                                 Yes, you can cancel your subscription at any time. Your access will continue until the end of your billing period.
                             </p>
                         </div>
                         <div>
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            <h3 className="text-lg font-medium text-[#2c3e50] mb-2">
                                 What payment methods do you accept?
                             </h3>
-                            <p className="text-gray-600">
+                            <p className="text-[#5a6c7d]">
                                 We accept all major credit cards, bank transfers, and e-wallets through our secure payment processor (Midtrans).
                             </p>
                         </div>
                         <div>
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            <h3 className="text-lg font-medium text-[#2c3e50] mb-2">
                                 Can I switch plans later?
                             </h3>
-                            <p className="text-gray-600">
+                            <p className="text-[#5a6c7d]">
                                 Absolutely! You can upgrade or downgrade your plan at any time from your account settings. Prorated charges may apply.
                             </p>
                         </div>

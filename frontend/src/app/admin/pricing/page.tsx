@@ -45,7 +45,7 @@ export default function AdminPricingPage() {
 
     const fetchPlans = async () => {
         try {
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/pricing/admin`);
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/pricing/admin`);
             setPlans(response.data);
         } catch (error) {
             console.error('Error fetching plans:', error);
@@ -59,10 +59,10 @@ export default function AdminPricingPage() {
         e.preventDefault();
         try {
             if (editingPlan) {
-                await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/pricing/${editingPlan.id}`, formData);
+                await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/pricing/${editingPlan.id}`, formData);
                 toast.success('Plan updated successfully');
             } else {
-                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/pricing`, formData);
+                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/pricing`, formData);
                 toast.success('Plan created successfully');
             }
             setIsModalOpen(false);
@@ -76,7 +76,7 @@ export default function AdminPricingPage() {
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this plan?')) return;
         try {
-            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/pricing/${id}`);
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/pricing/${id}`);
             toast.success('Plan deleted successfully');
             fetchPlans();
         } catch (error) {
@@ -127,7 +127,7 @@ export default function AdminPricingPage() {
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Pricing Plans Management</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Pricing Plans Management</h1>
                 <Button onClick={() => openModal()} className="flex items-center gap-2">
                     <Plus className="w-4 h-4" /> Add Plan
                 </Button>
