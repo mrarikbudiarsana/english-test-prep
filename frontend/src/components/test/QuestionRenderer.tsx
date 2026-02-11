@@ -1,5 +1,7 @@
 'use client';
 
+import { cn } from '@/lib/utils';
+
 import {
   Question,
   MCQData,
@@ -22,6 +24,9 @@ interface QuestionRendererProps {
   answer: any;
   onAnswerChange: (questionId: string, answer: any) => void;
   readOnly?: boolean;
+  /** Override the displayed question number (for continuous numbering across parts). */
+  displayNumber?: number | string;
+  isActive?: boolean;
 }
 
 export default function QuestionRenderer({
@@ -29,6 +34,8 @@ export default function QuestionRenderer({
   answer,
   onAnswerChange,
   readOnly = false,
+  displayNumber,
+  isActive = false,
 }: QuestionRendererProps) {
   const handleChange = (newAnswer: any) => {
     onAnswerChange(question.id, newAnswer);
@@ -77,7 +84,7 @@ export default function QuestionRenderer({
             onChange={handleChange}
             readOnly={readOnly}
             correctAnswer={readOnly ? question.correctAnswer : undefined}
-            questionNumber={question.questionNumber}
+            questionNumber={resolvedNumber}
           />
         );
 
@@ -115,35 +122,76 @@ export default function QuestionRenderer({
   // Determine if this is a "note/summary" style completion question (hidden header, minimal spacing)
   const isNoteStyle = question.questionType === 'completion' && (question.questionData as any).style !== 'standard';
 
-  return (
-    <div className={isNoteStyle ? 'py-0.5' : 'py-6 border-b border-gray-100 last:border-0'}>
-      {/* Question Header - Hidden for note/summary completion types */}
-      {!isNoteStyle && (
-        <div className="mb-4">
-          <div className="flex items-start gap-3">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-              {question.questionNumber}
-            </span>
-            <div className="pt-0.5">
-              <p className="text-base font-medium text-gray-900 leading-relaxed">
-                {question.questionText}
-              </p>
-              {question.points > 1 && (
-                <span className="text-xs text-gray-400 font-normal ml-2">
-                  ({question.points} points)
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+  // Determine the text to display next to the number bubble
+  const resolvedNumber = displayNumber ?? question.questionNumber;
+  const questionHeaderText = (() => {
+    if (question.questionType === 'true_false_not_given') {
+      return (question.questionData as TFNGData).statement || question.questionText;
+    }
+    if (question.questionType === 'yes_no_not_given') {
+      return (question.questionData as YNNGData).statement || question.questionText;
+    }
+    return question.questionText;
+  })();
 
-      {/* Question Body */}
-      <div className={isNoteStyle ? '' : 'pl-10'}>
+  // Strip "Question X" prefix if it exists
+  const processedHeaderText = (() => {
+    if (!questionHeaderText) return '';
+    const pattern = new RegExp(`^question\\s*${resolvedNumber}[:\\s]*`, 'i');
+    const patternGeneric = /^question\s*\d+[:\s]*/i;
+
+    let stripped = questionHeaderText.replace(pattern, '').trim();
+    if (stripped === questionHeaderText) {
+      stripped = questionHeaderText.replace(patternGeneric, '').trim();
+    }
+    return stripped;
+  })();
+
+  const isRedundantHeader = !processedHeaderText;
+
+  return (
+    <div className={cn(
+      isNoteStyle ? 'py-0.5' : 'py-6 border-b border-gray-100 last:border-0',
+      !isNoteStyle && "flex items-start gap-3"
+    )}>
+      {isNoteStyle ? (
         <TextHighlighter>
           {renderQuestion()}
         </TextHighlighter>
-      </div>
+      ) : (
+        <>
+          <span
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded-[4px] border text-sm font-bold mt-0.5 transition-colors duration-200",
+              // Range Handling: wide if string length > 2
+              String(resolvedNumber).length > 2 ? "h-7 px-2 min-w-[2.5rem]" : "h-7 w-7",
+              // Active State
+              isActive
+                ? "bg-blue-600 border-blue-600 text-white shadow-sm ring-2 ring-blue-100 ring-offset-1"
+                : "bg-white border-gray-300 text-gray-700 hover:border-gray-400"
+            )}
+          >
+            {resolvedNumber}
+          </span>
+          <div className="flex-1">
+            {!isRedundantHeader && (
+              <div className="mb-2">
+                <p className="text-base text-black leading-relaxed not-italic font-normal">
+                  {processedHeaderText}
+                </p>
+                {question.points > 1 && (
+                  <span className="text-xs text-gray-400 font-normal ml-2">
+                    ({question.points} points)
+                  </span>
+                )}
+              </div>
+            )}
+            <TextHighlighter>
+              {renderQuestion()}
+            </TextHighlighter>
+          </div>
+        </>
+      )}
 
       {/* Explanation (review mode) */}
       {readOnly && question.explanation && (
@@ -155,3 +203,4 @@ export default function QuestionRenderer({
     </div>
   );
 }
+

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Section, Question, SectionType } from '@/types/test';
@@ -15,6 +15,8 @@ import RichTextEditor from '@/components/test/RichTextEditor';
 import SectionProgress from '@/components/test/SectionProgress';
 import SubmitConfirmation from '@/components/test/SubmitConfirmation';
 import TestFooter from '@/components/test/TestFooter';
+import GroupInstruction from '@/components/test/GroupInstruction';
+import { renderFormattedText } from '@/components/test/GroupInstruction';
 import { useTimer } from '@/hooks/useTimer';
 import { sectionTypeLabel } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -22,22 +24,6 @@ import { useLayout } from '@/contexts/LayoutContext';
 import { EnterFullScreenIcon, ExitFullScreenIcon } from '@radix-ui/react-icons';
 
 const SECTION_ORDER: SectionType[] = ['listening', 'reading', 'writing', 'speaking'];
-
-const renderFormattedText = (text: string) => {
-  if (!text) return null;
-  // Split by bold markers (**text**)
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return (
-    <span>
-      {parts.map((part, i) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-          return <strong key={i} className="font-bold text-gray-900">{part.slice(2, -2)}</strong>;
-        }
-        return <span key={i}>{part}</span>;
-      })}
-    </span>
-  );
-};
 
 function TestTakingContent() {
   const params = useParams();
@@ -57,6 +43,24 @@ function TestTakingContent() {
   const [loading, setLoading] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submitType, setSubmitType] = useState<'section' | 'test'>('section');
+  const [activePartIndex, setActivePartIndex] = useState(0);
+
+  const [testTitle, setTestTitle] = useState<string>('');
+
+  // Load test title
+  useEffect(() => {
+    async function loadTestDetails() {
+      try {
+        const res = await api.get(`/tests/${testId}`);
+        setTestTitle(res.data.title);
+      } catch (err) {
+        console.error('Failed to load test details:', err);
+      }
+    }
+    if (testId) {
+      loadTestDetails();
+    }
+  }, [testId]);
 
   // Resizable split pane state
   const [leftPaneWidth, setLeftPaneWidth] = useState(50); // percentage
@@ -242,10 +246,37 @@ function TestTakingContent() {
   const currentQuestion = questions[currentQuestionIndex];
   const currentSectionParts = sections.filter(s => s.sectionType === state.currentSectionType);
 
-  // Find which section part the current question belongs to
-  const currentSectionPart = currentQuestion
-    ? currentSectionParts.find(s => s.id === currentQuestion.sectionId)
-    : currentSectionParts[0];
+  // Reset activePartIndex when changing section type
+  useEffect(() => {
+    setActivePartIndex(0);
+  }, [state.currentSectionType]);
+
+  // Current active part based on tab selection
+  const currentSectionPart = currentSectionParts[activePartIndex] || currentSectionParts[0];
+
+  // Filter questions for the active part
+  const activePartQuestions = useMemo(() => {
+    if (!currentSectionPart) return questions;
+    // For reading/listening with multiple parts, filter to active part
+    if (currentSectionParts.length > 1) {
+      return questions.filter(q => q.sectionId === currentSectionPart.id);
+    }
+    return questions;
+  }, [questions, currentSectionPart, currentSectionParts]);
+
+  // Compute the continuous display number offset for the active part
+  const partNumberOffset = useMemo(() => {
+    if (currentSectionParts.length <= 1) return 0;
+    let offset = 0;
+    for (let i = 0; i < activePartIndex; i++) {
+      const partId = currentSectionParts[i]?.id;
+      if (partId) {
+        // Sum points instead of just counting questions
+        offset += questions.filter(q => q.sectionId === partId).reduce((sum, q) => sum + (q.points || 1), 0);
+      }
+    }
+    return offset;
+  }, [questions, currentSectionParts, activePartIndex]);
 
   const unansweredCount = questions.filter(q => !state.answeredQuestions.has(q.id)).length;
 
@@ -261,11 +292,19 @@ function TestTakingContent() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className={`h-screen flex flex-col bg-gray-50 overflow-hidden ${isResizing ? 'select-none cursor-col-resize' : ''}`}>
       {/* Test Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+        <div className="w-full px-6 py-2 grid grid-cols-3 items-center">
+          {/* Left: Test Title */}
+          <div className="flex items-center justify-start">
+            <h1 className="text-sm font-bold text-gray-900 truncate max-w-[300px]" title={testTitle}>
+              {testTitle}
+            </h1>
+          </div>
+
+          {/* Center: Section Progress */}
+          <div className="flex items-center justify-center">
             <SectionProgress
               sections={SECTION_ORDER}
               currentSection={state.currentSectionType || 'listening'}
@@ -273,7 +312,8 @@ function TestTakingContent() {
             />
           </div>
 
-          <div className="flex items-center space-x-4">
+          {/* Right: Controls */}
+          <div className="flex items-center justify-end space-x-4">
             <button
               onClick={toggleFocusMode}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
@@ -313,7 +353,9 @@ function TestTakingContent() {
           {/* Listening Section */}
           {state.currentSectionType === 'listening' && (
             <div className="h-full overflow-y-auto">
+              {/* Keep listening section constrained or make full width? Usually listening is centered content. Let's keep max-w-7xl for listening/writing/speaking unless requested otherwise. Reading needs full width. */}
               <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
                 {currentSectionPart?.audioUrl && (
                   <AudioPlayer
                     src={currentSectionPart.audioUrl}
@@ -331,7 +373,7 @@ function TestTakingContent() {
                   const grouped: { [key: string]: Question[] } = {};
                   const ungrouped: Question[] = [];
 
-                  questions.forEach(q => {
+                  activePartQuestions.forEach(q => {
                     if (q.groupLabel) {
                       if (!grouped[q.groupLabel]) {
                         grouped[q.groupLabel] = [];
@@ -348,27 +390,23 @@ function TestTakingContent() {
                       {Object.entries(grouped).map(([groupLabel, groupQuestions]) => {
                         const firstQuestion = groupQuestions[0];
                         return (
-                          <div key={groupLabel} className="bg-white rounded-lg border-2 border-gray-300 p-6">
-                            {/* Group header - IELTS style */}
-                            <div className="mb-4">
-                              <h3 className="text-base font-bold text-gray-900 mb-2">
-                                {groupLabel}
-                              </h3>
-                              {firstQuestion.groupInstructions && (
-                                <p className="text-base text-gray-700 mb-2">
-                                  {renderFormattedText(firstQuestion.groupInstructions)}
-                                </p>
-                              )}
-                            </div>
+                          <div key={groupLabel} className="bg-white border-2 border-gray-300 p-6 mb-6">
+                            <GroupInstruction
+                              groupLabel={groupLabel}
+                              groupInstructions={firstQuestion.groupInstructions}
+                              variant="compact"
+                            />
 
-                            {/* Render all questions in this group - simple list style */}
+                            {/* Render all questions in this group */}
                             <div className="space-y-4">
-                              {groupQuestions.map(question => (
+                              {groupQuestions.map((question, qIdx) => (
                                 <div key={question.id} className="pl-0">
                                   <QuestionRenderer
                                     question={question}
                                     answer={state.answers[question.id]}
                                     onAnswerChange={handleAnswerChange}
+                                    displayNumber={partNumberOffset + activePartQuestions.indexOf(question) + 1}
+                                    isActive={questions.indexOf(question) === currentQuestionIndex}
                                   />
                                 </div>
                               ))}
@@ -378,15 +416,20 @@ function TestTakingContent() {
                       })}
 
                       {/* Render ungrouped questions */}
-                      {ungrouped.map(question => (
-                        <div key={question.id} className="bg-white rounded-xl border border-gray-200 p-6">
-                          <QuestionRenderer
-                            question={question}
-                            answer={state.answers[question.id]}
-                            onAnswerChange={handleAnswerChange}
-                          />
-                        </div>
-                      ))}
+                      {ungrouped.map(question => {
+                        const displayNum = partNumberOffset + activePartQuestions.indexOf(question) + 1;
+                        return (
+                          <div key={question.id} className="bg-white p-6 border-b border-gray-200 last:border-0">
+                            <QuestionRenderer
+                              question={question}
+                              answer={state.answers[question.id]}
+                              onAnswerChange={handleAnswerChange}
+                              displayNumber={displayNum}
+                              isActive={questions.indexOf(question) === currentQuestionIndex}
+                            />
+                          </div>
+                        );
+                      })}
                     </>
                   );
                 })()}
@@ -397,6 +440,7 @@ function TestTakingContent() {
           {/* Reading Section */}
           {state.currentSectionType === 'reading' && (
             <div className="flex flex-col h-full">
+
               {/* Full-width Instructions Banner */}
               {currentSectionPart?.instructions && (
                 <div className="bg-blue-50 border-b border-blue-200 px-6 py-3 text-center text-sm font-medium text-blue-800 shrink-0">
@@ -407,7 +451,7 @@ function TestTakingContent() {
               <div className="flex flex-1 overflow-hidden" ref={containerRef}>
                 {/* Left Pane: Reading Passage */}
                 <div
-                  className="h-full border-r border-gray-200 bg-white"
+                  className="h-full border-r border-gray-200 bg-white shrink-0"
                   style={{ width: `${leftPaneWidth}%` }}
                 >
                   <div className="h-full overflow-y-auto">
@@ -423,16 +467,15 @@ function TestTakingContent() {
 
                 {/* Drag Handle */}
                 <div
-                  className="w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize hover:w-1.5 transition-all z-10 flex items-center justify-center shrink-0 active:bg-blue-600"
+                  className="w-1.5 bg-gray-100 hover:bg-blue-400 cursor-col-resize hover:w-2 transition-all z-10 flex items-center justify-center shrink-0 active:bg-blue-600 -ml-0.5"
                   onMouseDown={startResizing}
                 >
-                  <div className="h-8 w-0.5 bg-gray-400 rounded-full" />
+                  <div className="h-8 w-1 bg-gray-300 rounded-full" />
                 </div>
 
                 {/* Right Pane: Questions */}
                 <div
-                  className="h-full bg-white flex-1"
-                  style={{ width: `${100 - leftPaneWidth}%` }}
+                  className="h-full bg-white grow min-w-0" // min-w-0 used to allow flex child to shrink below content size
                 >
                   <div className="h-full overflow-y-auto px-8 py-6 space-y-8">
 
@@ -442,7 +485,7 @@ function TestTakingContent() {
                       const grouped: { [key: string]: Question[] } = {};
                       const ungrouped: Question[] = [];
 
-                      questions.forEach(q => {
+                      activePartQuestions.forEach(q => {
                         if (q.groupLabel) {
                           if (!grouped[q.groupLabel]) {
                             grouped[q.groupLabel] = [];
@@ -451,13 +494,6 @@ function TestTakingContent() {
                         } else {
                           ungrouped.push(q);
                         }
-                      });
-
-                      // DEBUG: remove after testing
-                      console.log('GROUPED:', Object.keys(grouped), 'UNGROUPED:', ungrouped.length);
-                      ungrouped.forEach(q => {
-                        const qd = q.questionData as any;
-                        console.log(`Q${q.questionNumber}: type=${q.questionType}, title="${qd.title}", style="${qd.style}", ctx="${(qd.context || '').substring(0, 40)}"`);
                       });
 
                       return (
@@ -470,7 +506,6 @@ function TestTakingContent() {
                             // Detect "summary" mode: note-style completions WITHOUT bullet markers = flowing paragraph
                             const isSummaryFlow = isNoteStyle && groupQuestions.every(q => {
                               const ctx = ((q.questionData as any).context || '').trim();
-                              // Checks for standard bullet, en-dash, em-dash, bullet point char, asterisk
                               return q.questionType === 'completion' &&
                                 !ctx.startsWith('-') &&
                                 !ctx.startsWith('–') &&
@@ -482,22 +517,11 @@ function TestTakingContent() {
                             return (
                               <div key={groupLabel} className="mb-8">
                                 {/* Group header */}
-                                <div className={cn(
-                                  "mb-2",
-                                  isNoteStyle ? "pl-2" : "bg-gray-50 p-4 rounded-lg border border-gray-100 mb-6"
-                                )}>
-                                  <h3 className={cn(
-                                    "font-bold text-gray-900 mb-1",
-                                    isNoteStyle ? "text-xl" : "text-base"
-                                  )}>
-                                    {groupLabel}
-                                  </h3>
-                                  {firstQuestion.groupInstructions && (
-                                    <p className="text-base text-gray-700 mb-2">
-                                      {renderFormattedText(firstQuestion.groupInstructions)}
-                                    </p>
-                                  )}
-                                </div>
+                                <GroupInstruction
+                                  groupLabel={groupLabel}
+                                  groupInstructions={firstQuestion.groupInstructions}
+                                  variant={isNoteStyle ? 'compact' : 'default'}
+                                />
 
                                 {/* Summary flow: render ALL questions as inline text in ONE paragraph */}
                                 {isSummaryFlow ? (
@@ -520,6 +544,7 @@ function TestTakingContent() {
                                             if (testParts.length > 1) { parts = testParts; break; }
                                           }
                                         }
+                                        const displayNum = partNumberOffset + activePartQuestions.indexOf(question) + 1;
                                         const qIndex = questions.indexOf(question);
                                         return (
                                           <span key={question.id} id={`question-${qIndex}`}>
@@ -536,7 +561,7 @@ function TestTakingContent() {
                                                     />
                                                     {!state.answers[question.id] && (
                                                       <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium">
-                                                        {question.questionNumber}
+                                                        {displayNum}
                                                       </span>
                                                     )}
                                                   </span>
@@ -552,24 +577,34 @@ function TestTakingContent() {
                                 ) : (
                                   /* Standard or Note (bulleted) rendering: each question in its own block */
                                   <div className={isNoteStyle ? "space-y-0 pl-6" : "space-y-4"}>
-                                    {groupQuestions.map((question, qIdx) => (
-                                      <div
-                                        key={question.id}
-                                        className={cn(
-                                          "transition-colors duration-300",
-                                          questions.indexOf(question) === currentQuestionIndex
-                                            ? (isNoteStyle ? "" : "bg-blue-50/50 -mx-4 px-4 rounded-lg border-l-4 border-blue-500")
-                                            : (isNoteStyle ? "" : "border-l-4 border-transparent -mx-4 px-4")
-                                        )}
-                                        id={`question-${questions.indexOf(question)}`}
-                                      >
-                                        <QuestionRenderer
-                                          question={question}
-                                          answer={state.answers[question.id]}
-                                          onAnswerChange={handleAnswerChange}
-                                        />
-                                      </div>
-                                    ))}
+                                    {groupQuestions.map((question, qIdx) => {
+                                      const isNoteStyle = question.questionType === 'completion' && (question.questionData as any).style !== 'standard';
+
+                                      // Calculate display number (range if > 1 point)
+                                      const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
+                                      const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + (q.points || 1), 0) + 1;
+                                      const points = question.points || 1;
+                                      const displayNum = points > 1 ? `${startNum}-${startNum + points - 1}` : startNum;
+
+                                      return (
+                                        <div
+                                          key={question.id}
+                                          className={cn(
+                                            "transition-colors duration-300",
+                                            isNoteStyle ? "" : "-mx-4 px-4"
+                                          )}
+                                          id={`question-${questions.indexOf(question)}`}
+                                        >
+                                          <QuestionRenderer
+                                            question={question}
+                                            answer={state.answers[question.id]}
+                                            onAnswerChange={handleAnswerChange}
+                                            displayNumber={displayNum}
+                                            isActive={questions.indexOf(question) === currentQuestionIndex}
+                                          />
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 )}
                               </div>
@@ -625,7 +660,15 @@ function TestTakingContent() {
                                                 if (testParts.length > 1) { parts = testParts; break; }
                                               }
                                             }
+
+                                            // Calculate start number based on points of previous questions in this part
+                                            const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
+                                            const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + (q.points || 1), 0) + 1;
+                                            const points = question.points || 1;
+                                            const displayNum = points > 1 ? `${startNum}-${startNum + points - 1}` : startNum;
+
                                             const qIndex = questions.indexOf(question);
+
                                             return (
                                               <span key={question.id} id={`question-${qIndex}`}>
                                                 {parts.map((part: string, i: number) => (
@@ -640,8 +683,8 @@ function TestTakingContent() {
                                                           className="w-32 border border-gray-300 px-2 py-1 text-sm rounded bg-white text-center font-medium transition-all focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 placeholder:text-gray-300"
                                                         />
                                                         {!state.answers[question.id] && (
-                                                          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium">
-                                                            {question.questionNumber}
+                                                          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium whitespace-nowrap">
+                                                            {displayNum}
                                                           </span>
                                                         )}
                                                       </span>
@@ -658,14 +701,19 @@ function TestTakingContent() {
                                   } else {
                                     const question = item.question;
                                     const isNoteStyle = question.questionType === 'completion' && (question.questionData as any).style !== 'standard';
+
+                                    // Calculate display number (range if > 1 point)
+                                    const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
+                                    const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + (q.points || 1), 0) + 1;
+                                    const points = question.points || 1;
+                                    const displayNum = points > 1 ? `${startNum}-${startNum + points - 1}` : startNum;
+
                                     return (
                                       <div
                                         key={question.id}
                                         className={cn(
                                           "transition-colors duration-300",
-                                          questions.indexOf(question) === currentQuestionIndex
-                                            ? (isNoteStyle ? "" : "bg-blue-50/50 -mx-4 px-4 rounded-lg border-l-4 border-blue-500")
-                                            : (isNoteStyle ? "" : "border-l-4 border-transparent -mx-4 px-4")
+                                          isNoteStyle ? "" : "-mx-4 px-4" // Removed border/bg styles for active state
                                         )}
                                         id={`question-${questions.indexOf(question)}`}
                                       >
@@ -673,6 +721,8 @@ function TestTakingContent() {
                                           question={question}
                                           answer={state.answers[question.id]}
                                           onAnswerChange={handleAnswerChange}
+                                          displayNumber={displayNum}
+                                          isActive={questions.indexOf(question) === currentQuestionIndex}
                                         />
                                       </div>
                                     );
@@ -818,11 +868,23 @@ function TestTakingContent() {
       {/* Footer */}
       <TestFooter
         questions={questions}
+        sections={currentSectionParts}
         currentQuestionIndex={currentQuestionIndex}
         answeredQuestions={state.answeredQuestions}
         flaggedQuestions={state.flaggedQuestions}
         onQuestionSelect={(index) => {
           setCurrentQuestionIndex(index);
+
+          // If this is a Reading/Listening section with multiple parts,
+          // ensure we switch the activePartIndex if the question belongs to a different part
+          const selectedQuestion = questions[index];
+          if (selectedQuestion && currentSectionParts.length > 1) {
+            const partIdx = currentSectionParts.findIndex(p => p.id === selectedQuestion.sectionId);
+            if (partIdx !== -1 && partIdx !== activePartIndex) {
+              setActivePartIndex(partIdx);
+            }
+          }
+
           // Scroll and focus
           setTimeout(() => {
             const element = document.getElementById(`question-${index}`);

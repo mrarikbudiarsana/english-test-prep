@@ -2,6 +2,7 @@
 
 import { Question } from '@/types/test';
 import QuestionRenderer from './QuestionRenderer';
+import GroupInstruction from './GroupInstruction';
 
 interface QuestionGroupProps {
   questions: Question[];
@@ -32,16 +33,10 @@ export default function QuestionGroup({
     <div className="space-y-4">
       {/* Group Header (for IELTS format) */}
       {hasGrouping && showGroupLabel && (
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <div className="mb-3">
-            <h3 className="text-base font-semibold text-gray-900">
-              {firstQuestion.groupLabel}
-            </h3>
-          </div>
-          <div className="prose prose-sm max-w-none text-gray-700">
-            <p className="whitespace-pre-wrap">{firstQuestion.groupInstructions}</p>
-          </div>
-        </div>
+        <GroupInstruction
+          groupLabel={firstQuestion.groupLabel!}
+          groupInstructions={firstQuestion.groupInstructions}
+        />
       )}
 
       {/* Questions */}

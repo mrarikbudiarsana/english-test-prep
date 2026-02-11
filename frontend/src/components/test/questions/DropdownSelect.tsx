@@ -108,7 +108,7 @@ export default function DropdownSelect({
   return (
     <div>
       {/* Context with inline dropdowns */}
-      <div className="rounded-lg bg-gray-50 px-4 py-4 text-sm text-gray-700 leading-loose">
+      <div className="text-base text-gray-900 leading-relaxed mb-4">
         {renderedContent}
       </div>
 

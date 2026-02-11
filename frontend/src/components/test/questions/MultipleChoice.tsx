@@ -66,24 +66,21 @@ export default function MultipleChoice({
     const status = getOptionStatus(key);
 
     if (status === 'correct') {
-      return 'border-green-400 bg-green-50 ring-1 ring-green-200';
+      return 'bg-green-50/50 rounded';
     }
     if (status === 'incorrect') {
-      return 'border-red-400 bg-red-50 ring-1 ring-red-200';
+      return 'bg-red-50/50 rounded';
     }
     if (status === 'missed') {
-      return 'border-green-300 bg-green-50/50 border-dashed';
+      return 'bg-orange-50/50 rounded';
     }
-    if (isSelected(key)) {
-      return 'border-blue-400 bg-blue-50 ring-1 ring-blue-200';
-    }
-    return 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50';
+    return ''; // No background, no hover
   };
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2">
       {multiSelect && (
-        <p className="text-xs text-gray-500 italic mb-3">
+        <p className="text-xs text-gray-500 italic mb-2">
           Select all that apply
         </p>
       )}
@@ -94,9 +91,10 @@ export default function MultipleChoice({
           <label
             key={option.key}
             className={`
-              flex cursor-pointer items-start gap-3 rounded-lg border p-3.5 transition-all
+              flex cursor-pointer items-start gap-3 transition-colors
               ${readOnly ? 'cursor-default' : ''}
               ${getOptionStyle(option.key)}
+              ${status ? 'p-2 -ml-2' : ''} 
             `}
           >
             {/* Radio / Checkbox */}
@@ -122,8 +120,8 @@ export default function MultipleChoice({
 
             {/* Option Text */}
             <div className="flex flex-1 items-start justify-between gap-2">
-              <span className="text-sm text-gray-800">
-                <span className="mr-2 font-semibold text-gray-500">
+              <span className="text-base text-black leading-relaxed not-italic font-normal">
+                <span className="mr-2 font-normal text-black">
                   {option.key}.
                 </span>
                 {option.text}

@@ -25,8 +25,8 @@ export default function TestTimer({ timeRemaining, isRunning }: TestTimerProps) 
   return (
     <div
       className={`
-        inline-flex items-center gap-2 rounded-lg border px-4 py-2
-        font-mono text-lg font-semibold tabular-nums transition-colors
+        inline-flex items-center gap-2 rounded-lg border px-3 py-1
+        font-mono text-base font-semibold tabular-nums transition-colors
         ${colorClass}
         ${shouldPulse ? 'animate-pulse' : ''}
       `}

@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Question } from '@/types/test';
+import { Question, Section } from '@/types/test';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 
 interface TestFooterProps {
     questions: Question[];
+    sections: Section[];
     currentQuestionIndex: number;
     answeredQuestions: Set<string>;
     flaggedQuestions: Set<string>;
@@ -19,6 +20,7 @@ interface TestFooterProps {
 
 export default function TestFooter({
     questions,
+    sections,
     currentQuestionIndex,
     answeredQuestions,
     flaggedQuestions,
@@ -30,6 +32,16 @@ export default function TestFooter({
     onToggleFlag,
 }: TestFooterProps) {
     const currentQuestion = questions[currentQuestionIndex];
+
+    // Group questions by section (Part)
+    const groupedQuestions = sections.map((section, sectionIdx) => ({
+        section,
+        questions: questions.filter(q => q.sectionId === section.id),
+        partLabel: `Part ${sectionIdx + 1}`
+    })).filter(group => group.questions.length > 0);
+
+    // If no sections (or single section), fall back to simple list
+    const hasMultipleParts = groupedQuestions.length > 1;
 
     return (
         <div className="bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-50">
@@ -50,40 +62,87 @@ export default function TestFooter({
 
                 {/* Question Navigation Scroll Area */}
                 <div className="flex-1 overflow-x-auto no-scrollbar mx-4">
-                    <div className="flex items-center justify-center gap-1.5 min-w-max p-1">
-                        {questions.map((question, index) => {
-                            const isActive = index === currentQuestionIndex;
-                            const isAnswered = answeredQuestions.has(question.id);
-                            const isFlagged = flaggedQuestions.has(question.id);
+                    <div className="flex items-center justify-center gap-4 min-w-max p-1">
+                        {(hasMultipleParts ? groupedQuestions : [{ questions }]).map((group, groupIdx) => (
+                            <div key={groupIdx} className="flex items-center gap-2">
+                                {hasMultipleParts && (
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1 whitespace-nowrap">
+                                        {(group as any).partLabel}
+                                    </span>
+                                )}
+                                <div className="flex items-center gap-1.5">
+                                    {group.questions.map((question) => {
+                                        const index = questions.indexOf(question);
+                                        const isActive = index === currentQuestionIndex;
+                                        const isAnswered = answeredQuestions.has(question.id);
+                                        const isFlagged = flaggedQuestions.has(question.id);
 
-                            let buttonClass = 'min-w-[2rem] h-8 rounded-md text-xs font-medium transition-all relative ';
+                                        // Calculate display label (handle multi-point ranges)
+                                        // Note: We need a reliable way to know the "start number" for this footer item.
+                                        // Since we don't have the global offset here easily without passing it down, 
+                                        // we can approximate or require the parent to pass a label generator. 
+                                        // However, standard continuous index + 1 is usually close enough for footer navigation unless we have complex offsets.
+                                        // Better approach: calculate based on cumulative points up to this question.
 
-                            if (isActive) {
-                                buttonClass += 'bg-blue-600 text-white ring-2 ring-blue-300 ring-offset-1';
-                            } else if (isAnswered) {
-                                buttonClass += 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200';
-                            } else {
-                                buttonClass += 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200';
-                            }
+                                        // Calculating exact range label inside render loop is expensive if we re-scan everything. 
+                                        // Simplified active state: The parent knows the true display text (passed to QuestionRenderer).
+                                        // But here we just need a button. 
+                                        // Let's rely on simple 1-based index or just show the index+1 for now, 
+                                        // UNLESS points > 1, then we try to show range.
+                                        // Actually, typically the footer just shows "Question number" (1, 2, 3...) separately.
+                                        // But user requested "displayed numbers like 11 & 12". 
+                                        // If Q11 is 2 points, it covers 11-12.
 
-                            return (
-                                <button
-                                    key={question.id}
-                                    onClick={() => onQuestionSelect(index)}
-                                    className={buttonClass}
-                                    aria-label={`Question ${question.questionNumber}`}
-                                >
-                                    {question.questionNumber}
-                                    {isFlagged && (
-                                        <div className="absolute -top-1 -right-1">
-                                            <div className="bg-orange-500 rounded-full p-0.5 shadow-sm">
-                                                <Flag className="w-2 h-2 text-white fill-current" />
-                                            </div>
-                                        </div>
-                                    )}
-                                </button>
-                            );
-                        })}
+                                        // Let's implement a quick helper to get the visual label if possible.
+                                        // For footer, usually simple numbers are preferred to avoid clutter 20-21, 22-23...
+                                        // But if requested, we should try. 
+                                        // For now, let's keep it simple: Show the "Question Index + 1" but clearly point to the question.
+                                        // Wait, if Q20 is 2 points (20-21), then the NEXT question is Q22. 
+                                        // So grouping is essential.
+
+                                        // Let's PRE-CALCULATE the start numbers for all questions to be safe.
+                                        // Or just use the question.questionNumber if available/reliable.
+                                        const qNum = question.questionNumber; // This might be reliable if backend sets it correctly. 
+                                        // If backend sets questionNumber=20 for a 2-point question, does the next one have 22?
+                                        // Assuming yes. Then we just check points.
+
+                                        const points = question.points || 1;
+                                        const label = points > 1 ? `${qNum}-${qNum + points - 1}` : qNum;
+
+                                        let buttonClass = 'min-w-[2rem] h-8 px-2 rounded-md text-xs font-medium transition-all relative flex items-center justify-center ';
+
+                                        if (isActive) {
+                                            buttonClass += 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-200';
+                                        } else if (isAnswered) {
+                                            buttonClass += 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100';
+                                        } else {
+                                            buttonClass += 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50';
+                                        }
+
+                                        return (
+                                            <button
+                                                key={question.id}
+                                                onClick={() => onQuestionSelect(index)}
+                                                className={buttonClass}
+                                                aria-label={`Question ${label}`}
+                                            >
+                                                {label}
+                                                {isFlagged && (
+                                                    <div className="absolute -top-1 -right-1">
+                                                        <div className="bg-orange-500 rounded-full p-0.5 shadow-sm">
+                                                            <Flag className="w-2 h-2 text-white fill-current" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                {hasMultipleParts && groupIdx < groupedQuestions.length - 1 && (
+                                    <div className="h-4 w-[1px] bg-gray-200 mx-2" />
+                                )}
+                            </div>
+                        ))}
                     </div>
                 </div>
 

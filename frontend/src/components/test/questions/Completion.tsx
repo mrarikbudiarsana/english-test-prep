@@ -9,7 +9,7 @@ interface CompletionProps {
   onChange: (answer: string) => void;
   readOnly?: boolean;
   correctAnswer?: string;
-  questionNumber?: number;
+  questionNumber?: number | string;
 }
 
 export default function Completion({

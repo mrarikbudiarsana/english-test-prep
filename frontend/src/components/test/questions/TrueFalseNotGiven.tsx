@@ -43,24 +43,19 @@ export default function TrueFalseNotGiven({
   const getOptionStyle = (value: string): string => {
     const status = getOptionStatus(value);
 
-    if (status === 'correct') return 'border-green-400 bg-green-50 ring-1 ring-green-200';
-    if (status === 'incorrect') return 'border-red-400 bg-red-50 ring-1 ring-red-200';
-    if (status === 'missed') return 'border-green-300 bg-green-50/50 border-dashed';
-    if (answer === value) return 'border-blue-400 bg-blue-50 ring-1 ring-blue-200';
-    return 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50';
+    // Minimal highlighting for review mode, otherwise plain
+    if (status === 'correct') return 'bg-green-50/50 rounded p-1 -ml-1';
+    if (status === 'incorrect') return 'bg-red-50/50 rounded p-1 -ml-1';
+    if (status === 'missed') return 'bg-orange-50/50 rounded p-1 -ml-1';
+    // if (answer === value) return 'font-medium'; // Optional: bold text on selection
+    return '';
   };
 
   return (
     <div>
-      {/* Statement */}
-      <div className="mb-4 rounded-lg bg-gray-50 px-4 py-3">
-        <p className="text-sm text-gray-700 italic leading-relaxed">
-          &ldquo;{data.statement}&rdquo;
-        </p>
-      </div>
 
       {/* Options */}
-      <div className="space-y-2">
+      <div className="flex flex-col space-y-3">
         {OPTIONS.map((option) => {
           const status = getOptionStatus(option);
 
@@ -68,7 +63,7 @@ export default function TrueFalseNotGiven({
             <label
               key={option}
               className={`
-                flex cursor-pointer items-center gap-3 rounded-lg border p-3.5 transition-all
+                flex cursor-pointer items-center gap-3 transition-colors
                 ${readOnly ? 'cursor-default' : ''}
                 ${getOptionStyle(option)}
               `}
@@ -81,7 +76,7 @@ export default function TrueFalseNotGiven({
                 disabled={readOnly}
                 className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-default"
               />
-              <span className="text-sm font-medium text-gray-800">{option}</span>
+              <span className="text-base text-black leading-relaxed not-italic font-normal">{option}</span>
 
               {/* Status Icons */}
               <div className="ml-auto">
