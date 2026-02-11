@@ -151,7 +151,7 @@ export default function QuestionRenderer({
 
   return (
     <div className={cn(
-      isNoteStyle ? 'py-0.5' : 'py-6 border-b border-gray-100 last:border-0',
+      isNoteStyle ? 'py-0.5' : 'py-3 border-b border-gray-100 last:border-0',
       !isNoteStyle && "flex items-start gap-3"
     )}>
       {isNoteStyle ? (

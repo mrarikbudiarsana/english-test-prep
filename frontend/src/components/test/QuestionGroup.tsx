@@ -40,7 +40,7 @@ export default function QuestionGroup({
       )}
 
       {/* Questions */}
-      <div className="space-y-4">
+      <div className="space-y-1">
         {questions.map((question) => (
           <QuestionRenderer
             key={question.id}

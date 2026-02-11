@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Question, Section } from '@/types/test';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 
@@ -43,6 +43,35 @@ export default function TestFooter({
     // If no sections (or single section), fall back to simple list
     const hasMultipleParts = groupedQuestions.length > 1;
 
+    // Track which parts are expanded (show question numbers)
+    const [expandedParts, setExpandedParts] = useState<Set<number>>(
+        new Set(groupedQuestions.map((_, idx) => idx)) // All expanded by default
+    );
+
+    // Auto-expand the part containing the current question
+    useEffect(() => {
+        if (currentQuestion && hasMultipleParts) {
+            const partIdx = groupedQuestions.findIndex(g =>
+                g.questions.some(q => q.id === currentQuestion.id)
+            );
+            if (partIdx !== -1) {
+                setExpandedParts(prev => new Set(prev).add(partIdx));
+            }
+        }
+    }, [currentQuestion?.id, hasMultipleParts]);
+
+    const togglePart = (partIdx: number) => {
+        setExpandedParts(prev => {
+            const next = new Set(prev);
+            if (next.has(partIdx)) {
+                next.delete(partIdx);
+            } else {
+                next.add(partIdx);
+            }
+            return next;
+        });
+    };
+
     return (
         <div className="bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-50">
             <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
@@ -63,13 +92,19 @@ export default function TestFooter({
                 {/* Question Navigation Scroll Area */}
                 <div className="flex-1 overflow-x-auto no-scrollbar mx-4">
                     <div className="flex items-center justify-center gap-4 min-w-max p-1">
-                        {(hasMultipleParts ? groupedQuestions : [{ questions }]).map((group, groupIdx) => (
+                        {(hasMultipleParts ? groupedQuestions : [{ questions }]).map((group, groupIdx) => {
+                            const isExpanded = !hasMultipleParts || expandedParts.has(groupIdx);
+                            return (
                             <div key={groupIdx} className="flex items-center gap-2">
                                 {hasMultipleParts && (
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1 whitespace-nowrap">
+                                    <button
+                                        onClick={() => togglePart(groupIdx)}
+                                        className="text-[10px] font-bold text-gray-500 hover:text-gray-700 uppercase tracking-wider mr-1 whitespace-nowrap transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-gray-100"
+                                    >
                                         {(group as any).partLabel}
-                                    </span>
+                                    </button>
                                 )}
+                                {isExpanded && (
                                 <div className="flex items-center gap-1.5">
                                     {group.questions.map((question) => {
                                         const index = questions.indexOf(question);
@@ -138,11 +173,13 @@ export default function TestFooter({
                                         );
                                     })}
                                 </div>
+                                )}
                                 {hasMultipleParts && groupIdx < groupedQuestions.length - 1 && (
                                     <div className="h-4 w-[1px] bg-gray-200 mx-2" />
                                 )}
                             </div>
-                        ))}
+                        )})}
+
                     </div>
                 </div>
 

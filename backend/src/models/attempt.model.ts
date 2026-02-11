@@ -50,10 +50,18 @@ export async function findById(id: string) {
 
 export async function findByUserId(userId: string, offset: number = 0, limit: number = 20) {
   const result = await query(
-    `SELECT ${SELECT_COLUMNS}
-     FROM attempts
-     WHERE user_id = $1
-     ORDER BY created_at DESC
+    `SELECT a.*,
+            json_build_object(
+              'id', t.id,
+              'title', t.title,
+              'testType', t.test_type,
+              'isPublished', t.is_published,
+              'isFree', t.is_free
+            ) as test
+     FROM attempts a
+     JOIN tests t ON a.test_id = t.id
+     WHERE a.user_id = $1
+     ORDER BY a.created_at DESC
      OFFSET $2 LIMIT $3`,
     [userId, offset, limit],
   );
@@ -63,8 +71,34 @@ export async function findByUserId(userId: string, offset: number = 0, limit: nu
     [userId],
   );
 
+  // Transform rows to camelCase
+  const transformedRows = result.rows.map((row: any) => ({
+    id: row.id,
+    userId: row.user_id,
+    testId: row.test_id,
+    mode: row.mode,
+    practiceSectionType: row.practice_section_type,
+    status: row.status,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    currentSection: row.current_section,
+    sectionStartedAt: row.section_started_at,
+    listeningRaw: row.listening_raw,
+    listeningBand: row.listening_band,
+    readingRaw: row.reading_raw,
+    readingBand: row.reading_band,
+    writingBand: row.writing_band,
+    speakingBand: row.speaking_band,
+    overallBand: row.overall_band,
+    writingFeedback: row.writing_feedback,
+    speakingFeedback: row.speaking_feedback,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    test: row.test,
+  }));
+
   return {
-    rows: result.rows,
+    rows: transformedRows,
     total: parseInt(countResult.rows[0].count, 10),
   };
 }

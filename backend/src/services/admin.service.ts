@@ -131,7 +131,7 @@ export async function deleteSection(id: string) {
  * Admin: Get all questions for a section.
  */
 export async function getQuestionsBySection(sectionId: string) {
-  return questionService.getQuestionsBySectionId(sectionId);
+  return questionService.getQuestionsBySectionIdWithAnswers(sectionId);
 }
 
 /**

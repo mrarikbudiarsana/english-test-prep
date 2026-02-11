@@ -23,8 +23,12 @@ api.interceptors.request.use(async (config) => {
 // Handle responses
 api.interceptors.response.use(
   (response) => {
-    // Unwrap { data: ... } responses from backend
+    // Unwrap { data: ... } responses from backend, unless it's a paginated response with 'total'
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      // If 'total' is present, don't unwrap - we need the metadata
+      if ('total' in response.data) {
+        return response;
+      }
       response.data = response.data.data;
     }
     return response;
