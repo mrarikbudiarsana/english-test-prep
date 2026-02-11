@@ -144,46 +144,46 @@ export default function TestOverviewPage() {
       {/* Back Button */}
       <Link
         href="/tests"
-        className="inline-flex items-center gap-2 text-slate-600 hover:text-indigo-600 font-semibold transition-colors group"
+        className="inline-flex items-center gap-2 text-[#5a6c7d] hover:text-[#e4002b] font-semibold transition-colors group"
       >
         <HiChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
         Back to Tests
       </Link>
 
       {/* Hero Section with Gradient Background */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-3xl p-8 md:p-10 border border-indigo-100/50 shadow-lg shadow-indigo-100/50">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-purple-200/30 to-pink-200/30 rounded-full blur-3xl -z-0" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl -z-0" />
+      <div className="relative overflow-hidden bg-gradient-to-br from-white via-[#f8f9fa] to-[#f0f9ff] rounded-3xl p-8 md:p-10 border border-[#e8ecef] shadow-lg shadow-[#e8ecef]/50">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#e8f4f8]/40 rounded-full blur-3xl -z-0" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#ffe5ea]/30 rounded-full blur-3xl -z-0" />
 
         <div className="relative z-10">
           {/* Badges */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold shadow-sm ${
               test.testType === 'academic'
-                ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
-                : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+                ? 'bg-[#e4002b] text-white'
+                : 'bg-[#3b82f6] text-white'
             }`}>
               <HiAcademicCap className="w-4 h-4" />
               {test.testType === 'general_training' ? 'General Training' : 'Academic'}
             </span>
             {test.isFree && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl text-sm font-bold shadow-sm">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-xl text-sm font-bold shadow-sm">
                 <HiLockOpen className="w-4 h-4" />
                 Free
               </span>
             )}
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur text-slate-700 rounded-xl text-sm font-semibold border border-slate-200/50">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur text-[#2c3e50] rounded-xl text-sm font-semibold border border-[#e8ecef]">
               <HiClock className="w-4 h-4" />
               {test.durationMinutes} minutes
             </span>
           </div>
 
           {/* Title & Description */}
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-3">
+          <h1 className="text-3xl md:text-4xl font-bold text-[#2c3e50] mb-3">
             {test.title}
           </h1>
           {test.description && (
-            <p className="text-slate-600 text-lg max-w-2xl leading-relaxed">
+            <p className="text-[#5a6c7d] text-lg max-w-2xl leading-relaxed">
               {test.description}
             </p>
           )}
@@ -200,14 +200,14 @@ export default function TestOverviewPage() {
       )}
 
       {/* Start Full Test Card */}
-      <div className="bg-white rounded-2xl border-2 border-slate-200 p-8 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all">
+      <div className="bg-white rounded-2xl border-2 border-[#e8ecef] p-8 shadow-sm hover:shadow-lg hover:border-[#e4002b]/30 transition-all">
         <div className="flex items-start gap-4 mb-6">
-          <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-200/50">
+          <div className="w-14 h-14 bg-[#e4002b] rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#ffe5ea]">
             <HiPlay className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Full Test</h2>
-            <p className="text-slate-600 leading-relaxed">
+            <h2 className="text-2xl font-bold text-[#2c3e50] mb-2">Full Test</h2>
+            <p className="text-[#5a6c7d] leading-relaxed">
               Take the complete IELTS test with all 4 sections in order. Timer will run for each section to simulate real exam conditions.
             </p>
           </div>
@@ -215,7 +215,7 @@ export default function TestOverviewPage() {
         <button
           onClick={() => handleStartTest('full')}
           disabled={starting}
-          className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all shadow-lg shadow-indigo-200/50 hover:shadow-xl hover:shadow-indigo-300/50"
+          className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#e4002b] text-white rounded-xl hover:bg-[#e4002b]/90 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all shadow-lg shadow-[#ffe5ea] hover:shadow-xl"
         >
           <HiPlay className="w-6 h-6 group-hover:scale-110 transition-transform" />
           {starting ? 'Starting...' : 'Start Full Test'}
@@ -225,10 +225,10 @@ export default function TestOverviewPage() {
       {/* Section Practice */}
       <div>
         <div className="flex items-center gap-3 mb-5">
-          <HiSparkles className="w-6 h-6 text-indigo-600" />
-          <h2 className="text-2xl font-bold text-slate-800">Practice by Section</h2>
+          <HiSparkles className="w-6 h-6 text-[#e4002b]" />
+          <h2 className="text-2xl font-bold text-[#2c3e50]">Practice by Section</h2>
         </div>
-        <p className="text-slate-600 mb-6 leading-relaxed">
+        <p className="text-[#5a6c7d] mb-6 leading-relaxed">
           Focus on specific skills by practicing individual sections. Perfect for targeted improvement.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -287,16 +287,16 @@ export default function TestOverviewPage() {
       </div>
 
       {/* Tips Section */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+      <div className="bg-gradient-to-br from-[#e8f4f8] to-white rounded-2xl p-6 border border-[#e8ecef]">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 bg-[#e8f4f8] rounded-xl flex items-center justify-center flex-shrink-0">
             💡
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 mb-2">Preparation Tips</h3>
-            <ul className="text-sm text-slate-600 space-y-2 leading-relaxed">
+            <h3 className="font-bold text-[#2c3e50] mb-2">Preparation Tips</h3>
+            <ul className="text-sm text-[#5a6c7d] space-y-2 leading-relaxed">
               <li className="flex items-start gap-2">
-                <span className="text-blue-500 font-bold">•</span>
+                <span className="text-[#3b82f6] font-bold">•</span>
                 <span>Ensure you have a stable internet connection before starting</span>
               </li>
               <li className="flex items-start gap-2">

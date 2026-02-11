@@ -63,31 +63,31 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 pb-12 max-w-[1600px] mx-auto">
       {/* Hero Section with Gradient */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-3xl p-8 md:p-10 border border-indigo-100/50">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-200/30 to-pink-200/30 rounded-full blur-3xl -z-0" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl -z-0" />
+      <div className="relative overflow-hidden bg-gradient-to-br from-white via-[#f8f9fa] to-[#f0f9ff] rounded-3xl p-8 md:p-10 border border-[#e8ecef]">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#e8f4f8]/40 rounded-full blur-3xl -z-0" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#ffe5ea]/30 rounded-full blur-3xl -z-0" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <p className="text-sm font-medium text-indigo-600 mb-2 tracking-wide uppercase">Welcome back</p>
-            <h1 className="text-4xl md:text-5xl font-bold text-slate-800 mb-3">
+            <p className="text-sm font-medium text-[#e4002b] mb-2 tracking-wide uppercase">Welcome back</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-[#2c3e50] mb-3">
               {user?.displayName?.split(' ')[0] || 'Student'}
             </h1>
-            <p className="text-slate-600 text-lg max-w-xl leading-relaxed">
+            <p className="text-[#5a6c7d] text-lg max-w-xl leading-relaxed">
               Your IELTS goal is within reach. Track your progress and improve your performance step by step.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
               href="/tests"
-              className="group px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 font-semibold transition-all shadow-lg shadow-indigo-200/50 hover:shadow-xl hover:shadow-indigo-300/50 flex items-center justify-center gap-2"
+              className="group px-6 py-3.5 bg-[#e4002b] text-white rounded-xl hover:bg-[#e4002b]/90 font-semibold transition-all shadow-lg shadow-[#ffe5ea] hover:shadow-xl flex items-center justify-center gap-2"
             >
               Start Practice
               <HiArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
               href="/results"
-              className="px-6 py-3.5 bg-white/80 backdrop-blur text-slate-700 rounded-xl hover:bg-white font-semibold transition-all border border-slate-200 flex items-center justify-center"
+              className="px-6 py-3.5 bg-white/80 backdrop-blur text-[#2c3e50] rounded-xl hover:bg-white font-semibold transition-all border border-[#e8ecef] flex items-center justify-center"
             >
               View Results
             </Link>
@@ -101,27 +101,27 @@ export default function DashboardPage() {
           title="Tests Completed"
           value={totalTests}
           icon={<HiClipboardList className="w-6 h-6" />}
-          gradient="from-emerald-500 to-teal-500"
-          bgColor="bg-emerald-50/50"
-          iconBg="bg-emerald-100"
-          iconColor="text-emerald-600"
+          gradient="from-[#e4002b] to-[#ff1744]"
+          bgColor="bg-[#ffe5ea]/50"
+          iconBg="bg-[#ffe5ea]"
+          iconColor="text-[#e4002b]"
         />
         <StatCard
           title="Average Score"
           value={avgBand ? formatBand(avgBand) : '-'}
           subtitle={avgBand ? 'Band Score' : 'No data'}
           icon={<HiChartBar className="w-6 h-6" />}
-          gradient="from-violet-500 to-purple-500"
-          bgColor="bg-violet-50/50"
-          iconBg="bg-violet-100"
-          iconColor="text-violet-600"
+          gradient="from-[#3b82f6] to-[#2563eb]"
+          bgColor="bg-[#e8f4f8]/50"
+          iconBg="bg-[#e8f4f8]"
+          iconColor="text-[#2563eb]"
         />
         <StatCard
           title="Best Score"
           value={bestBand ? formatBand(bestBand) : '-'}
           subtitle={bestBand ? 'Your record!' : 'No data'}
           icon={<HiStar className="w-6 h-6" />}
-          gradient="from-amber-500 to-orange-500"
+          gradient="from-amber-500 to-yellow-500"
           bgColor="bg-amber-50/50"
           iconBg="bg-amber-100"
           iconColor="text-amber-600"
@@ -131,31 +131,31 @@ export default function DashboardPage() {
           value={currentStreak}
           subtitle={currentStreak > 0 ? `${currentStreak} days 🔥` : 'Start today!'}
           icon={<HiFire className="w-6 h-6" />}
-          gradient="from-rose-500 to-pink-500"
-          bgColor="bg-rose-50/50"
-          iconBg="bg-rose-100"
-          iconColor="text-rose-600"
+          gradient="from-emerald-500 to-teal-500"
+          bgColor="bg-emerald-50/50"
+          iconBg="bg-emerald-100"
+          iconColor="text-emerald-600"
         />
       </div>
 
       {/* Weekly Goal Progress */}
-      <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-100/50">
+      <div className="bg-gradient-to-br from-[#e8f4f8] to-white rounded-2xl p-6 border border-[#e8ecef]">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <HiCheckCircle className="w-5 h-5 text-blue-600" />
+            <h3 className="text-lg font-bold text-[#2c3e50] flex items-center gap-2">
+              <HiCheckCircle className="w-5 h-5 text-[#2563eb]" />
               Weekly Goal
             </h3>
-            <p className="text-sm text-slate-600 mt-1">Complete {weeklyGoal} practice tests this week</p>
+            <p className="text-sm text-[#5a6c7d] mt-1">Complete {weeklyGoal} practice tests this week</p>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-bold text-blue-600">{weeklyProgress}/{weeklyGoal}</p>
-            <p className="text-xs text-slate-500 font-medium">tests completed</p>
+            <p className="text-3xl font-bold text-[#e4002b]">{weeklyProgress}/{weeklyGoal}</p>
+            <p className="text-xs text-[#5a6c7d] font-medium">tests completed</p>
           </div>
         </div>
-        <div className="w-full bg-blue-100 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-[#e8f4f8] rounded-full h-3 overflow-hidden border border-[#e8ecef]">
           <div
-            className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full transition-all duration-500 shadow-sm"
+            className="bg-[#e4002b] h-full rounded-full transition-all duration-500 shadow-sm"
             style={{ width: `${(weeklyProgress / weeklyGoal) * 100}%` }}
           />
         </div>
@@ -173,13 +173,13 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
         {/* Recent Activity - 2/3 width */}
-        <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white">
-            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <HiClock className="w-5 h-5 text-slate-600" />
+        <div className="xl:col-span-2 bg-white rounded-2xl border border-[#e8ecef] overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-[#e8ecef] flex justify-between items-center bg-gradient-to-r from-[#f8f9fa] to-white">
+            <h3 className="text-lg font-bold text-[#2c3e50] flex items-center gap-2">
+              <HiClock className="w-5 h-5 text-[#5a6c7d]" />
               Recent Activity
             </h3>
-            <Link href="/results" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
+            <Link href="/results" className="text-sm font-semibold text-[#e4002b] hover:text-[#e4002b]/80 transition-colors">
               View All →
             </Link>
           </div>
@@ -190,7 +190,7 @@ export default function DashboardPage() {
                   <Link
                     key={attempt.id}
                     href={`/results/${attempt.id}`}
-                    className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-indigo-50/50 hover:to-purple-50/50 rounded-xl transition-all group border border-transparent hover:border-indigo-100"
+                    className="flex items-center justify-between p-4 hover:bg-[#ffe5ea]/30 rounded-xl transition-all group border border-transparent hover:border-[#e4002b]/20"
                   >
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg transition-all ${
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                         {displayScore(attempt.overallBand)}
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                        <p className="font-semibold text-[#2c3e50] group-hover:text-[#e4002b] transition-colors">
                           {attempt.testTitle}
                         </p>
                         <p className="text-sm text-slate-500 flex items-center gap-2 mt-0.5">
@@ -211,7 +211,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-semibold text-slate-500 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200 group-hover:bg-white group-hover:border-indigo-200 transition-all">
+                      <span className="text-xs font-semibold text-[#5a6c7d] px-3 py-1.5 bg-[#f5f7f9] rounded-lg border border-[#e8ecef] group-hover:bg-white group-hover:border-[#e4002b]/20 transition-all">
                         IELTS
                       </span>
                     </div>
@@ -220,16 +220,16 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mb-4 border border-indigo-200/50">
-                  <HiClock className="h-8 w-8 text-indigo-400" />
+                <div className="w-16 h-16 bg-[#ffe5ea] rounded-2xl flex items-center justify-center mb-4 border border-[#e4002b]/20">
+                  <HiClock className="h-8 w-8 text-[#e4002b]/60" />
                 </div>
-                <p className="text-slate-800 font-semibold text-lg">No tests taken yet</p>
-                <p className="text-sm text-slate-500 mt-2 max-w-xs mx-auto">
+                <p className="text-[#2c3e50] font-semibold text-lg">No tests taken yet</p>
+                <p className="text-sm text-[#5a6c7d] mt-2 max-w-xs mx-auto">
                   Start your first practice test to track your progress and see analytics.
                 </p>
                 <Link
                   href="/tests"
-                  className="mt-6 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-200/50"
+                  className="mt-6 px-5 py-2.5 bg-[#e4002b] text-white text-sm font-semibold rounded-xl hover:bg-[#e4002b]/90 transition-all shadow-lg shadow-[#ffe5ea]"
                 >
                   Browse Tests
                 </Link>
@@ -239,8 +239,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Study Tips & Recommendations - 1/3 width */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2">
+        <div className="bg-white rounded-2xl border border-[#e8ecef] p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-[#2c3e50] mb-5 flex items-center gap-2">
             <HiLightBulb className="w-5 h-5 text-amber-500" />
             Study Tips
           </h3>
@@ -248,14 +248,14 @@ export default function DashboardPage() {
             <TipCard
               title="Practice Reading Daily"
               description="Consistency is key. Even 20 minutes a day can significantly improve your score."
-              color="from-sky-500 to-blue-500"
-              bgColor="bg-sky-50/50"
+              color="from-[#2563eb] to-[#1d4ed8]"
+              bgColor="bg-[#e8f4f8]/50"
             />
             <TipCard
               title="Time Management"
               description="Practice under timed conditions to build speed and confidence."
-              color="from-purple-500 to-violet-500"
-              bgColor="bg-purple-50/50"
+              color="from-amber-500 to-orange-500"
+              bgColor="bg-amber-50/50"
             />
             <TipCard
               title="Review Mistakes"
@@ -265,18 +265,18 @@ export default function DashboardPage() {
             />
 
             {/* Quick Action */}
-            <div className="pt-4 mt-4 border-t border-slate-100">
+            <div className="pt-4 mt-4 border-t border-[#e8ecef]">
               <Link
                 href="/tests?type=academic"
-                className="block p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 hover:border-indigo-200 transition-all group"
+                className="block p-4 bg-gradient-to-br from-[#f8f9fa] to-white rounded-xl border border-[#e8ecef] hover:border-[#e4002b]/30 hover:bg-[#ffe5ea]/20 transition-all group"
               >
-                <p className="font-semibold text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors">
+                <p className="font-semibold text-[#2c3e50] mb-1 group-hover:text-[#e4002b] transition-colors">
                   Try a Full Mock Test
                 </p>
-                <p className="text-sm text-slate-600 mb-3">
+                <p className="text-sm text-[#5a6c7d] mb-3">
                   Simulate real exam conditions with a complete IELTS test.
                 </p>
-                <div className="flex items-center text-sm font-semibold text-indigo-600 group-hover:text-indigo-700">
+                <div className="flex items-center text-sm font-semibold text-[#e4002b] group-hover:text-[#e4002b]/80">
                   Start Now <HiArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Link>

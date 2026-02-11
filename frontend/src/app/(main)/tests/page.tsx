@@ -74,19 +74,19 @@ export default function TestCatalogPage() {
   return (
     <div className="space-y-8 pb-12 max-w-[1600px] mx-auto">
       {/* Header Section with Gradient */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-3xl p-8 md:p-10 border border-blue-100/50">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-purple-200/30 to-pink-200/30 rounded-full blur-3xl -z-0" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl -z-0" />
+      <div className="relative overflow-hidden bg-gradient-to-br from-white via-[#f8f9fa] to-[#f0f9ff] rounded-3xl p-8 md:p-10 border border-[#e8ecef]">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#e8f4f8]/40 rounded-full blur-3xl -z-0" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#ffe5ea]/30 rounded-full blur-3xl -z-0" />
 
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-3">
-            <HiBookOpen className="w-6 h-6 text-indigo-600" />
-            <p className="text-sm font-semibold text-indigo-600 tracking-wide uppercase">Practice Library</p>
+            <HiBookOpen className="w-6 h-6 text-[#e4002b]" />
+            <p className="text-sm font-semibold text-[#e4002b] tracking-wide uppercase">Practice Library</p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-800 mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-[#2c3e50] mb-4">
             Choose Your Test
           </h1>
-          <p className="text-slate-600 text-lg max-w-2xl">
+          <p className="text-[#5a6c7d] text-lg max-w-2xl">
             Select from our collection of practice tests designed to help you achieve your target band score.
           </p>
         </div>
@@ -124,7 +124,7 @@ export default function TestCatalogPage() {
             placeholder="Search for tests..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all bg-white text-slate-800 placeholder:text-slate-400"
+            className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-[#e8ecef] focus:border-[#e4002b]/50 focus:ring-2 focus:ring-[#ffe5ea] focus:outline-none transition-all bg-white text-[#2c3e50] placeholder:text-[#5a6c7d]/50"
           />
         </div>
         <div className="relative">
@@ -132,7 +132,7 @@ export default function TestCatalogPage() {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as any)}
-            className="appearance-none w-full md:w-56 pl-12 pr-10 py-3.5 rounded-xl border border-slate-200 bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all cursor-pointer text-slate-800 font-medium"
+            className="appearance-none w-full md:w-56 pl-12 pr-10 py-3.5 rounded-xl border border-[#e8ecef] bg-white focus:border-[#e4002b]/50 focus:ring-2 focus:ring-[#ffe5ea] focus:outline-none transition-all cursor-pointer text-[#2c3e50] font-medium"
           >
             <option value="all">All Types</option>
             <option value="academic">Academic</option>
@@ -187,9 +187,9 @@ export default function TestCatalogPage() {
           {premiumTests.length > 0 && (
             <div className="space-y-5">
               <div className="flex items-center gap-3">
-                <HiAcademicCap className="w-6 h-6 text-indigo-600" />
-                <h2 className="text-2xl font-bold text-slate-800">Premium Tests</h2>
-                <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-semibold rounded-full">
+                <HiAcademicCap className="w-6 h-6 text-[#e4002b]" />
+                <h2 className="text-2xl font-bold text-[#2c3e50]">Premium Tests</h2>
+                <span className="px-3 py-1 bg-[#ffe5ea] text-[#e4002b] text-sm font-semibold rounded-full">
                   {premiumTests.length}
                 </span>
               </div>
@@ -210,18 +210,18 @@ function TestCard({ test }: { test: Test }) {
   // Determine gradient based on test type
   const gradients = {
     academic: {
-      bg: 'from-indigo-500 to-purple-500',
-      light: 'from-indigo-50 to-purple-50',
-      border: 'border-indigo-200',
-      text: 'text-indigo-600',
-      badge: 'bg-indigo-100 text-indigo-700',
+      bg: 'from-[#e4002b] to-[#c40025]',
+      light: 'from-[#ffe5ea] to-[#fff0f2]',
+      border: 'border-[#e4002b]/20',
+      text: 'text-[#e4002b]',
+      badge: 'bg-[#ffe5ea] text-[#e4002b]',
     },
     general_training: {
-      bg: 'from-emerald-500 to-teal-500',
-      light: 'from-emerald-50 to-teal-50',
-      border: 'border-emerald-200',
-      text: 'text-emerald-600',
-      badge: 'bg-emerald-100 text-emerald-700',
+      bg: 'from-[#3b82f6] to-[#2563eb]',
+      light: 'from-[#e8f4f8] to-[#f0f9ff]',
+      border: 'border-[#3b82f6]/20',
+      text: 'text-[#2563eb]',
+      badge: 'bg-[#e8f4f8] text-[#2563eb]',
     },
   };
 
@@ -254,20 +254,20 @@ function TestCard({ test }: { test: Test }) {
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-bold text-slate-800 group-hover:text-indigo-600 transition-colors mb-2 line-clamp-2 min-h-[3.5rem]">
+        <h3 className={`text-lg font-bold text-[#2c3e50] group-hover:${theme.text} transition-colors mb-2 line-clamp-2 min-h-[3.5rem]`}>
           {test.title}
         </h3>
 
         {/* Description */}
         {test.description && (
-          <p className="text-slate-500 text-sm mb-6 line-clamp-2 flex-grow leading-relaxed">
+          <p className="text-[#5a6c7d] text-sm mb-6 line-clamp-2 flex-grow leading-relaxed">
             {test.description}
           </p>
         )}
 
         {/* Footer */}
-        <div className={`pt-4 mt-auto border-t ${theme.border} border-opacity-30 flex items-center justify-between`}>
-          <div className="flex items-center gap-2 text-slate-600">
+        <div className={`pt-4 mt-auto border-t ${theme.border} flex items-center justify-between`}>
+          <div className="flex items-center gap-2 text-[#5a6c7d]">
             <HiClock className="w-4 h-4" />
             <span className="text-sm font-semibold">{test.durationMinutes} min</span>
           </div>

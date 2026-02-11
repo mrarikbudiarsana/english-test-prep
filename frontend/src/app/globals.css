@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #1e293b;
+  /* Primary Brand */
+  --color-ielts-red: #e4002b;
+
+  /* Backgrounds */
+  --color-background: #fafbfc;
+  --color-background-secondary: #f5f7f9;
+  --color-background-tertiary: #f0f9ff;
+
+  /* Text */
+  --color-foreground: #2c3e50;
+  --color-foreground-secondary: #5a6c7d;
+
+  /* Borders & Dividers */
+  --color-border: #e8ecef;
+
+  /* Accents */
+  --color-red-soft: #ffe5ea;
+  --color-blue-soft: #e8f4f8;
+
+  /* Status */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Brand Colors */
+  --color-primary: #e4002b;
+  --color-red: #e4002b;
+
+  /* Backgrounds */
+  --color-background: #fafbfc;
+  --color-bg-secondary: #f5f7f9;
+  --color-bg-tertiary: #f0f9ff;
+
+  /* Text Colors */
+  --color-foreground: #2c3e50;
+  --color-text-secondary: #5a6c7d;
+
+  /* Borders */
+  --color-border: #e8ecef;
+
+  /* Soft Accents */
+  --color-red-soft: #ffe5ea;
+  --color-blue-soft: #e8f4f8;
+
+  /* Status Colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Adjust backgrounds for dark mode */
+    --color-background: #1a1a1a;
+    --color-background-secondary: #242424;
+    --color-background-tertiary: #2a2a2a;
+
+    /* Adjust text for dark mode */
+    --color-foreground: #e5e7eb;
+    --color-foreground-secondary: #9ca3af;
+
+    /* Borders in dark mode */
+    --color-border: #374151;
+
+    /* Soft accents adjusted for dark mode */
+    --color-red-soft: #4a1520;
+    --color-blue-soft: #1e3a5f;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
