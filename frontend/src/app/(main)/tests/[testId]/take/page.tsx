@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { Section, Question, SectionType } from '@/types/test';
+import { Section, Question, SectionType, MCQData, DropdownData } from '@/types/test';
 import { TestSessionProvider, useTestSession } from '@/contexts/TestSessionContext';
 import { HiArrowLeft } from 'react-icons/hi';
 import TestTimer from '@/components/test/TestTimer';
@@ -26,6 +26,24 @@ import { EnterFullScreenIcon, ExitFullScreenIcon } from '@radix-ui/react-icons';
 import CongratulationsModal from '@/components/test/CongratulationsModal';
 
 const SECTION_ORDER: SectionType[] = ['listening', 'reading', 'writing', 'speaking'];
+
+/**
+ * Calculate effective points for a question based on its type.
+ * Multi-select MCQs use expectedAnswers, dropdowns use key count.
+ */
+function getEffectivePoints(q: Question): number {
+  if (q.questionType === 'multiple_choice') {
+    const mcqData = q.questionData as MCQData;
+    if (mcqData.multiSelect) {
+      return mcqData.expectedAnswers || 2;
+    }
+  }
+  if (q.questionType === 'dropdown') {
+    const dropdownData = q.questionData as DropdownData;
+    return Object.keys(dropdownData.dropdowns).length;
+  }
+  return q.points || 1;
+}
 
 function TestTakingContent() {
   const params = useParams();
@@ -278,8 +296,8 @@ function TestTakingContent() {
     for (let i = 0; i < activePartIndex; i++) {
       const partId = currentSectionParts[i]?.id;
       if (partId) {
-        // Sum points instead of just counting questions
-        offset += questions.filter(q => q.sectionId === partId).reduce((sum, q) => sum + (q.points || 1), 0);
+        // Sum effective points (accounts for multi-select MCQs, dropdowns, etc.)
+        offset += questions.filter(q => q.sectionId === partId).reduce((sum, q) => sum + getEffectivePoints(q), 0);
       }
     }
     return offset;
@@ -394,12 +412,12 @@ function TestTakingContent() {
                   });
 
                   return (
-                    <>
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
                       {/* Render grouped questions */}
                       {Object.entries(grouped).map(([groupLabel, groupQuestions]) => {
                         const firstQuestion = groupQuestions[0];
                         return (
-                          <div key={groupLabel} className="bg-white">
+                          <div key={groupLabel}>
                             <GroupInstruction
                               groupLabel={groupLabel}
                               groupInstructions={firstQuestion.groupInstructions}
@@ -408,17 +426,23 @@ function TestTakingContent() {
 
                             {/* Render all questions in this group */}
                             <div className="space-y-4">
-                              {groupQuestions.map((question, qIdx) => (
-                                <div key={question.id} className="pl-0">
-                                  <QuestionRenderer
-                                    question={question}
-                                    answer={state.answers[question.id]}
-                                    onAnswerChange={handleAnswerChange}
-                                    displayNumber={partNumberOffset + activePartQuestions.indexOf(question) + 1}
-                                    isActive={questions.indexOf(question) === currentQuestionIndex}
-                                  />
-                                </div>
-                              ))}
+                              {groupQuestions.map((question) => {
+                                // Calculate display number based on accumulated points of previous questions
+                                const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
+                                const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
+
+                                return (
+                                  <div key={question.id} className="pl-0">
+                                    <QuestionRenderer
+                                      question={question}
+                                      answer={state.answers[question.id]}
+                                      onAnswerChange={handleAnswerChange}
+                                      displayNumber={startNum}
+                                      isActive={questions.indexOf(question) === currentQuestionIndex}
+                                    />
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         );
@@ -426,20 +450,23 @@ function TestTakingContent() {
 
                       {/* Render ungrouped questions */}
                       {ungrouped.map(question => {
-                        const displayNum = partNumberOffset + activePartQuestions.indexOf(question) + 1;
+                        // Calculate display number based on accumulated points of previous questions
+                        const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
+                        const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
+
                         return (
-                          <div key={question.id} className="bg-white p-6 border-b border-gray-200 last:border-0">
+                          <div key={question.id} className="pt-4 border-t border-gray-100 first:border-0 first:pt-0">
                             <QuestionRenderer
                               question={question}
                               answer={state.answers[question.id]}
                               onAnswerChange={handleAnswerChange}
-                              displayNumber={displayNum}
+                              displayNumber={startNum}
                               isActive={questions.indexOf(question) === currentQuestionIndex}
                             />
                           </div>
                         );
                       })}
-                    </>
+                    </div>
                   );
                 })()}
               </div>
@@ -553,7 +580,9 @@ function TestTakingContent() {
                                             if (testParts.length > 1) { parts = testParts; break; }
                                           }
                                         }
-                                        const displayNum = partNumberOffset + activePartQuestions.indexOf(question) + 1;
+                                        // Calculate display number based on effective points of previous questions
+                                        const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
+                                        const displayNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
                                         const qIndex = questions.indexOf(question);
                                         return (
                                           <span key={question.id} id={`question-${qIndex}`}>
@@ -586,14 +615,17 @@ function TestTakingContent() {
                                 ) : (
                                   /* Standard or Note (bulleted) rendering: each question in its own block */
                                   <div className={isNoteStyle ? "space-y-0 pl-6" : "space-y-4"}>
-                                    {groupQuestions.map((question, qIdx) => {
+                                    {groupQuestions.map((question) => {
                                       const isNoteStyle = question.questionType === 'completion' && (question.questionData as any).style !== 'standard';
 
-                                      // Calculate display number (range if > 1 point)
+                                      // Calculate display number based on accumulated effective points
                                       const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
-                                      const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + (q.points || 1), 0) + 1;
-                                      const points = question.points || 1;
-                                      const displayNum = points > 1 ? `${startNum}-${startNum + points - 1}` : startNum;
+                                      const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
+                                      // For MCQs, pass startNum and let QuestionRenderer handle multi-badges
+                                      // For other types with multiple points, show range
+                                      const effectivePoints = getEffectivePoints(question);
+                                      const isMCQ = question.questionType === 'multiple_choice';
+                                      const displayNum = (!isMCQ && effectivePoints > 1) ? `${startNum}-${startNum + effectivePoints - 1}` : startNum;
 
                                       return (
                                         <div
@@ -670,11 +702,12 @@ function TestTakingContent() {
                                               }
                                             }
 
-                                            // Calculate start number based on points of previous questions in this part
+                                            // Calculate start number based on effective points of previous questions
                                             const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
-                                            const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + (q.points || 1), 0) + 1;
-                                            const points = question.points || 1;
-                                            const displayNum = points > 1 ? `${startNum}-${startNum + points - 1}` : startNum;
+                                            const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
+                                            const effectivePoints = getEffectivePoints(question);
+                                            const isMCQ = question.questionType === 'multiple_choice';
+                                            const displayNum = (!isMCQ && effectivePoints > 1) ? `${startNum}-${startNum + effectivePoints - 1}` : startNum;
 
                                             const qIndex = questions.indexOf(question);
 
@@ -711,18 +744,19 @@ function TestTakingContent() {
                                     const question = item.question;
                                     const isNoteStyle = question.questionType === 'completion' && (question.questionData as any).style !== 'standard';
 
-                                    // Calculate display number (range if > 1 point)
+                                    // Calculate display number based on effective points
                                     const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
-                                    const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + (q.points || 1), 0) + 1;
-                                    const points = question.points || 1;
-                                    const displayNum = points > 1 ? `${startNum}-${startNum + points - 1}` : startNum;
+                                    const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
+                                    const effectivePoints = getEffectivePoints(question);
+                                    const isMCQ = question.questionType === 'multiple_choice';
+                                    const displayNum = (!isMCQ && effectivePoints > 1) ? `${startNum}-${startNum + effectivePoints - 1}` : startNum;
 
                                     return (
                                       <div
                                         key={question.id}
                                         className={cn(
                                           "transition-colors duration-300",
-                                          isNoteStyle ? "" : "-mx-4 px-4" // Removed border/bg styles for active state
+                                          isNoteStyle ? "" : "-mx-4 px-4"
                                         )}
                                         id={`question-${questions.indexOf(question)}`}
                                       >
