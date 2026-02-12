@@ -185,7 +185,8 @@ export default function Completion({
             <div className="text-base text-gray-900 leading-relaxed space-y-1">
               {lines.map((line, idx) => {
                 const raw = line;
-                const hiddenBulletChars = '[\\u2022\\u2023\\u25E6\\u25CF\\u00B7\\u2219*]';
+                // Hidden bullets: Unicode bullets that should be normalized (NOT asterisk - it's a valid marker)
+                const hiddenBulletChars = '[\\u2022\\u2023\\u25E6\\u25CF\\u00B7\\u2219]';
                 const hyphenChars = '[-\\u2010\\u2011\\u2012\\u2013\\u2014\\u2212]';
                 const rawNoHiddenBullet = raw.replace(new RegExp(`^\\s*${hiddenBulletChars}+\\s*`), '');
                 let trimmed = rawNoHiddenBullet.trim()
@@ -202,6 +203,21 @@ export default function Completion({
                 const leadingSpaces = raw.length - raw.replace(/^\s+/, '').length;
                 const indentLevel = Math.min(Math.floor(leadingSpaces / 2), 3);
                 const rawNoLeadingWs = raw.replace(/^\s+/, '');
+
+                // Check for asterisk bullet (Markdown style)
+                if (/^\*\s+/.test(rawNoLeadingWs)) {
+                  const asteriskContent = rawNoLeadingWs.replace(/^\*\s+/, '');
+                  return (
+                    <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
+                      <span className="mt-1 text-gray-900">•</span>
+                      <div className="flex-1">
+                        {renderInlineWithBlank(asteriskContent)}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Check for hyphen bullet
                 if (new RegExp(`^${hyphenChars}\\s+`).test(rawNoLeadingWs)) {
                   const hyphenContent = rawNoLeadingWs.replace(new RegExp(`^${hyphenChars}\\s+`), '');
                   return (
@@ -331,10 +347,12 @@ export default function Completion({
           const bulletMatch = trimmedText.match(bulletRegexSingle);
           const singleLineContent = bulletMatch ? bulletMatch[2] : trimmedText;
 
-          // Normalize hyphen-like characters to simple hyphen
+          // Normalize bullet characters
           let bulletSymbol = bulletMatch?.[1] || '•';
           if (/^[-\u2010\u2011\u2012\u2013\u2014\u2212]$/.test(bulletSymbol)) {
             bulletSymbol = '-';
+          } else if (bulletSymbol === '*' || bulletSymbol === '\u2022') {
+            bulletSymbol = '•';
           }
 
           // For single-line contexts with bullets, render with the bullet
