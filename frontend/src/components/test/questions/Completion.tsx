@@ -326,19 +326,28 @@ export default function Completion({
             .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u00c2\u00a2/g, '\u2022')
             .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201c/g, '\u2013')
             .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201d/g, '\u2014');
-          const bulletMatch = trimmedText.match(/^([\-*\u2022\u2013\u2014])\s+(.*)$/);
+          const hyphenCharsForMatch = '[-\\u2010\\u2011\\u2012\\u2013\\u2014\\u2212]';
+          const bulletRegexSingle = new RegExp(`^(${hyphenCharsForMatch}|[*\\u2022])\\s+(.*)$`);
+          const bulletMatch = trimmedText.match(bulletRegexSingle);
           const singleLineContent = bulletMatch ? bulletMatch[2] : trimmedText;
 
-          // For single-line contexts, do not auto-render a bullet; treat as plain line.
+          // Normalize hyphen-like characters to simple hyphen
+          let bulletSymbol = bulletMatch?.[1] || '•';
+          if (/^[-\u2010\u2011\u2012\u2013\u2014\u2212]$/.test(bulletSymbol)) {
+            bulletSymbol = '-';
+          }
+
+          // For single-line contexts with bullets, render with the bullet
           if (lines.length === 1) {
             return (
-              <div className="text-base text-gray-900 leading-relaxed">
-                {renderInlineWithBlank(singleLineContent)}
+              <div className="text-base text-gray-900 leading-relaxed flex items-start gap-2">
+                <span className="mt-1 text-gray-900">{bulletSymbol}</span>
+                <div className="flex-1">
+                  {renderInlineWithBlank(singleLineContent)}
+                </div>
               </div>
             );
           }
-
-          const bulletSymbol = bulletMatch?.[1] || '•';
           return (
             <div className="text-base text-gray-900 leading-relaxed flex items-start gap-3">
               {/* Bullet point for notes */}
