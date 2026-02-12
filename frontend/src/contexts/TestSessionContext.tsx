@@ -164,10 +164,24 @@ export function TestSessionProvider({ children }: { children: React.ReactNode })
 
     dispatch({ type: 'AUTO_SAVE_START' });
     try {
-      const responses = Object.entries(state.answers).map(([questionId, answerData]) => ({
-        questionId,
-        answerData,
-      }));
+      const responses = Object.entries(state.answers).map(([questionId, answerData]) => {
+        // Find sectionId for this question
+        let sectionId = '';
+        for (const [sId, questions] of Object.entries(state.questions)) {
+          if (questions.some(q => q.id === questionId)) {
+            sectionId = sId;
+            break;
+          }
+        }
+        return {
+          questionId,
+          sectionId,
+          answerData,
+        };
+      }).filter(r => r.sectionId); // Only send responses where we found the sectionId
+
+      if (responses.length === 0) return;
+
       await api.post(`/attempts/${state.attemptId}/auto-save`, { responses });
       dispatch({ type: 'AUTO_SAVE_COMPLETE' });
     } catch (error) {
