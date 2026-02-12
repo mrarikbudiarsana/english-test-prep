@@ -63,8 +63,10 @@ function TestTakingContent() {
   const [loading, setLoading] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showCongratulationsModal, setShowCongratulationsModal] = useState(false);
+
   const [submitType, setSubmitType] = useState<'section' | 'test'>('section');
   const [activePartIndex, setActivePartIndex] = useState(0);
+  const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
 
   const [testTitle, setTestTitle] = useState<string>('');
 
@@ -271,10 +273,16 @@ function TestTakingContent() {
   const currentQuestion = questions[currentQuestionIndex];
   const currentSectionParts = sections.filter(s => s.sectionType === state.currentSectionType);
 
-  // Reset activePartIndex when changing section type
+  // Reset activePartIndex and currentPromptIndex when changing section type
   useEffect(() => {
     setActivePartIndex(0);
+    setCurrentPromptIndex(0);
   }, [state.currentSectionType]);
+
+  // Reset currentPromptIndex when changing active part
+  useEffect(() => {
+    setCurrentPromptIndex(0);
+  }, [activePartIndex]);
 
   // Current active part based on tab selection
   const currentSectionPart = currentSectionParts[activePartIndex] || currentSectionParts[0];
@@ -790,6 +798,34 @@ function TestTakingContent() {
           {state.currentSectionType === 'writing' && (
             <div className="h-full overflow-y-auto">
               <div className="max-w-7xl mx-auto px-4 py-6 pb-24">
+                {/* Writing task navigation (Task 1 / Task 2) */}
+                {currentSectionParts.length > 1 && (
+                  <div className="mb-6 flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+                    {currentSectionParts.map((part, idx) => {
+                      const isActive = activePartIndex === idx;
+                      return (
+                        <button
+                          key={part.id}
+                          onClick={() => {
+                            setActivePartIndex(idx);
+                            // Also try to find the question associated with this part to update footer state
+                            // Assuming 1 question per writing task part
+                            const questionIdx = questions.findIndex(q => q.sectionId === part.id);
+                            if (questionIdx !== -1) {
+                              setCurrentQuestionIndex(questionIdx);
+                            }
+                          }}
+                          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${isActive
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                            }`}
+                        >
+                          Task {part.taskNumber}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div>
                     {currentSectionPart && (
@@ -804,10 +840,10 @@ function TestTakingContent() {
                             className="mb-4 rounded-lg border border-gray-200 max-w-full"
                           />
                         )}
-                        <div className="prose prose-sm">
+                        <div className="prose prose-sm text-gray-900 prose-p:text-gray-900 prose-headings:text-gray-900 prose-li:text-gray-900 max-w-none">
                           {currentSectionPart.taskDescription}
                         </div>
-                        <p className="mt-3 text-sm text-gray-500">
+                        <p className="mt-3 text-sm text-gray-900 font-medium">
                           Write at least {currentSectionPart.minWords} words.
                         </p>
                       </div>
@@ -835,27 +871,7 @@ function TestTakingContent() {
                 </div>
               </div>
 
-              {/* Writing task navigation (Task 1 / Task 2) */}
-              {currentSectionParts.length > 1 && (
-                <div className="mt-8 flex justify-center space-x-4">
-                  {currentSectionParts.map((part, idx) => (
-                    <button
-                      key={part.id}
-                      onClick={() => {
-                        // Switch to the other task's section part
-                        const newQuestions = questions; // already loaded
-                        setCurrentQuestionIndex(idx);
-                      }}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${currentSectionPart?.id === part.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                        }`}
-                    >
-                      Task {part.taskNumber}
-                    </button>
-                  ))}
-                </div>
-              )}
+
             </div>
           )}
 
@@ -863,6 +879,30 @@ function TestTakingContent() {
           {state.currentSectionType === 'speaking' && (
             <div className="h-full overflow-y-auto">
               <div className="max-w-7xl mx-auto px-4 py-6">
+
+                {/* Speaking part navigation */}
+                {currentSectionParts.length > 1 && (
+                  <div className="mb-6 flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit mx-auto">
+                    {currentSectionParts.map((part, idx) => {
+                      const isActive = activePartIndex === idx;
+                      return (
+                        <button
+                          key={part.id}
+                          onClick={() => {
+                            setActivePartIndex(idx);
+                          }}
+                          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${isActive
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                            }`}
+                        >
+                          Part {part.partNumber}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
                 <div className="max-w-2xl mx-auto space-y-6">
                   {currentSectionPart && (
                     <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -872,38 +912,90 @@ function TestTakingContent() {
                       {currentSectionPart.instructions && (
                         <p className="text-gray-500 text-sm mb-4">{currentSectionPart.instructions}</p>
                       )}
-                      {currentSectionPart.speakingPrompts && (
-                        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                          {(currentSectionPart.speakingPrompts as any[]).map((prompt: any, idx: number) => (
-                            <div key={idx} className="mb-2 last:mb-0">
-                              <p className="text-gray-900">{prompt.text}</p>
-                              {prompt.followUp && (
-                                <p className="text-gray-500 text-sm mt-1">Follow-up: {prompt.followUp}</p>
-                              )}
-                            </div>
-                          ))}
+
+                      {currentSectionPart.speakingPrompts && (currentSectionPart.speakingPrompts as any[]).length > 0 ? (
+                        <div className="bg-gray-50 rounded-lg p-6 mb-6 min-h-[150px] flex flex-col justify-center items-center text-center">
+                          {/* Show only current prompt */}
+                          {(() => {
+                            const prompt = (currentSectionPart.speakingPrompts as any[])[currentPromptIndex];
+                            return (
+                              <div key={currentPromptIndex} className="space-y-4">
+                                <p className="text-xl font-medium text-gray-900">{prompt?.text}</p>
+                                {prompt?.followUp && (
+                                  <p className="text-gray-500 text-sm mt-2">Follow-up: {prompt.followUp}</p>
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                          <div className="mt-4 text-sm text-gray-400">
+                            Question {currentPromptIndex + 1} of {(currentSectionPart.speakingPrompts as any[]).length}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-10 text-gray-500">
+                          No prompts available for this part.
+                        </div>
+                      )}
+
+                      {/* Prompt Navigation */}
+                      {(currentSectionPart.speakingPrompts as any[])?.length > 1 && (
+                        <div className="flex justify-between items-center mb-6">
+                          <button
+                            onClick={() => setCurrentPromptIndex(prev => Math.max(0, prev - 1))}
+                            disabled={currentPromptIndex === 0}
+                            className="px-3 py-1 text-sm text-gray-600 hover:text-blue-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                          >
+                            Previous Question
+                          </button>
+                          <button
+                            onClick={() => setCurrentPromptIndex(prev => Math.min(((currentSectionPart.speakingPrompts as any[])?.length || 1) - 1, prev + 1))}
+                            disabled={currentPromptIndex === ((currentSectionPart.speakingPrompts as any[])?.length || 1) - 1}
+                            className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium disabled:text-gray-300 disabled:cursor-not-allowed"
+                          >
+                            Next Question
+                          </button>
                         </div>
                       )}
                     </div>
                   )}
 
                   <AudioRecorder
+                    // remount recorder when prompt changes to reset state
+                    key={`${currentSectionPart?.id}-${currentPromptIndex}`}
                     onRecordingComplete={(url, duration) => {
                       if (currentSectionPart) {
+                        // Get existing answer or init empty object
+                        const existingAnswer = state.answers[`speaking_${currentSectionPart.id}`] || {};
+                        const recordings = existingAnswer.recordings || {};
+
+                        // Update specific recording for this prompt
+                        const updatedRecordings = {
+                          ...recordings,
+                          [currentPromptIndex]: { url, duration }
+                        };
+
                         handleAnswerChange(`speaking_${currentSectionPart.id}`, {
-                          audioUrl: url,
-                          duration,
+                          // Keep other properties if any, update recordings
+                          ...existingAnswer,
+                          recordings: updatedRecordings,
                         });
                       }
                     }}
-                    maxDuration={currentSectionPart?.responseTime || 120}
+                    // 120s (2 min) for Part 1/2, 180s (3 min) for Part 3
+                    maxDuration={currentSectionPart?.partNumber === 3 ? 180 : 120}
                   />
+
+                  {/* Show previous recording if exists */}
+                  {currentSectionPart && state.answers[`speaking_${currentSectionPart.id}`]?.recordings?.[currentPromptIndex] && (
+                    <div className="mt-2 text-center text-sm text-green-600 font-medium">
+                      ✓ Recorded ({state.answers[`speaking_${currentSectionPart.id}`].recordings[currentPromptIndex].duration}s)
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
-
-
 
         </div>
       </div>

@@ -186,7 +186,7 @@ export default function Completion({
               {lines.map((line, idx) => {
                 const raw = line;
                 // Hidden bullets: Unicode bullets that should be normalized (NOT asterisk - it's a valid marker)
-                const hiddenBulletChars = '[\\u2022\\u2023\\u25E6\\u25CF\\u00B7\\u2219]';
+                const hiddenBulletChars = '[\\u2023\\u25E6\\u25CF\\u00B7\\u2219]';
                 const hyphenChars = '[-\\u2010\\u2011\\u2012\\u2013\\u2014\\u2212]';
                 const rawNoHiddenBullet = raw.replace(new RegExp(`^\\s*${hiddenBulletChars}+\\s*`), '');
                 let trimmed = rawNoHiddenBullet.trim()

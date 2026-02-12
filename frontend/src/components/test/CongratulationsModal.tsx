@@ -19,6 +19,7 @@ interface CongratulationsModalProps {
     onClose: () => void;
     onViewResults: () => void;
     testTitle?: string;
+    attemptId?: string;
 }
 
 export default function CongratulationsModal({
@@ -26,11 +27,15 @@ export default function CongratulationsModal({
     onClose,
     onViewResults,
     testTitle = 'English Test',
+    attemptId,
 }: CongratulationsModalProps) {
     const [copied, setCopied] = useState(false);
 
-    // In a real app, this would likely be the result page URL or a specific shareable link
-    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    // Share the specific result page if attemptId is present
+    const shareUrl = typeof window !== 'undefined'
+        ? (attemptId ? `${window.location.origin}/results/${attemptId}` : window.location.href)
+        : '';
+
     const shareText = `I just finished the ${testTitle}! Check it out!`;
 
     const handleCopyLink = () => {
