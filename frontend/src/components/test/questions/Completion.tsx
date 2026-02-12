@@ -181,11 +181,13 @@ export default function Completion({
             <div className="text-base text-gray-900 leading-relaxed space-y-1">
               {lines.map((line, idx) => {
                 const raw = line;
-                const trimmed = raw.trim()
+                let trimmed = raw.trim()
                   .replace(/\u00e2\u20ac\u00a2/g, '\u2022')
                   .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u00c2\u00a2/g, '\u2022')
                   .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201c/g, '\u2013')
                   .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201d/g, '\u2014');
+                // If a hidden bullet was pasted before a hyphen, normalize to just a hyphen.
+                trimmed = trimmed.replace(/^[\u2022*]\s*[-\u2013\u2014]\s+/, '- ');
                 if (!trimmed) {
                   return <div key={`sp-${idx}`} className="h-2" />;
                 }
@@ -197,10 +199,15 @@ export default function Completion({
                 const contentText = bulletMatch ? bulletMatch[2] : trimmed;
                 const bulletChar = bulletMatch?.[1] || null;
 
-                const bulletSymbol = bulletChar || null;
+                let bulletSymbol = bulletChar || null;
+                let cleanContentText = contentText;
 
                 if (bulletSymbol) {
-                  const cleanContentText = contentText;
+                  // If a bullet dot is followed by a hyphen (common copy/paste), prefer the hyphen only.
+                  if (bulletSymbol === '\u2022' && /^[-\u2013\u2014]\s+/.test(cleanContentText)) {
+                    bulletSymbol = '-';
+                    cleanContentText = cleanContentText.replace(/^[-\u2013\u2014]\s+/, '');
+                  }
                   return (
                     <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
                       <span className="mt-1 text-gray-900">{bulletSymbol}</span>

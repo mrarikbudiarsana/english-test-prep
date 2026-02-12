@@ -147,34 +147,43 @@ export default function PricingPage() {
                 </div>
 
                 {/* FAQ Section */}
-                <div className="mt-24 max-w-3xl mx-auto">
-                    <h2 className="text-3xl font-bold text-center text-[#2c3e50] mb-12">
-                        Frequently Asked Questions
-                    </h2>
-                    <div className="space-y-8">
-                        <div>
-                            <h3 className="text-lg font-medium text-[#2c3e50] mb-2">
-                                Can I cancel my subscription at any time?
-                            </h3>
-                            <p className="text-[#5a6c7d]">
-                                Yes, you can cancel your subscription at any time. Your access will continue until the end of your billing period.
+                <div className="mt-24 max-w-4xl mx-auto">
+                    <div className="bg-white border border-[#e8ecef] rounded-2xl p-8 sm:p-10 shadow-sm">
+                        <div className="text-center mb-10">
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#e4002b] mb-3">FAQ</p>
+                            <h2 className="text-3xl sm:text-4xl font-bold text-[#2c3e50]">
+                                Frequently Asked Questions
+                            </h2>
+                            <p className="text-[#5a6c7d] mt-3">
+                                Everything you need to know about plans and billing.
                             </p>
                         </div>
-                        <div>
-                            <h3 className="text-lg font-medium text-[#2c3e50] mb-2">
-                                What payment methods do you accept?
-                            </h3>
-                            <p className="text-[#5a6c7d]">
-                                We accept all major credit cards, bank transfers, and e-wallets through our secure payment processor (Midtrans).
-                            </p>
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-medium text-[#2c3e50] mb-2">
-                                Can I switch plans later?
-                            </h3>
-                            <p className="text-[#5a6c7d]">
-                                Absolutely! You can upgrade or downgrade your plan at any time from your account settings. Prorated charges may apply.
-                            </p>
+
+                        <div className="divide-y divide-[#e8ecef]">
+                            <div className="py-6">
+                                <h3 className="text-lg font-semibold text-[#2c3e50] mb-2">
+                                    Can I cancel my subscription at any time?
+                                </h3>
+                                <p className="text-[#5a6c7d]">
+                                    Yes, you can cancel your subscription at any time. Your access will continue until the end of your billing period.
+                                </p>
+                            </div>
+                            <div className="py-6">
+                                <h3 className="text-lg font-semibold text-[#2c3e50] mb-2">
+                                    What payment methods do you accept?
+                                </h3>
+                                <p className="text-[#5a6c7d]">
+                                    We accept all major credit cards, bank transfers, and e-wallets through our secure payment processor (Midtrans).
+                                </p>
+                            </div>
+                            <div className="py-6">
+                                <h3 className="text-lg font-semibold text-[#2c3e50] mb-2">
+                                    Can I switch plans later?
+                                </h3>
+                                <p className="text-[#5a6c7d]">
+                                    Absolutely! You can upgrade or downgrade your plan at any time from your account settings. Prorated charges may apply.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

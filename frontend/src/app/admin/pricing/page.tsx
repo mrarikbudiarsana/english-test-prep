@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Modal } from '@/components/ui/Modal';
-import axios from 'axios';
+import api from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
 
@@ -45,7 +45,7 @@ export default function AdminPricingPage() {
 
     const fetchPlans = async () => {
         try {
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/pricing/admin`);
+            const response = await api.get('/pricing/admin');
             setPlans(response.data);
         } catch (error) {
             console.error('Error fetching plans:', error);
@@ -59,10 +59,10 @@ export default function AdminPricingPage() {
         e.preventDefault();
         try {
             if (editingPlan) {
-                await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/pricing/${editingPlan.id}`, formData);
+                await api.put(`/pricing/${editingPlan.id}`, formData);
                 toast.success('Plan updated successfully');
             } else {
-                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/pricing`, formData);
+                await api.post('/pricing', formData);
                 toast.success('Plan created successfully');
             }
             setIsModalOpen(false);
@@ -76,7 +76,7 @@ export default function AdminPricingPage() {
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this plan?')) return;
         try {
-            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/pricing/${id}`);
+            await api.delete(`/pricing/${id}`);
             toast.success('Plan deleted successfully');
             fetchPlans();
         } catch (error) {
