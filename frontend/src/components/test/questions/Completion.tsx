@@ -356,13 +356,14 @@ export default function Completion({
           }
 
           // For single-line contexts with bullets, render with the bullet
-          // Hyphen bullets are sub-bullets (indented), asterisk/dot bullets are main level
+          // Use leading spaces from original context to determine indentation
           if (lines.length === 1) {
-            const isSubBullet = bulletSymbol === '-';
+            const leadingSpaces = data.context.length - data.context.replace(/^\s+/, '').length;
+            const indentLevel = Math.min(Math.floor(leadingSpaces / 2), 3);
             return (
               <div
                 className="text-base text-gray-900 leading-relaxed flex items-start gap-2"
-                style={isSubBullet ? { marginLeft: '16px' } : undefined}
+                style={indentLevel > 0 ? { marginLeft: `${indentLevel * 16}px` } : undefined}
               >
                 <span className="mt-1 text-gray-900">{bulletSymbol}</span>
                 <div className="flex-1">
