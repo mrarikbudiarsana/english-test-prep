@@ -222,6 +222,10 @@ export async function complete(id: string) {
   return result.rows[0] || null;
 }
 
+export async function remove(id: string) {
+  await query('DELETE FROM attempts WHERE id = $1', [id]);
+}
+
 export async function countByUserId(userId: string) {
   const result = await query(
     'SELECT COUNT(*) FROM attempts WHERE user_id = $1',

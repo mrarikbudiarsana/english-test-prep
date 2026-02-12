@@ -17,15 +17,17 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   const [isLoaded, setIsLoaded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animFrameRef = useRef<number>(0);
+  const playingRef = useRef(false);
 
   const updateTime = useCallback(() => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-      if (isPlaying) {
-        animFrameRef.current = requestAnimationFrame(updateTime);
-      }
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    setCurrentTime(audio.currentTime);
+    if (!audio.paused) {
+      animFrameRef.current = requestAnimationFrame(updateTime);
     }
-  }, [isPlaying]);
+  }, []);
 
   const loadAudio = useCallback((url: string) => {
     if (audioRef.current) {
@@ -38,6 +40,7 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     audioRef.current = audio;
     setHasPlayed(false);
     setIsLoaded(false);
+    playingRef.current = false;
 
     audio.addEventListener('loadedmetadata', () => {
       setDuration(audio.duration);
@@ -50,6 +53,7 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     audio.addEventListener('ended', () => {
       setIsPlaying(false);
       setHasPlayed(true);
+      playingRef.current = false;
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       onEnd?.();
     });
@@ -57,6 +61,7 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     audio.addEventListener('error', (e) => {
       console.error('Audio loading error:', e);
       setIsPlaying(false);
+      playingRef.current = false;
     });
 
     // Kick off the request immediately so metadata/canplay can resolve.
@@ -67,14 +72,23 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     if (!audioRef.current) return;
     if (playOnce && hasPlayed) return;
 
-    audioRef.current.play();
-    setIsPlaying(true);
-    animFrameRef.current = requestAnimationFrame(updateTime);
+    audioRef.current.play()
+      .then(() => {
+        setIsPlaying(true);
+        playingRef.current = true;
+        animFrameRef.current = requestAnimationFrame(updateTime);
+      })
+      .catch((err) => {
+        console.error('Audio play failed:', err);
+        setIsPlaying(false);
+        playingRef.current = false;
+      });
   }, [hasPlayed, playOnce, updateTime]);
 
   const pause = useCallback(() => {
     audioRef.current?.pause();
     setIsPlaying(false);
+    playingRef.current = false;
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
   }, []);
 

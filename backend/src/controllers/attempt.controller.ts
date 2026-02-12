@@ -134,3 +134,17 @@ export async function getResults(
     next(error);
   }
 }
+
+export async function deleteAttempt(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    await attemptService.deleteAttempt(attemptId, req.user!.id);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}

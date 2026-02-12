@@ -197,14 +197,10 @@ export default function Completion({
                 const contentText = bulletMatch ? bulletMatch[2] : trimmed;
                 const bulletChar = bulletMatch?.[1] || null;
 
-                const bulletSymbol = bulletChar
-                  ? (bulletChar === '-' || bulletChar === '\u2013' || bulletChar === '\u2014' ? '\u2013' : '\u2022')
-                  : null;
+                const bulletSymbol = bulletChar || null;
 
                 if (bulletSymbol) {
-                  const cleanContentText = bulletSymbol === '\u2022'
-                    ? contentText.replace(/^[-\u2013\u2014]\s+/, '')
-                    : contentText;
+                  const cleanContentText = contentText;
                   return (
                     <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
                       <span className="mt-1 text-gray-900">{bulletSymbol}</span>

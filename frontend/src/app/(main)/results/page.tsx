@@ -27,6 +27,7 @@ export default function ResultsPage() {
   const [offset, setOffset] = useState(0);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [sortBy, setSortBy] = useState<SortBy>('date');
+  const [deletingAttemptId, setDeletingAttemptId] = useState<string | null>(null);
   const limit = 10;
 
   useEffect(() => {
@@ -62,6 +63,24 @@ export default function ResultsPage() {
       console.error('Failed to fetch attempts');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDeleteAttempt(attemptId: string) {
+    if (!window.confirm('Delete this in-progress attempt? This cannot be undone.')) {
+      return;
+    }
+
+    setDeletingAttemptId(attemptId);
+    try {
+      await api.delete(`/attempts/${attemptId}`);
+      setAttempts((prev) => prev.filter((a) => a.id !== attemptId));
+      setTotal((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to delete attempt');
+      alert('Failed to delete attempt. Please try again.');
+    } finally {
+      setDeletingAttemptId(null);
     }
   }
 
@@ -318,6 +337,22 @@ export default function ResultsPage() {
                     {/* Right: Status */}
                     <div className="flex flex-col items-end gap-3">
                       {getStatusBadge(attempt.status)}
+                      {attempt.status === 'in_progress' && (
+                        <button
+                          className="text-xs font-semibold text-gray-500 hover:text-red-600 transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!deletingAttemptId) {
+                              handleDeleteAttempt(attempt.id);
+                            }
+                          }}
+                          disabled={deletingAttemptId === attempt.id}
+                          aria-label="Delete in-progress attempt"
+                        >
+                          {deletingAttemptId === attempt.id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      )}
                       <button className="text-sm font-semibold text-[#e4002b] group-hover:text-[#e4002b]/80 flex items-center gap-1">
                         View Details
                         <span className="group-hover:translate-x-1 transition-transform">→</span>

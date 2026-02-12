@@ -201,6 +201,25 @@ export async function submitTest(attemptId: string) {
 }
 
 /**
+ * Delete an in-progress attempt owned by the user.
+ */
+export async function deleteAttempt(attemptId: string, userId: string) {
+  const attempt = await attemptModel.findById(attemptId);
+  if (!attempt) {
+    throw new NotFoundError('Attempt not found');
+  }
+  if (attempt.userId !== userId) {
+    throw new ForbiddenError('You do not have access to this attempt');
+  }
+  if (attempt.status !== 'in_progress') {
+    throw new ValidationError('Only in-progress attempts can be deleted');
+  }
+
+  await attemptModel.remove(attemptId);
+  return { success: true };
+}
+
+/**
  * Trigger the AI scoring pipeline for writing and speaking sections.
  * This runs asynchronously after the test is submitted.
  */
