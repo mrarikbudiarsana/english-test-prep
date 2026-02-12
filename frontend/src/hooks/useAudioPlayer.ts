@@ -32,12 +32,16 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     }
 
     const audio = new Audio(url);
+    audio.preload = 'metadata';
     audioRef.current = audio;
     setHasPlayed(false);
     setIsLoaded(false);
 
     audio.addEventListener('loadedmetadata', () => {
       setDuration(audio.duration);
+    });
+
+    audio.addEventListener('canplay', () => {
       setIsLoaded(true);
     });
 
@@ -52,6 +56,9 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
       console.error('Audio loading error:', e);
       setIsPlaying(false);
     });
+
+    // Kick off the request immediately so metadata/canplay can resolve.
+    audio.load();
   }, [options]);
 
   const play = useCallback(() => {

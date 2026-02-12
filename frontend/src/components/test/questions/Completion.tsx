@@ -93,7 +93,7 @@ export default function Completion({
                 <span key={i}>
                   <span>{part}</span>
                   {i < parts.length - 1 && (
-                    <div className="inline-block relative mx-1 align-middle">
+                    <span className="inline-block relative mx-1 align-middle">
                       <input
                         type="text"
                         value={answer || ''}
@@ -105,14 +105,14 @@ export default function Completion({
                             ${status === 'incorrect' ? '!border-red-500 text-red-700' : ''}
                             ${readOnly ? 'cursor-default' : ''}
                           `}
-                        placeholder={readOnly ? '' : '...'}
+                        placeholder=""
                       />
-                      {!answer && questionNumber && (
-                        <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-gray-400 text-xs pointer-events-none font-medium">
+                      {!answer && questionNumber !== undefined && (
+                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium">
                           {questionNumber}
                         </span>
                       )}
-                    </div>
+                    </span>
                   )}
                 </span>
               ))}
@@ -120,39 +120,121 @@ export default function Completion({
           );
         }
 
-        // Default: Detect Note (list) vs Summary (paragraph) based on content
+        // Default: Note/Summary (document flow)
         const text = data.context.trim();
         const isListMode = text.startsWith('-') || text.startsWith('•') || text.startsWith('*') || /^\d+\./.test(text);
 
+        const noteInputClass = `
+          h-8 w-32 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 font-medium text-center
+          focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
+          ${inputStyle.includes('green') ? 'border-green-500 bg-green-50 text-green-900' : ''}
+          ${inputStyle.includes('red') ? 'border-red-500 bg-red-50 text-red-900' : ''}
+          ${readOnly ? 'cursor-default' : ''}
+        `;
+
+        const noteTextClass = data.style !== 'standard' ? 'whitespace-pre-wrap' : '';
+
+        const renderInlineWithBlank = (context: string) => {
+          const blankMarker = data.blankPosition || '___';
+          let segs = context.split(blankMarker);
+          if (segs.length === 1) {
+            for (const marker of ['{blank}', '___', '_____', '______', '__________']) {
+              const testParts = context.split(marker);
+              if (testParts.length > 1) { segs = testParts; break; }
+            }
+          }
+          return (
+            <span>
+              {segs.map((part, i) => (
+                <span key={i}>
+                  <span>{part}</span>
+                  {i < segs.length - 1 && (
+                    <span className="inline-block relative mx-1 align-middle">
+                      <input
+                        type="text"
+                        value={answer || ''}
+                        onChange={handleChange}
+                        readOnly={readOnly}
+                        className={noteInputClass}
+                      />
+                      {!answer && questionNumber !== undefined && (
+                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium">
+                          {questionNumber}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </span>
+              ))}
+            </span>
+          );
+        };
+
+        const lines = data.context.split('\n');
+        if (lines.length > 1) {
+          return (
+            <div className="text-base text-gray-900 leading-relaxed space-y-1">
+              {lines.map((line, idx) => {
+                const raw = line;
+                const trimmed = raw.trim();
+                if (!trimmed) {
+                  return <div key={`sp-${idx}`} className="h-2" />;
+                }
+
+                const leadingSpaces = raw.length - raw.replace(/^\s+/, '').length;
+                const indentLevel = Math.min(Math.floor(leadingSpaces / 2), 3);
+
+                const bulletMatch = trimmed.match(/^([-*•]|â€¢|â€“|â€”)\s+(.*)$/);
+                const contentText = bulletMatch ? bulletMatch[2] : trimmed;
+                const bulletChar = bulletMatch?.[1] || null;
+
+                const bulletSymbol = bulletChar
+                  ? (bulletChar === '-' || bulletChar === 'â€“' || bulletChar === 'â€”' ? '–' : '•')
+                  : null;
+
+                if (bulletSymbol) {
+                  return (
+                    <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
+                      <span className="mt-1 text-gray-900">{bulletSymbol}</span>
+                      <div className="flex-1">
+                        {renderInlineWithBlank(contentText)}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={`ln-${idx}`} className={idx === 0 ? 'font-semibold' : 'font-semibold mt-2'}>
+                    {contentText}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        }
+
         const content = (
-          <div className={isListMode ? "flex-1 pt-0.5" : "inline"}>
+          <div className={isListMode ? `flex-1 pt-0.5 ${noteTextClass}` : `inline ${noteTextClass}`}>
             {parts.length > 1 ? (
               <div className="inline">
                 {parts.map((part, i) => (
                   <span key={i}>
                     <span>{part}</span>
                     {i < parts.length - 1 && (
-                      <div className="inline-block relative mx-1 align-middle">
+                      <span className="inline-block relative mx-1 align-middle">
                         <input
                           type="text"
                           value={answer || ''}
                           onChange={handleChange}
                           readOnly={readOnly}
-                          className={`
-                            w-32 border border-gray-300 px-2 py-1 text-sm rounded bg-white text-center font-medium transition-all
-                            focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100
-                            placeholder:text-gray-300
-                            ${inputStyle.includes('green') ? 'border-green-500 bg-green-50' : ''}
-                            ${inputStyle.includes('red') ? 'border-red-500 bg-red-50' : ''}
-                            ${readOnly ? 'cursor-default' : ''}
-                          `}
+                          className={noteInputClass}
                         />
-                        {!answer && questionNumber && (
+                        {!answer && questionNumber !== undefined && (
                           <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium">
                             {questionNumber}
                           </span>
                         )}
-                      </div>
+                      </span>
                     )}
                   </span>
                 ))}
@@ -160,27 +242,20 @@ export default function Completion({
             ) : (
               <>
                 <span className="mb-2 inline">{data.context}</span>
-                <div className="inline-block relative mx-1 align-middle">
+                <span className="inline-block relative mx-1 align-middle">
                   <input
                     type="text"
                     value={answer || ''}
                     onChange={handleChange}
                     readOnly={readOnly}
-                    className={`
-                      w-32 border border-gray-300 px-2 py-1 text-sm rounded bg-white text-center font-medium transition-all
-                      focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100
-                      placeholder:text-gray-300
-                      ${inputStyle.includes('green') ? 'border-green-500 bg-green-50' : ''}
-                      ${inputStyle.includes('red') ? 'border-red-500 bg-red-50' : ''}
-                      ${readOnly ? 'cursor-default' : ''}
-                  `}
+                    className={noteInputClass}
                   />
-                  {!answer && questionNumber && (
+                  {!answer && questionNumber !== undefined && (
                     <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium">
                       {questionNumber}
                     </span>
                   )}
-                </div>
+                </span>
               </>
             )}
           </div>
@@ -197,7 +272,7 @@ export default function Completion({
         }
 
         return (
-          <div className="text-base text-gray-900 leading-relaxed mb-4">
+          <div className={`text-base text-gray-900 leading-relaxed mb-4 ${noteTextClass}`}>
             {content}
           </div>
         );

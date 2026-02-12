@@ -59,6 +59,13 @@ export default function AudioPlayer({ src, playOnce, onEnd }: AudioPlayerProps) 
     }
   }, [isPlaying, play, pause]);
 
+  const durationDisplay = useMemo(() => {
+    if (!isLoaded || !duration || !isFinite(duration)) return '--:--';
+    return formatTime(duration);
+  }, [duration, formatTime, isLoaded]);
+
+  const durationLabel = durationDisplay === '--:--' ? 'loading...' : durationDisplay;
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
       <div className="flex items-center gap-4">
@@ -108,7 +115,7 @@ export default function AudioPlayer({ src, playOnce, onEnd }: AudioPlayerProps) 
           {/* Time Display */}
           <div className="flex justify-between text-xs text-gray-500 font-mono">
             <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
+            <span>{durationLabel}</span>
           </div>
         </div>
       </div>

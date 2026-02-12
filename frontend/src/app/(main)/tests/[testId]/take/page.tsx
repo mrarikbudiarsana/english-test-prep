@@ -541,7 +541,7 @@ function TestTakingContent() {
                                         {(groupQuestions[0].questionData as any).title}
                                       </h4>
                                     )}
-                                    <div className="text-base text-gray-900 leading-relaxed">
+                                    <div className="text-base text-gray-900 leading-relaxed whitespace-pre-wrap">
                                       {groupQuestions.map((question) => {
                                         const qData = question.questionData as any;
                                         const context = qData.context || '';
@@ -566,7 +566,7 @@ function TestTakingContent() {
                                                       type="text"
                                                       value={state.answers[question.id] || ''}
                                                       onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                                      className="w-32 border border-gray-300 px-2 py-1 text-sm rounded bg-white text-center font-medium transition-all focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 placeholder:text-gray-300"
+                                                      className="h-8 w-32 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 font-medium text-center focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                                                     />
                                                     {!state.answers[question.id] && (
                                                       <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium">
@@ -657,7 +657,7 @@ function TestTakingContent() {
                                     return (
                                       <div key={`summary-${idx}`} className="pl-2">
                                         <h4 className="mb-3 text-lg font-bold text-gray-900">{item.title}</h4>
-                                        <div className="text-base text-gray-900 leading-relaxed">
+                                        <div className="text-base text-gray-900 leading-relaxed whitespace-pre-wrap">
                                           {item.questions.map((question) => {
                                             const qData = question.questionData as any;
                                             const context = qData.context || '';
@@ -689,7 +689,7 @@ function TestTakingContent() {
                                                           type="text"
                                                           value={state.answers[question.id] || ''}
                                                           onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                                          className="w-32 border border-gray-300 px-2 py-1 text-sm rounded bg-white text-center font-medium transition-all focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 placeholder:text-gray-300"
+                                                          className="h-8 w-32 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 font-medium text-center focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                                                         />
                                                         {!state.answers[question.id] && (
                                                           <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium whitespace-nowrap">
