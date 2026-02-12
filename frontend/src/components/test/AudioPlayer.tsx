@@ -103,8 +103,8 @@ export default function AudioPlayer({ src, playOnce, onEnd }: AudioPlayerProps) 
             onClick={handleProgressClick}
           >
             <div
-              className="h-full rounded-full bg-blue-500 transition-all"
-              style={{ width: `${progress}%` }}
+              className="h-full rounded-full bg-blue-500"
+              style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
             />
             <div
               className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 shadow transition-opacity group-hover:opacity-100"

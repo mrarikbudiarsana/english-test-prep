@@ -195,6 +195,19 @@ export default function Completion({
                 const leadingSpaces = raw.length - raw.replace(/^\s+/, '').length;
                 const indentLevel = Math.min(Math.floor(leadingSpaces / 2), 3);
 
+                const strippedNoDots = trimmed.replace(/^[\u2022*]+\s*/, '');
+                if (/^[-\u2013\u2014]\s+/.test(strippedNoDots)) {
+                  const hyphenContent = strippedNoDots.replace(/^[-\u2013\u2014]\s+/, '');
+                  return (
+                    <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
+                      <span className="mt-1 text-gray-900">-</span>
+                      <div className="flex-1">
+                        {renderInlineWithBlank(hyphenContent)}
+                      </div>
+                    </div>
+                  );
+                }
+
                 const bulletMatch = trimmed.match(/^([\-*\u2022\u2013\u2014])\s+(.*)$/);
                 const contentText = bulletMatch ? bulletMatch[2] : trimmed;
                 const bulletChar = bulletMatch?.[1] || null;
@@ -203,11 +216,6 @@ export default function Completion({
                 let cleanContentText = contentText;
 
                 if (bulletSymbol) {
-                  // If a bullet dot is followed by a hyphen (common copy/paste), prefer the hyphen only.
-                  if (bulletSymbol === '\u2022' && /^[-\u2013\u2014]\s+/.test(cleanContentText)) {
-                    bulletSymbol = '-';
-                    cleanContentText = cleanContentText.replace(/^[-\u2013\u2014]\s+/, '');
-                  }
                   return (
                     <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
                       <span className="mt-1 text-gray-900">{bulletSymbol}</span>

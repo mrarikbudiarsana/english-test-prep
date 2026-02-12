@@ -18,18 +18,35 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animFrameRef = useRef<number>(0);
   const playingRef = useRef(false);
+  const listenersRef = useRef<{
+    audio: HTMLAudioElement;
+    loadedmetadata: () => void;
+    durationchange: () => void;
+    timeupdate: () => void;
+  } | null>(null);
 
   const updateTime = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     setCurrentTime(audio.currentTime);
+    if (isFinite(audio.duration) && audio.duration > 0) {
+      setDuration(audio.duration);
+    }
     if (!audio.paused) {
       animFrameRef.current = requestAnimationFrame(updateTime);
     }
   }, []);
 
   const loadAudio = useCallback((url: string) => {
+    if (listenersRef.current) {
+      const { audio, loadedmetadata, durationchange, timeupdate } = listenersRef.current;
+      audio.removeEventListener('loadedmetadata', loadedmetadata);
+      audio.removeEventListener('durationchange', durationchange);
+      audio.removeEventListener('timeupdate', timeupdate);
+      listenersRef.current = null;
+    }
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.removeAttribute('src');
@@ -42,9 +59,29 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     setIsLoaded(false);
     playingRef.current = false;
 
-    audio.addEventListener('loadedmetadata', () => {
-      setDuration(audio.duration);
-    });
+    const handleLoadedMetadata = () => {
+      if (isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+    const handleDurationChange = () => {
+      if (isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('durationchange', handleDurationChange);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    listenersRef.current = {
+      audio,
+      loadedmetadata: handleLoadedMetadata,
+      durationchange: handleDurationChange,
+      timeupdate: handleTimeUpdate,
+    };
 
     audio.addEventListener('canplay', () => {
       setIsLoaded(true);
@@ -101,6 +138,13 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
 
   useEffect(() => {
     return () => {
+      if (listenersRef.current) {
+        const { audio, loadedmetadata, durationchange, timeupdate } = listenersRef.current;
+        audio.removeEventListener('loadedmetadata', loadedmetadata);
+        audio.removeEventListener('durationchange', durationchange);
+        audio.removeEventListener('timeupdate', timeupdate);
+        listenersRef.current = null;
+      }
       audioRef.current?.pause();
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
