@@ -227,7 +227,9 @@ export default function Completion({
                   );
                 }
 
-                const bulletMatch = trimmed.match(/^([\-*\u2022\u2013\u2014])\s+(.*)$/);
+                // Use same hyphen chars for bullet detection
+                const bulletRegex = new RegExp(`^(${hyphenChars}|[*\\u2022])\\s+(.*)$`);
+                const bulletMatch = trimmed.match(bulletRegex);
                 const contentText = bulletMatch ? bulletMatch[2] : trimmed;
                 const bulletChar = bulletMatch?.[1] || null;
 
@@ -238,6 +240,10 @@ export default function Completion({
                   // If a dot bullet is present but content starts with a hyphen-like, prefer the hyphen.
                   if (new RegExp(`^${hyphenChars}\\s+`).test(cleanContentText)) {
                     cleanContentText = cleanContentText.replace(new RegExp(`^${hyphenChars}\\s+`), '');
+                    bulletSymbol = '-';
+                  }
+                  // Normalize all hyphen-like characters to a simple hyphen for display
+                  if (/^[-\u2010\u2011\u2012\u2013\u2014\u2212]$/.test(bulletSymbol)) {
                     bulletSymbol = '-';
                   }
                   if (bulletSymbol === '-') {
@@ -253,9 +259,12 @@ export default function Completion({
                   );
                 }
 
+                // Non-bullet line: header if short and no blanks, otherwise regular text with blank processing
+                const hasBlank = /\{blank\}|_{3,}/i.test(line);
+                const isHeader = !hasBlank && contentText.length < 60;
                 return (
-                  <div key={`ln-${idx}`} className={idx === 0 ? 'font-semibold' : 'font-semibold mt-2'}>
-                    {contentText}
+                  <div key={`ln-${idx}`} className={isHeader ? (idx === 0 ? 'font-semibold' : 'font-semibold mt-2') : ''}>
+                    {renderInlineWithBlank(contentText)}
                   </div>
                 );
               })}
