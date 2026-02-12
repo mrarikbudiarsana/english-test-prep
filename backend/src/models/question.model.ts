@@ -172,8 +172,25 @@ export async function remove(id: string) {
 
 export async function getMaxQuestionNumber(sectionId: string) {
   const result = await query(
-    'SELECT COALESCE(MAX(question_number), 0) AS "maxNumber" FROM questions WHERE section_id = $1',
+    `SELECT ${SELECT_COLUMNS}
+     FROM questions
+     WHERE section_id = $1
+     ORDER BY question_number ASC`,
     [sectionId],
   );
-  return parseInt(result.rows[0].maxNumber, 10);
+
+  const questions = result.rows;
+  if (questions.length === 0) return 0;
+
+  // Calculate the maximum "end" number accounting for multi-select questions
+  const maxEnd = questions.reduce((max, q) => {
+    const qData = q.questionData || {};
+    const consumed = (q.questionType === 'multiple_choice' && qData.multiSelect)
+      ? (qData.expectedAnswers || 2)
+      : 1;
+    const questionEnd = q.questionNumber + consumed - 1;
+    return Math.max(max, questionEnd);
+  }, 0);
+
+  return maxEnd;
 }

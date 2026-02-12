@@ -149,6 +149,18 @@ export default function QuestionEditor({
   const handleQuestionDataChange = (data: QuestionData, answer: any) => {
     setQuestionData(data);
     setCorrectAnswer(answer);
+
+    // Auto-update points for multi-select MCQs based on expectedAnswers
+    if (questionType === 'multiple_choice') {
+      const mcqData = data as MCQData;
+      if (mcqData.multiSelect && mcqData.expectedAnswers) {
+        // Multi-select enabled: points = number of expected answers
+        setPoints(mcqData.expectedAnswers);
+      } else if (!mcqData.multiSelect) {
+        // Multi-select disabled: reset to 1 point
+        setPoints(1);
+      }
+    }
   };
 
   const validate = (): boolean => {
