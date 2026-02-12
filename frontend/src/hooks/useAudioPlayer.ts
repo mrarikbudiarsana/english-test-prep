@@ -8,6 +8,8 @@ interface UseAudioPlayerOptions {
 }
 
 export function useAudioPlayer(options?: UseAudioPlayerOptions) {
+  const playOnce = options?.playOnce ?? false;
+  const onEnd = options?.onEnd;
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -49,7 +51,7 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
       setIsPlaying(false);
       setHasPlayed(true);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      options?.onEnd?.();
+      onEnd?.();
     });
 
     audio.addEventListener('error', (e) => {
@@ -59,16 +61,16 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
 
     // Kick off the request immediately so metadata/canplay can resolve.
     audio.load();
-  }, [options]);
+  }, [onEnd]);
 
   const play = useCallback(() => {
     if (!audioRef.current) return;
-    if (options?.playOnce && hasPlayed) return;
+    if (playOnce && hasPlayed) return;
 
     audioRef.current.play();
     setIsPlaying(true);
     animFrameRef.current = requestAnimationFrame(updateTime);
-  }, [hasPlayed, options?.playOnce, updateTime]);
+  }, [hasPlayed, playOnce, updateTime]);
 
   const pause = useCallback(() => {
     audioRef.current?.pause();
@@ -100,6 +102,6 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     play,
     pause,
     seek,
-    canPlay: !options?.playOnce || !hasPlayed,
+    canPlay: !playOnce || !hasPlayed,
   };
 }

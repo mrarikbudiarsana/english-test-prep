@@ -122,7 +122,12 @@ export default function Completion({
 
         // Default: Note/Summary (document flow)
         const text = data.context.trim();
-        const isListMode = text.startsWith('-') || text.startsWith('•') || text.startsWith('*') || /^\d+\./.test(text);
+        const normalizedText = text
+          .replace(/\u00e2\u20ac\u00a2/g, '\u2022')
+          .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u00c2\u00a2/g, '\u2022')
+          .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201c/g, '\u2013')
+          .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201d/g, '\u2014');
+        const isListMode = /^\s*([\-*\u2022\u2013\u2014]|\d+\.)/.test(normalizedText);
 
         const noteInputClass = `
           h-8 w-32 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 font-medium text-center
@@ -176,7 +181,11 @@ export default function Completion({
             <div className="text-base text-gray-900 leading-relaxed space-y-1">
               {lines.map((line, idx) => {
                 const raw = line;
-                const trimmed = raw.trim();
+                const trimmed = raw.trim()
+                  .replace(/\u00e2\u20ac\u00a2/g, '\u2022')
+                  .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u00c2\u00a2/g, '\u2022')
+                  .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201c/g, '\u2013')
+                  .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201d/g, '\u2014');
                 if (!trimmed) {
                   return <div key={`sp-${idx}`} className="h-2" />;
                 }
@@ -184,20 +193,23 @@ export default function Completion({
                 const leadingSpaces = raw.length - raw.replace(/^\s+/, '').length;
                 const indentLevel = Math.min(Math.floor(leadingSpaces / 2), 3);
 
-                const bulletMatch = trimmed.match(/^([-*•]|â€¢|â€“|â€”)\s+(.*)$/);
+                const bulletMatch = trimmed.match(/^([\-*\u2022\u2013\u2014])\s+(.*)$/);
                 const contentText = bulletMatch ? bulletMatch[2] : trimmed;
                 const bulletChar = bulletMatch?.[1] || null;
 
                 const bulletSymbol = bulletChar
-                  ? (bulletChar === '-' || bulletChar === 'â€“' || bulletChar === 'â€”' ? '–' : '•')
+                  ? (bulletChar === '-' || bulletChar === '\u2013' || bulletChar === '\u2014' ? '\u2013' : '\u2022')
                   : null;
 
                 if (bulletSymbol) {
+                  const cleanContentText = bulletSymbol === '\u2022'
+                    ? contentText.replace(/^[-\u2013\u2014]\s+/, '')
+                    : contentText;
                   return (
                     <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
                       <span className="mt-1 text-gray-900">{bulletSymbol}</span>
                       <div className="flex-1">
-                        {renderInlineWithBlank(contentText)}
+                        {renderInlineWithBlank(cleanContentText)}
                       </div>
                     </div>
                   );
@@ -290,3 +302,5 @@ export default function Completion({
     </div>
   );
 }
+
+
