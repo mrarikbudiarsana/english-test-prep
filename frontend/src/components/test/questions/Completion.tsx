@@ -55,14 +55,17 @@ export default function Completion({
 
   // Split context text at the blank position marker to create inline input
   // Support multiple common markers: {blank}, ___, _____, etc.
+  const normalizeContext = (text: string) =>
+    text.replace(/\{blank\}/gi, '___');
+
   const blankMarker = data.blankPosition || '___';
-  let parts = data.context.split(blankMarker);
+  let parts = normalizeContext(data.context).split(blankMarker);
 
   // If split didn't work, try common alternatives
   if (parts.length === 1) {
     const commonMarkers = ['{blank}', '___', '_____', '______', '__________'];
     for (const marker of commonMarkers) {
-      const testParts = data.context.split(marker);
+      const testParts = normalizeContext(data.context).split(marker);
       if (testParts.length > 1) {
         parts = testParts;
         break;
@@ -140,11 +143,12 @@ export default function Completion({
         const noteTextClass = data.style !== 'standard' ? 'whitespace-pre-wrap' : '';
 
         const renderInlineWithBlank = (context: string) => {
+          const normalizedContext = normalizeContext(context);
           const blankMarker = data.blankPosition || '___';
-          let segs = context.split(blankMarker);
+          let segs = normalizedContext.split(blankMarker);
           if (segs.length === 1) {
             for (const marker of ['{blank}', '___', '_____', '______', '__________']) {
-              const testParts = context.split(marker);
+              const testParts = normalizedContext.split(marker);
               if (testParts.length > 1) { segs = testParts; break; }
             }
           }
@@ -313,7 +317,18 @@ export default function Completion({
             .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u00c2\u00a2/g, '\u2022')
             .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201c/g, '\u2013')
             .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201d/g, '\u2014');
-          const bulletMatch = trimmedText.match(/^([\-*\u2022\u2013\u2014])\s+/);
+          const bulletMatch = trimmedText.match(/^([\-*\u2022\u2013\u2014])\s+(.*)$/);
+          const singleLineContent = bulletMatch ? bulletMatch[2] : trimmedText;
+
+          // For single-line contexts, do not auto-render a bullet; treat as plain line.
+          if (lines.length === 1) {
+            return (
+              <div className="text-base text-gray-900 leading-relaxed">
+                {renderInlineWithBlank(singleLineContent)}
+              </div>
+            );
+          }
+
           const bulletSymbol = bulletMatch?.[1] || '•';
           return (
             <div className="text-base text-gray-900 leading-relaxed flex items-start gap-3">
