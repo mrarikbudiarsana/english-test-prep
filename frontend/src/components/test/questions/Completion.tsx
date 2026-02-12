@@ -356,9 +356,14 @@ export default function Completion({
           }
 
           // For single-line contexts with bullets, render with the bullet
+          // Hyphen bullets are sub-bullets (indented), asterisk/dot bullets are main level
           if (lines.length === 1) {
+            const isSubBullet = bulletSymbol === '-';
             return (
-              <div className="text-base text-gray-900 leading-relaxed flex items-start gap-2">
+              <div
+                className="text-base text-gray-900 leading-relaxed flex items-start gap-2"
+                style={isSubBullet ? { marginLeft: '16px' } : undefined}
+              >
                 <span className="mt-1 text-gray-900">{bulletSymbol}</span>
                 <div className="flex-1">
                   {renderInlineWithBlank(singleLineContent)}
