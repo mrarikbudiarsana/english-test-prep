@@ -183,18 +183,6 @@ export default function Completion({
                 const raw = line;
                 const hiddenBulletChars = '[\\u2022\\u2023\\u25E6\\u25CF\\u00B7\\u2219*]';
                 const hyphenChars = '[-\\u2010\\u2011\\u2012\\u2013\\u2014\\u2212]';
-                const rawNoLeadingWs = raw.replace(/^\s+/, '');
-                if (new RegExp(`^${hyphenChars}\\s+`).test(rawNoLeadingWs)) {
-                  const hyphenContent = rawNoLeadingWs.replace(new RegExp(`^${hyphenChars}\\s+`), '');
-                  return (
-                    <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
-                      <span className="mt-1 text-gray-900">-</span>
-                      <div className="flex-1">
-                        {renderInlineWithBlank(hyphenContent)}
-                      </div>
-                    </div>
-                  );
-                }
                 const rawNoHiddenBullet = raw.replace(new RegExp(`^\\s*${hiddenBulletChars}+\\s*`), '');
                 let trimmed = rawNoHiddenBullet.trim()
                   .replace(/\u00e2\u20ac\u00a2/g, '\u2022')
@@ -209,6 +197,18 @@ export default function Completion({
 
                 const leadingSpaces = raw.length - raw.replace(/^\s+/, '').length;
                 const indentLevel = Math.min(Math.floor(leadingSpaces / 2), 3);
+                const rawNoLeadingWs = raw.replace(/^\s+/, '');
+                if (new RegExp(`^${hyphenChars}\\s+`).test(rawNoLeadingWs)) {
+                  const hyphenContent = rawNoLeadingWs.replace(new RegExp(`^${hyphenChars}\\s+`), '');
+                  return (
+                    <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
+                      <span className="mt-1 text-gray-900">-</span>
+                      <div className="flex-1">
+                        {renderInlineWithBlank(hyphenContent)}
+                      </div>
+                    </div>
+                  );
+                }
 
                 const strippedNoDots = trimmed.replace(new RegExp(`^${hiddenBulletChars}+\\s*`), '');
                 if (new RegExp(`^${hyphenChars}\\s+`).test(strippedNoDots)) {
