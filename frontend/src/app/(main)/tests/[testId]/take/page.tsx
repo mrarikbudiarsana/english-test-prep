@@ -399,7 +399,7 @@ function TestTakingContent() {
                       {Object.entries(grouped).map(([groupLabel, groupQuestions]) => {
                         const firstQuestion = groupQuestions[0];
                         return (
-                          <div key={groupLabel} className="bg-white border-2 border-gray-300 p-6 mb-6">
+                          <div key={groupLabel} className="bg-white">
                             <GroupInstruction
                               groupLabel={groupLabel}
                               groupInstructions={firstQuestion.groupInstructions}

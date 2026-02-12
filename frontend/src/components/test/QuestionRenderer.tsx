@@ -107,6 +107,7 @@ export default function QuestionRenderer({
             onChange={handleChange}
             readOnly={readOnly}
             correctAnswer={readOnly ? (question.correctAnswer as Record<string, string> | undefined) : undefined}
+            displayNumber={typeof resolvedNumber === 'number' ? resolvedNumber : undefined}
           />
         );
 

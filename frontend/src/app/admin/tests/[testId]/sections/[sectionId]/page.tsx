@@ -185,10 +185,18 @@ export default function AdminSectionQuestionsPage() {
     );
   }
 
-  const nextQuestionNumber =
-    questions.length > 0
-      ? Math.max(...questions.map((q) => q.questionNumber)) + 1
-      : 1;
+  // Calculate next question number accounting for multi-select MCQs that consume multiple numbers
+  // e.g., "Choose TWO" question 11 displays as 11-12, so next should be 13
+  const nextQuestionNumber = questions.length > 0
+    ? questions.reduce((maxEnd, q) => {
+        const qData = q.questionData as any;
+        const consumed = (q.questionType === 'multiple_choice' && qData?.multiSelect)
+          ? (qData.expectedAnswers || 2)
+          : 1;
+        const questionEnd = q.questionNumber + consumed - 1;
+        return Math.max(maxEnd, questionEnd);
+      }, 0) + 1
+    : 1;
 
   return (
     <div className="space-y-6">

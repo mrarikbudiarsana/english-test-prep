@@ -9,6 +9,8 @@ interface DropdownSelectProps {
   onChange: (answer: Record<string, string>) => void;
   readOnly?: boolean;
   correctAnswer?: Record<string, string>;
+  /** Display number for the question (used for placeholder instead of dropdown key) */
+  displayNumber?: number | string;
 }
 
 export default function DropdownSelect({
@@ -17,6 +19,7 @@ export default function DropdownSelect({
   onChange,
   readOnly = false,
   correctAnswer,
+  displayNumber,
 }: DropdownSelectProps) {
   const currentAnswer = answer || {};
 
@@ -44,6 +47,14 @@ export default function DropdownSelect({
   // Parse the context text and replace placeholders {1}, {2}, etc. with dropdowns
   const renderedContent = useMemo(() => {
     const dropdownKeys = Object.keys(data.dropdowns);
+    // Sort keys to ensure consistent ordering for display number calculation
+    const sortedKeys = [...dropdownKeys].sort((a, b) => {
+      const numA = parseInt(a, 10);
+      const numB = parseInt(b, 10);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+
     // Build a regex to match all placeholders like {1}, {2}, etc.
     const pattern = new RegExp(
       `(${dropdownKeys.map((k) => `\\{${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\}`).join('|')})`,
@@ -59,6 +70,12 @@ export default function DropdownSelect({
         const key = match[1];
         const dropdown = data.dropdowns[key];
         const status = getDropdownStatus(key);
+
+        // Calculate placeholder text: use displayNumber if provided, otherwise fall back to key
+        const keyIndex = sortedKeys.indexOf(key);
+        const placeholderNum = displayNumber !== undefined
+          ? (typeof displayNumber === 'number' ? displayNumber + keyIndex : displayNumber)
+          : key;
 
         const selectStyle = (() => {
           if (status === 'correct') return 'border-green-400 bg-green-50 text-green-800';
@@ -79,7 +96,7 @@ export default function DropdownSelect({
                 ${selectStyle}
               `}
             >
-              <option value="">({key})</option>
+              <option value=""></option>
               {dropdown.options.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -103,7 +120,7 @@ export default function DropdownSelect({
       // Regular text
       return <span key={index}>{part}</span>;
     });
-  }, [data, currentAnswer, readOnly, correctAnswer, handleSelect]);
+  }, [data, currentAnswer, readOnly, correctAnswer, handleSelect, displayNumber]);
 
   return (
     <div>
@@ -117,13 +134,26 @@ export default function DropdownSelect({
         <div className="mt-4 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
           <p className="text-xs font-medium text-blue-700 mb-2">Correct Answers</p>
           <div className="space-y-1">
-            {Object.entries(correctAnswer).map(([key, value]) => (
-              <div key={key} className="flex items-center gap-2 text-sm text-blue-800">
-                <span className="font-semibold">({key})</span>
-                <span className="text-blue-400">&rarr;</span>
-                <span className="font-medium">{value}</span>
-              </div>
-            ))}
+            {(() => {
+              const sortedKeys = Object.keys(correctAnswer).sort((a, b) => {
+                const numA = parseInt(a, 10);
+                const numB = parseInt(b, 10);
+                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                return a.localeCompare(b);
+              });
+              return sortedKeys.map((key, idx) => {
+                const displayNum = displayNumber !== undefined
+                  ? (typeof displayNumber === 'number' ? displayNumber + idx : displayNumber)
+                  : key;
+                return (
+                  <div key={key} className="flex items-center gap-2 text-sm text-blue-800">
+                    <span className="font-semibold">({displayNum})</span>
+                    <span className="text-blue-400">&rarr;</span>
+                    <span className="font-medium">{correctAnswer[key]}</span>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
       )}
