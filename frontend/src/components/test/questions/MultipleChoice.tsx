@@ -18,7 +18,7 @@ export default function MultipleChoice({
   readOnly = false,
   correctAnswer,
 }: MultipleChoiceProps) {
-  const { options, multiSelect } = data;
+  const { options, multiSelect, expectedAnswers } = data;
 
   const handleSingleSelect = useCallback(
     (key: string) => {
@@ -81,7 +81,9 @@ export default function MultipleChoice({
     <div className="space-y-2">
       {multiSelect && (
         <p className="text-xs text-gray-500 italic mb-2">
-          Select all that apply
+          {expectedAnswers
+            ? `Select ${expectedAnswers === 2 ? 'TWO' : expectedAnswers === 3 ? 'THREE' : expectedAnswers} answers`
+            : 'Select all that apply'}
         </p>
       )}
       {options.map((option) => {

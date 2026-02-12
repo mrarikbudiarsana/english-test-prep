@@ -124,6 +124,13 @@ export default function QuestionRenderer({
 
   // Determine the text to display next to the number bubble
   const resolvedNumber = displayNumber ?? question.questionNumber;
+
+  // Check if this is a multi-select MCQ and get expected answers count
+  const isMultiSelectMCQ = question.questionType === 'multiple_choice' &&
+    (question.questionData as MCQData).multiSelect;
+  const expectedAnswers = isMultiSelectMCQ
+    ? (question.questionData as MCQData).expectedAnswers || 2
+    : 1;
   const questionHeaderText = (() => {
     if (question.questionType === 'true_false_not_given') {
       return (question.questionData as TFNGData).statement || question.questionText;
@@ -160,19 +167,27 @@ export default function QuestionRenderer({
         </TextHighlighter>
       ) : (
         <>
-          <span
-            className={cn(
-              "flex shrink-0 items-center justify-center rounded-[4px] border text-sm font-bold mt-0.5 transition-colors duration-200",
-              // Range Handling: wide if string length > 2
-              String(resolvedNumber).length > 2 ? "h-7 px-2 min-w-[2.5rem]" : "h-7 w-7",
-              // Active State
-              isActive
-                ? "bg-blue-600 border-blue-600 text-white shadow-sm ring-2 ring-blue-100 ring-offset-1"
-                : "bg-white border-gray-300 text-gray-700 hover:border-gray-400"
-            )}
-          >
-            {resolvedNumber}
-          </span>
+          <div className="flex shrink-0 items-center gap-1 mt-0.5">
+            {Array.from({ length: expectedAnswers }).map((_, idx) => {
+              const num = typeof resolvedNumber === 'number'
+                ? resolvedNumber + idx
+                : resolvedNumber;
+              return (
+                <span
+                  key={idx}
+                  className={cn(
+                    "flex shrink-0 items-center justify-center rounded-[4px] border text-sm font-bold transition-colors duration-200",
+                    String(num).length > 2 ? "h-7 px-2 min-w-[2.5rem]" : "h-7 w-7",
+                    isActive
+                      ? "bg-blue-600 border-blue-600 text-white shadow-sm ring-2 ring-blue-100 ring-offset-1"
+                      : "bg-white border-gray-300 text-gray-700 hover:border-gray-400"
+                  )}
+                >
+                  {num}
+                </span>
+              );
+            })}
+          </div>
           <div className="flex-1">
             {!isRedundantHeader && (
               <div className="mb-2">

@@ -13,6 +13,7 @@ interface MCQEditorProps {
 export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorProps) {
   const options = data.options || [];
   const multiSelect = data.multiSelect || false;
+  const expectedAnswers = data.expectedAnswers || 2;
 
   const handleOptionTextChange = (index: number, text: string) => {
     const newOptions = [...options];
@@ -77,12 +78,20 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
       : Array.isArray(correctAnswer) && correctAnswer.length > 0
         ? correctAnswer[0]
         : '';
-    onChange({ ...data, multiSelect: newMultiSelect }, newCorrect);
+    onChange({
+      ...data,
+      multiSelect: newMultiSelect,
+      expectedAnswers: newMultiSelect ? 2 : undefined
+    }, newCorrect);
+  };
+
+  const handleExpectedAnswersChange = (value: number) => {
+    onChange({ ...data, expectedAnswers: value }, correctAnswer);
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
           <input
             type="checkbox"
@@ -92,6 +101,21 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
           />
           Allow multiple correct answers
         </label>
+        {multiSelect && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">
+              Number of answers required:
+            </label>
+            <Input
+              type="number"
+              min={2}
+              max={options.length}
+              value={expectedAnswers}
+              onChange={(e) => handleExpectedAnswersChange(parseInt(e.target.value) || 2)}
+              className="w-16 text-center"
+            />
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -151,9 +175,20 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
       </div>
 
       <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
-        Correct answer: {multiSelect
-          ? (Array.isArray(correctAnswer) && correctAnswer.length > 0 ? correctAnswer.join(', ') : 'None selected')
-          : (correctAnswer || 'None selected')}
+        Correct answer: {(() => {
+          if (multiSelect) {
+            if (!Array.isArray(correctAnswer) || correctAnswer.length === 0) return 'None selected';
+            const texts = correctAnswer.map((key: string) => {
+              const opt = options.find((o) => o.key === key);
+              return opt?.text || key;
+            });
+            return texts.join(', ');
+          } else {
+            if (!correctAnswer) return 'None selected';
+            const opt = options.find((o) => o.key === correctAnswer);
+            return opt?.text || correctAnswer;
+          }
+        })()}
       </div>
     </div>
   );

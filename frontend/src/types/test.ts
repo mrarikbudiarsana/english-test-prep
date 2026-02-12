@@ -70,6 +70,7 @@ export interface Question {
 export interface MCQData {
   options: { key: string; text: string }[];
   multiSelect: boolean;
+  expectedAnswers?: number; // For "select TWO/THREE" questions - how many answers required
 }
 
 export interface TFNGData {
