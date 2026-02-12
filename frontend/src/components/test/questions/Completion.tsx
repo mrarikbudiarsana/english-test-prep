@@ -236,6 +236,9 @@ export default function Completion({
                     cleanContentText = cleanContentText.replace(new RegExp(`^${hyphenChars}\\s+`), '');
                     bulletSymbol = '-';
                   }
+                  if (bulletSymbol === '-') {
+                    cleanContentText = cleanContentText.replace(new RegExp(`^${hyphenChars}\\s+`), '');
+                  }
                   return (
                     <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
                       <span className="mt-1 text-gray-900">{bulletSymbol}</span>
