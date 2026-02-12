@@ -181,13 +181,28 @@ export default function Completion({
             <div className="text-base text-gray-900 leading-relaxed space-y-1">
               {lines.map((line, idx) => {
                 const raw = line;
-                let trimmed = raw.trim()
+                const hiddenBulletChars = '[\\u2022\\u2023\\u25E6\\u25CF\\u00B7\\u2219*]';
+                const hyphenChars = '[-\\u2010\\u2011\\u2012\\u2013\\u2014\\u2212]';
+                const rawNoLeadingWs = raw.replace(/^\s+/, '');
+                if (new RegExp(`^${hyphenChars}\\s+`).test(rawNoLeadingWs)) {
+                  const hyphenContent = rawNoLeadingWs.replace(new RegExp(`^${hyphenChars}\\s+`), '');
+                  return (
+                    <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
+                      <span className="mt-1 text-gray-900">-</span>
+                      <div className="flex-1">
+                        {renderInlineWithBlank(hyphenContent)}
+                      </div>
+                    </div>
+                  );
+                }
+                const rawNoHiddenBullet = raw.replace(new RegExp(`^\\s*${hiddenBulletChars}+\\s*`), '');
+                let trimmed = rawNoHiddenBullet.trim()
                   .replace(/\u00e2\u20ac\u00a2/g, '\u2022')
                   .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u00c2\u00a2/g, '\u2022')
                   .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201c/g, '\u2013')
                   .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201d/g, '\u2014');
                 // If a hidden bullet was pasted before a hyphen, normalize to just a hyphen.
-                trimmed = trimmed.replace(/^[\u2022*]\s*[-\u2013\u2014]\s+/, '- ');
+                trimmed = trimmed.replace(new RegExp(`^${hiddenBulletChars}+\\s*[-\\u2013\\u2014]\\s+`), '- ');
                 if (!trimmed) {
                   return <div key={`sp-${idx}`} className="h-2" />;
                 }
@@ -195,9 +210,9 @@ export default function Completion({
                 const leadingSpaces = raw.length - raw.replace(/^\s+/, '').length;
                 const indentLevel = Math.min(Math.floor(leadingSpaces / 2), 3);
 
-                const strippedNoDots = trimmed.replace(/^[\u2022*]+\s*/, '');
-                if (/^[-\u2013\u2014]\s+/.test(strippedNoDots)) {
-                  const hyphenContent = strippedNoDots.replace(/^[-\u2013\u2014]\s+/, '');
+                const strippedNoDots = trimmed.replace(new RegExp(`^${hiddenBulletChars}+\\s*`), '');
+                if (new RegExp(`^${hyphenChars}\\s+`).test(strippedNoDots)) {
+                  const hyphenContent = strippedNoDots.replace(new RegExp(`^${hyphenChars}\\s+`), '');
                   return (
                     <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
                       <span className="mt-1 text-gray-900">-</span>
@@ -216,6 +231,11 @@ export default function Completion({
                 let cleanContentText = contentText;
 
                 if (bulletSymbol) {
+                  // If a dot bullet is present but content starts with a hyphen-like, prefer the hyphen.
+                  if (new RegExp(`^${hyphenChars}\\s+`).test(cleanContentText)) {
+                    cleanContentText = cleanContentText.replace(new RegExp(`^${hyphenChars}\\s+`), '');
+                    bulletSymbol = '-';
+                  }
                   return (
                     <div key={`ln-${idx}`} className="flex items-start gap-2" style={{ marginLeft: `${indentLevel * 16}px` }}>
                       <span className="mt-1 text-gray-900">{bulletSymbol}</span>
@@ -285,10 +305,17 @@ export default function Completion({
         );
 
         if (isListMode) {
+          const trimmedText = data.context.trim()
+            .replace(/\u00e2\u20ac\u00a2/g, '\u2022')
+            .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u00c2\u00a2/g, '\u2022')
+            .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201c/g, '\u2013')
+            .replace(/\u00c3\u00a2\u00e2\u201a\u00ac\u201d/g, '\u2014');
+          const bulletMatch = trimmedText.match(/^([\-*\u2022\u2013\u2014])\s+/);
+          const bulletSymbol = bulletMatch?.[1] || '•';
           return (
             <div className="text-base text-gray-900 leading-relaxed flex items-start gap-3">
               {/* Bullet point for notes */}
-              <div className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+              <div className="mt-1.5 text-gray-700 w-3 text-center">{bulletSymbol}</div>
               {content}
             </div>
           );
