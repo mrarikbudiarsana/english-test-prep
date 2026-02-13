@@ -124,7 +124,7 @@ export default function AdminEditTestPage() {
     }
     setDeletingSectionId(sectionId);
     try {
-      await api.delete(`/admin/tests/${testId}/sections/${sectionId}`);
+      await api.delete(`/admin/sections/${sectionId}`);
       setSections((prev) => prev.filter((s) => s.id !== sectionId));
     } catch (err: any) {
       alert(err.response?.data?.error || 'Failed to delete section');
