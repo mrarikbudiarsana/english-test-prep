@@ -5,6 +5,7 @@ import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import AudioUploader from './AudioUploader';
 import MCQEditor from './QuestionTypeEditors/MCQEditor';
 import TFNGEditor from './QuestionTypeEditors/TFNGEditor';
 import CompletionEditor from './QuestionTypeEditors/CompletionEditor';
@@ -24,6 +25,7 @@ interface QuestionFormData {
   questionNumber: number;
   questionType: QuestionType;
   questionText: string;
+  audioUrl?: string | null;
   questionData: QuestionData;
   correctAnswer: any;
   points: number;
@@ -146,6 +148,7 @@ export default function QuestionEditor({
     initialData?.questionType || 'multiple_choice'
   );
   const [questionText, setQuestionText] = useState(initialData?.questionText || '');
+  const [audioUrl, setAudioUrl] = useState<string | null>(initialData?.audioUrl || null);
   const [questionData, setQuestionData] = useState<QuestionData>(
     initialData?.questionData || getDefaultQuestionData('multiple_choice')
   );
@@ -206,6 +209,7 @@ export default function QuestionEditor({
         questionNumber,
         questionType,
         questionText: questionText.trim(),
+        audioUrl,
         questionData,
         correctAnswer,
         points,
@@ -290,6 +294,16 @@ export default function QuestionEditor({
           value={points}
           onChange={(e) => setPoints(parseFloat(e.target.value) || 0)}
           error={errors.points}
+        />
+      </div>
+
+      {/* Audio Uploader (Optional) */}
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+        <h4 className="text-sm font-semibold text-gray-700">Question Audio (Optional)</h4>
+        <p className="text-xs text-gray-500">Upload a specific audio clip for this question (e.g., TOEFL Part A conversations).</p>
+        <AudioUploader
+          onUpload={(url) => setAudioUrl(url)}
+          currentUrl={audioUrl}
         />
       </div>
 

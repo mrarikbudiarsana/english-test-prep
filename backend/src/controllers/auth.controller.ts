@@ -56,3 +56,21 @@ export async function updateProfile(
     next(error);
   }
 }
+
+export async function updateExamPreference(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { preferredExamType } = req.body;
+    if (!preferredExamType) {
+      res.status(400).json({ error: 'preferredExamType is required' });
+      return;
+    }
+    const updated = await authService.updateExamPreference(req.user!.id, preferredExamType);
+    res.json({ data: updated });
+  } catch (error) {
+    next(error);
+  }
+}

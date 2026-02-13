@@ -69,3 +69,30 @@ export async function updateProfile(
 
   return updated;
 }
+
+/**
+ * Valid exam types for preference selection.
+ */
+const VALID_EXAM_TYPES = ['ielts', 'toefl_ibt', 'toefl_itp', 'pte'];
+
+/**
+ * Update a user's preferred exam type.
+ */
+export async function updateExamPreference(
+  id: string,
+  preferredExamType: string,
+) {
+  // Validate exam type
+  if (!VALID_EXAM_TYPES.includes(preferredExamType)) {
+    throw new Error(`Invalid exam type. Must be one of: ${VALID_EXAM_TYPES.join(', ')}`);
+  }
+
+  // Verify the user exists first
+  const existing = await userModel.findById(id);
+  if (!existing) {
+    throw new NotFoundError('User not found');
+  }
+
+  const updated = await userModel.update(id, { preferredExamType });
+  return updated;
+}

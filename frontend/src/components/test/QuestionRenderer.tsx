@@ -209,6 +209,11 @@ export default function QuestionRenderer({
             })}
           </div>
           <div className="flex-1">
+            {question.audioUrl && (
+              <div className="mb-3">
+                <audio controls src={question.audioUrl} className="w-full max-w-md h-8" preload="metadata" />
+              </div>
+            )}
             {!isRedundantHeader && (
               <div className="mb-2">
                 <p className="text-base text-black leading-relaxed not-italic font-normal">

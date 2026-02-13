@@ -12,6 +12,7 @@ const fieldMap: Record<string, string> = {
   role: 'role',
   isActive: 'is_active',
   freeTestsRemaining: 'free_tests_remaining',
+  preferredExamType: 'preferred_exam_type',
 };
 
 // ---------- queries ----------
@@ -26,6 +27,7 @@ export async function findById(id: string) {
             role,
             is_active     AS "isActive",
             free_tests_remaining AS "freeTestsRemaining",
+            preferred_exam_type AS "preferredExamType",
             created_at    AS "createdAt",
             updated_at    AS "updatedAt"
      FROM users
@@ -45,6 +47,7 @@ export async function findByFirebaseUid(firebaseUid: string) {
             role,
             is_active     AS "isActive",
             free_tests_remaining AS "freeTestsRemaining",
+            preferred_exam_type AS "preferredExamType",
             created_at    AS "createdAt",
             updated_at    AS "updatedAt"
      FROM users
@@ -64,6 +67,7 @@ export async function findByEmail(email: string) {
             role,
             is_active     AS "isActive",
             free_tests_remaining AS "freeTestsRemaining",
+            preferred_exam_type AS "preferredExamType",
             created_at    AS "createdAt",
             updated_at    AS "updatedAt"
      FROM users
@@ -90,6 +94,7 @@ export async function create(data: {
                role,
                is_active     AS "isActive",
                free_tests_remaining AS "freeTestsRemaining",
+               preferred_exam_type AS "preferredExamType",
                created_at    AS "createdAt",
                updated_at    AS "updatedAt"`,
     [data.firebaseUid, data.email, data.displayName ?? null, data.photoUrl ?? null],
@@ -105,6 +110,7 @@ export async function update(
     role: string;
     isActive: boolean;
     freeTestsRemaining: number;
+    preferredExamType: string;
   }>,
 ) {
   const entries = Object.entries(data).filter(([, v]) => v !== undefined);
@@ -139,6 +145,7 @@ export async function update(
                role,
                is_active     AS "isActive",
                free_tests_remaining AS "freeTestsRemaining",
+               preferred_exam_type AS "preferredExamType",
                created_at    AS "createdAt",
                updated_at    AS "updatedAt"`,
     values,
@@ -160,6 +167,7 @@ export async function decrementFreeTests(id: string) {
                role,
                is_active     AS "isActive",
                free_tests_remaining AS "freeTestsRemaining",
+               preferred_exam_type AS "preferredExamType",
                created_at    AS "createdAt",
                updated_at    AS "updatedAt"`,
     [id],
@@ -177,6 +185,7 @@ export async function findAll(offset: number = 0, limit: number = 20) {
             role,
             is_active     AS "isActive",
             free_tests_remaining AS "freeTestsRemaining",
+            preferred_exam_type AS "preferredExamType",
             created_at    AS "createdAt",
             updated_at    AS "updatedAt"
      FROM users

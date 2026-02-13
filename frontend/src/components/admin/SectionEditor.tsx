@@ -217,17 +217,19 @@ export default function SectionEditor({ testId, testType, existingSections = [],
       {sectionType === 'listening' && (
         <div className="p-4 bg-purple-50 rounded-lg border border-purple-200 space-y-4">
           <h4 className="text-sm font-semibold text-purple-800">Listening Section Settings</h4>
-          <Select
-            label="Part Number"
-            value={String(partNumber)}
-            onChange={(e) => setPartNumber(parseInt(e.target.value))}
-            options={[
-              { value: '1', label: 'Part 1' },
-              { value: '2', label: 'Part 2' },
-              { value: '3', label: 'Part 3' },
-              { value: '4', label: 'Part 4' },
-            ]}
-          />
+          {['toefl_itp', 'toefl_ibt'].includes(testType) && (
+            <Select
+              label="Part Number"
+              value={String(partNumber)}
+              onChange={(e) => setPartNumber(parseInt(e.target.value))}
+              options={[
+                { value: '1', label: 'Part 1' },
+                { value: '2', label: 'Part 2' },
+                { value: '3', label: 'Part 3' },
+                { value: '4', label: 'Part 4' },
+              ]}
+            />
+          )}
           <AudioUploader
             onUpload={(url) => setAudioUrl(url || null)}
             currentUrl={audioUrl}
