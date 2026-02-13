@@ -8,6 +8,9 @@ import routes from './routes';
 
 const app = express();
 
+// Trust Vercel/proxy X-Forwarded-For headers for rate limiting
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
   crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },

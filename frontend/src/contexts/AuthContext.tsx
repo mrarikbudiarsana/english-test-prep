@@ -6,7 +6,8 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   sendPasswordResetEmail,
   updateProfile,
@@ -38,6 +39,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Handle Google redirect result on page load
+    getRedirectResult(auth).then(async (result) => {
+      if (result?.user) {
+        try {
+          await api.post('/auth/login', { firebaseUid: result.user.uid });
+        } catch {
+          await api.post('/auth/register', {
+            firebaseUid: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            photoUrl: result.user.photoURL,
+          });
+        }
+      }
+    }).catch(() => {});
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
       if (fbUser) {
@@ -76,22 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginWithGoogle = async () => {
-    const credential = await signInWithPopup(auth, googleProvider);
-    try {
-      const response = await api.post('/auth/login', {
-        firebaseUid: credential.user.uid,
-      });
-      setUser(response.data);
-    } catch {
-      // User doesn't exist yet, register them
-      const response = await api.post('/auth/register', {
-        firebaseUid: credential.user.uid,
-        email: credential.user.email,
-        displayName: credential.user.displayName,
-        photoUrl: credential.user.photoURL,
-      });
-      setUser(response.data);
-    }
+    await signInWithRedirect(auth, googleProvider);
+    // Page will redirect to Google and come back — result handled in useEffect above
   };
 
   const logout = async () => {

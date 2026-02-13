@@ -2,6 +2,8 @@ import admin from 'firebase-admin';
 import { env } from './env';
 import path from 'path';
 
+let initialized = false;
+
 try {
   let serviceAccount;
 
@@ -19,12 +21,14 @@ try {
     credential: admin.credential.cert(serviceAccount),
     storageBucket: env.firebaseStorageBucket,
   });
+
+  initialized = true;
 } catch (error) {
   console.error('Firebase Admin init error:', error);
   console.warn('Firebase Admin SDK initialization skipped.');
 }
 
 export const firebaseAdmin = admin;
-export const firebaseAuth = admin.auth();
-export const firebaseStorage = admin.storage();
-export const bucket = admin.storage().bucket();
+export const firebaseAuth = initialized ? admin.auth() : null as any;
+export const firebaseStorage = initialized ? admin.storage() : null as any;
+export const bucket = initialized ? admin.storage().bucket() : null as any;
