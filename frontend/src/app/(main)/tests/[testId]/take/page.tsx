@@ -440,24 +440,49 @@ function TestTakingContent() {
   const currentSectionPart = currentSectionParts[activePartIndex] || currentSectionParts[0];
 
   const resolvedPartNumbers = useMemo(() => {
-    return currentSectionParts.map((part, idx) => {
+    const resolved: number[] = [];
+
+    for (let idx = 0; idx < currentSectionParts.length; idx++) {
+      const part = currentSectionParts[idx];
+      const source = `${part?.title || ''} ${part?.instructions || ''}`.toLowerCase();
+      const hasExplicitMarker = /\bpart\s*[abc]\b/.test(source);
+
       // TOEFL ITP Listening: infer from title/instructions first to avoid bad legacy part_number data
       if (testType === 'toefl_itp' && state.currentSectionType === 'listening') {
-        const source = `${part?.title || ''} ${part?.instructions || ''}`.toLowerCase();
-        if (/\bpart\s*a\b/.test(source)) return 1;
-        if (/\bpart\s*b\b/.test(source)) return 2;
-        if (/\bpart\s*c\b/.test(source)) return 3;
+        if (/\bpart\s*a\b/.test(source)) {
+          resolved.push(1);
+          continue;
+        }
+        if (/\bpart\s*b\b/.test(source)) {
+          resolved.push(2);
+          continue;
+        }
+        if (/\bpart\s*c\b/.test(source)) {
+          resolved.push(3);
+          continue;
+        }
+
+        if (idx > 0) {
+          const prevResolved = resolved[idx - 1];
+          const rawPart = part?.partNumber;
+
+          // If marker text is absent, keep continuity with previous recording.
+          // This prevents Part B recording 2 from being treated as Part C due bad part_number.
+          if (rawPart == null || (!hasExplicitMarker && rawPart >= prevResolved)) {
+            resolved.push(prevResolved);
+            continue;
+          }
+        }
       }
 
-      if (part?.partNumber != null) return part.partNumber;
-
-      // If missing, keep same logical part as previous for listening recordings
-      if (testType === 'toefl_itp' && state.currentSectionType === 'listening' && idx > 0) {
-        return currentSectionParts[idx - 1]?.partNumber ?? idx;
+      if (part?.partNumber != null) {
+        resolved.push(part.partNumber);
+      } else {
+        resolved.push(idx + 1);
       }
+    }
 
-      return idx + 1;
-    });
+    return resolved;
   }, [currentSectionParts, testType, state.currentSectionType]);
 
   const getResolvedPartNumber = useCallback((index: number) => {
@@ -503,6 +528,14 @@ function TestTakingContent() {
     }
     return offset;
   }, [questions, currentSectionParts, activePartIndex]);
+
+  const footerPartLabels = useMemo(() => {
+    const labels: Record<string, string> = {};
+    currentSectionParts.forEach((part, idx) => {
+      labels[part.id] = `Part ${getResolvedPartNumber(idx)}`;
+    });
+    return labels;
+  }, [currentSectionParts, getResolvedPartNumber]);
 
   const unansweredCount = (() => {
     const sectionType = state.currentSectionType;
@@ -1382,6 +1415,7 @@ function TestTakingContent() {
       <TestFooter
         questions={questions}
         sections={currentSectionParts}
+        sectionPartLabels={footerPartLabels}
         currentQuestionIndex={currentQuestionIndex}
         answeredQuestions={state.answeredQuestions}
         flaggedQuestions={state.flaggedQuestions}

@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 interface TestFooterProps {
     questions: Question[];
     sections: Section[];
+    sectionPartLabels?: Record<string, string>;
     currentQuestionIndex: number;
     answeredQuestions: Set<string>;
     flaggedQuestions: Set<string>;
@@ -21,6 +22,7 @@ interface TestFooterProps {
 export default function TestFooter({
     questions,
     sections,
+    sectionPartLabels,
     currentQuestionIndex,
     answeredQuestions,
     flaggedQuestions,
@@ -37,7 +39,7 @@ export default function TestFooter({
     const groupedQuestions = sections.map((section, sectionIdx) => ({
         section,
         questions: questions.filter(q => q.sectionId === section.id),
-        partLabel: `Part ${sectionIdx + 1}`
+        partLabel: sectionPartLabels?.[section.id] || `Part ${sectionIdx + 1}`
     })).filter(group => group.questions.length > 0);
 
     // If no sections (or single section), fall back to simple list
