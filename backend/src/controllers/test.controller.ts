@@ -10,8 +10,10 @@ export async function getTests(
   try {
     const offset = parseInt(req.query.offset as string) || 0;
     const limit = parseInt(req.query.limit as string) || 20;
-    const result = await testService.getPublishedTests(offset, limit);
-    console.log('📋 getTests result:', JSON.stringify(result, null, 2));
+    // Support comma-separated test types (e.g., ?testTypes=academic,general_training)
+    const testTypesParam = req.query.testTypes as string | undefined;
+    const testTypes = testTypesParam ? testTypesParam.split(',') : undefined;
+    const result = await testService.getPublishedTests(offset, limit, testTypes);
     res.json({ data: result, offset, limit });
   } catch (error) {
     next(error);

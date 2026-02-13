@@ -19,8 +19,8 @@ export async function createPayment(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { planType } = req.body;
-    const payment = await paymentService.createPayment(req.user!.id, planType);
+    const { planType, examType } = req.body;
+    const payment = await paymentService.createPayment(req.user!.id, planType, examType);
     res.status(201).json({ data: payment });
   } catch (error) {
     next(error);

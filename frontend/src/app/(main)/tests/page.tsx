@@ -11,10 +11,9 @@ import {
   HiLockOpen,
   HiSparkles,
   HiSearch,
-  HiFilter,
-  HiChevronRight,
   HiBookOpen,
 } from 'react-icons/hi';
+import { getExamConfig } from '@/config/examConfig';
 
 export default function TestCatalogPage() {
   const { user } = useAuth();
@@ -22,9 +21,23 @@ export default function TestCatalogPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Filter states
+  // Get user's preferred exam type to set default filter
+  const examType = user?.preferredExamType;
+  const examConfig = examType ? getExamConfig(examType) : null;
+
+  // Filter states - default to user's exam preference if available
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'academic' | 'general_training' | 'toefl_ibt' | 'toefl_itp' | 'pte_academic'>('all');
+
+  // Update filter whenever the user switches exam from the navbar
+  useEffect(() => {
+    if (!examConfig) return;
+    if (examType === 'ielts') {
+      setTypeFilter('academic');
+    } else {
+      setTypeFilter(examConfig.testTypes[0] as any);
+    }
+  }, [examType]);
 
   useEffect(() => {
     async function fetchTests() {
@@ -115,40 +128,16 @@ export default function TestCatalogPage() {
         </div>
       )}
 
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search for tests..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-[#e8ecef] focus:border-[#e4002b]/50 focus:ring-2 focus:ring-[#ffe5ea] focus:outline-none transition-all bg-white text-[#2c3e50] placeholder:text-[#5a6c7d]/50"
-          />
-        </div>
-        <div className="relative">
-          <HiFilter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as any)}
-            className="appearance-none w-full md:w-56 pl-12 pr-10 py-3.5 rounded-xl border border-[#e8ecef] bg-white focus:border-[#e4002b]/50 focus:ring-2 focus:ring-[#ffe5ea] focus:outline-none transition-all cursor-pointer text-[#2c3e50] font-medium"
-          >
-            <option value="all">All Types</option>
-            <optgroup label="IELTS">
-              <option value="academic">IELTS Academic</option>
-              <option value="general_training">IELTS General Training</option>
-            </optgroup>
-            <optgroup label="TOEFL">
-              <option value="toefl_ibt">TOEFL iBT</option>
-              <option value="toefl_itp">TOEFL ITP</option>
-            </optgroup>
-            <optgroup label="PTE">
-              <option value="pte_academic">PTE Academic</option>
-            </optgroup>
-          </select>
-          <HiChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none rotate-90" />
-        </div>
+      {/* Search Bar */}
+      <div className="relative">
+        <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Search for tests..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-[#e8ecef] focus:border-[#e4002b]/50 focus:ring-2 focus:ring-[#ffe5ea] focus:outline-none transition-all bg-white text-[#2c3e50] placeholder:text-[#5a6c7d]/50"
+        />
       </div>
 
       {error && (
@@ -166,10 +155,10 @@ export default function TestCatalogPage() {
           <h3 className="text-2xl font-bold text-slate-800 mb-2">No tests found</h3>
           <p className="text-slate-500 mb-6">Try adjusting your filters or search query.</p>
           <button
-            onClick={() => { setSearchQuery(''); setTypeFilter('all'); }}
+            onClick={() => setSearchQuery('')}
             className="px-6 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all"
           >
-            Clear All Filters
+            Clear Search
           </button>
         </div>
       ) : (
@@ -217,44 +206,40 @@ export default function TestCatalogPage() {
 
 function TestCard({ test }: { test: Test }) {
   // Determine gradient based on test type
-  const gradients: Record<string, { bg: string; light: string; border: string; text: string; label: string; abbr: string }> = {
+  // Colors aligned with examConfig brand colors
+  const gradients: Record<string, { primary: string; secondary: string; border: string; label: string; abbr: string }> = {
     academic: {
-      bg: 'from-[#e4002b] to-[#c40025]',
-      light: 'from-[#ffe5ea] to-[#fff0f2]',
-      border: 'border-[#e4002b]/20',
-      text: 'text-[#e4002b]',
+      primary: '#e4002b',
+      secondary: '#fff0f2',
+      border: '#ffc4ce',
       label: 'IELTS Academic',
       abbr: 'A',
     },
     general_training: {
-      bg: 'from-[#3b82f6] to-[#2563eb]',
-      light: 'from-[#e8f4f8] to-[#f0f9ff]',
-      border: 'border-[#3b82f6]/20',
-      text: 'text-[#2563eb]',
+      primary: '#e4002b',
+      secondary: '#fff0f2',
+      border: '#ffc4ce',
       label: 'IELTS General',
       abbr: 'G',
     },
     toefl_ibt: {
-      bg: 'from-indigo-600 to-indigo-800',
-      light: 'from-indigo-50 to-indigo-100/50',
-      border: 'border-indigo-200',
-      text: 'text-indigo-700',
+      primary: '#7B6FD4',
+      secondary: '#f5f3fe',
+      border: '#c4baf5',
       label: 'TOEFL iBT',
       abbr: 'T',
     },
     toefl_itp: {
-      bg: 'from-rose-500 to-rose-700',
-      light: 'from-rose-50 to-rose-100/50',
-      border: 'border-rose-200',
-      text: 'text-rose-700',
+      primary: '#5848B8',
+      secondary: '#f0eefc',
+      border: '#b3acec',
       label: 'TOEFL ITP',
       abbr: 'T',
     },
     pte_academic: {
-      bg: 'from-orange-500 to-orange-700',
-      light: 'from-orange-50 to-orange-100/50',
-      border: 'border-orange-200',
-      text: 'text-orange-700',
+      primary: '#0097A7',
+      secondary: '#e6fafb',
+      border: '#80dfe5',
       label: 'PTE Academic',
       abbr: 'P',
     },
@@ -265,15 +250,21 @@ function TestCard({ test }: { test: Test }) {
   return (
     <Link
       href={`/tests/${test.id}`}
-      className="group relative bg-white rounded-2xl border-2 border-slate-200 hover:border-slate-300 transition-all duration-300 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 flex flex-col"
+      className="group relative bg-white rounded-2xl border-2 transition-all duration-300 overflow-hidden hover:shadow-xl flex flex-col"
+      style={{ borderColor: theme.border }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = theme.primary; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = theme.border; }}
     >
       {/* Gradient Header */}
-      <div className={`h-2 bg-gradient-to-r ${theme.bg}`} />
+      <div className="h-2" style={{ backgroundColor: theme.primary }} />
 
       <div className="p-6 flex flex-col flex-1">
         {/* Top Section */}
         <div className="flex items-start justify-between mb-4">
-          <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${theme.bg} flex items-center justify-center text-white text-xl font-bold shadow-lg group-hover:scale-110 transition-transform`}>
+          <div
+            className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg group-hover:scale-110 transition-transform"
+            style={{ backgroundColor: theme.primary }}
+          >
             {theme.abbr}
           </div>
           {test.isFree ? (
@@ -289,7 +280,7 @@ function TestCard({ test }: { test: Test }) {
         </div>
 
         {/* Title */}
-        <h3 className={`text-lg font-bold text-[#2c3e50] group-hover:${theme.text} transition-colors mb-2 line-clamp-2 min-h-[3.5rem]`}>
+        <h3 className="text-lg font-bold text-[#2c3e50] transition-colors mb-2 line-clamp-2 min-h-[3.5rem]">
           {test.title}
         </h3>
 
@@ -301,19 +292,22 @@ function TestCard({ test }: { test: Test }) {
         )}
 
         {/* Footer */}
-        <div className={`pt-4 mt-auto border-t ${theme.border} flex items-center justify-between`}>
+        <div className="pt-4 mt-auto border-t flex items-center justify-between" style={{ borderColor: theme.border }}>
           <div className="flex items-center gap-2 text-[#5a6c7d]">
             <HiClock className="w-4 h-4" />
             <span className="text-sm font-semibold">{test.durationMinutes} min</span>
           </div>
-          <span className={`text-xs font-bold uppercase tracking-wider ${theme.text}`}>
+          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: theme.primary }}>
             {theme.label}
           </span>
         </div>
       </div>
 
-      {/* Hover Effect - Subtle Gradient Overlay */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${theme.light} opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none -z-10`} />
+      {/* Hover Effect - Subtle background tint */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none -z-10"
+        style={{ backgroundColor: theme.secondary }}
+      />
     </Link>
   );
 }

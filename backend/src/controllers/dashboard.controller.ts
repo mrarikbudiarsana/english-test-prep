@@ -7,7 +7,8 @@ export async function getStats(
   next: NextFunction
 ): Promise<void> {
   try {
-    const stats = await dashboardService.getStats(req.user!.id);
+    const examType = req.query.examType as string | undefined;
+    const stats = await dashboardService.getStats(req.user!.id, examType);
     res.json({ data: stats });
   } catch (error) {
     next(error);

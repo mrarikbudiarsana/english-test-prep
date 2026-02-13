@@ -64,6 +64,7 @@ export async function activateSubscription(orderId: string) {
   const subscription = await subscriptionModel.create({
     userId: payment.userId,
     planType: planEntry.type,
+    examType: (payment as any).examType ?? 'ielts',
     startsAt: now,
     expiresAt,
   });

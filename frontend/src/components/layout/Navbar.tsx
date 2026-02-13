@@ -3,12 +3,34 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { HiMenu, HiX, HiUser, HiLogout, HiCog } from 'react-icons/hi';
+import { HiMenu, HiX, HiUser, HiLogout, HiCog, HiSwitchHorizontal } from 'react-icons/hi';
+import { examConfigs, getAllExamTypes } from '@/config/examConfig';
+import { ExamType } from '@/types/user';
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateExamPreference } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [examMenuOpen, setExamMenuOpen] = useState(false);
+  const [isChangingExam, setIsChangingExam] = useState(false);
+
+  const currentExam = user?.preferredExamType ? examConfigs[user.preferredExamType] : null;
+
+  const handleExamChange = async (examType: ExamType) => {
+    if (examType === user?.preferredExamType) {
+      setExamMenuOpen(false);
+      return;
+    }
+    setIsChangingExam(true);
+    try {
+      await updateExamPreference(examType);
+      setExamMenuOpen(false);
+    } catch (error) {
+      console.error('Failed to change exam:', error);
+    } finally {
+      setIsChangingExam(false);
+    }
+  };
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-[#e8ecef] sticky top-0 z-50 shadow-sm">
@@ -29,6 +51,80 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-1">
             {user ? (
               <>
+                {/* Exam Switcher */}
+                {currentExam && (
+                  <div className="relative mr-2">
+                    <button
+                      onClick={() => setExamMenuOpen(!examMenuOpen)}
+                      disabled={isChangingExam}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all border ${
+                        examMenuOpen
+                          ? 'bg-gray-100 border-gray-200'
+                          : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div
+                        className={`w-7 h-7 rounded-lg bg-gradient-to-br ${currentExam.colors.gradient} flex items-center justify-center text-white text-xs font-bold`}
+                      >
+                        {currentExam.shortName.charAt(0)}
+                      </div>
+                      <span className="font-semibold text-sm text-gray-700">
+                        {currentExam.shortName}
+                      </span>
+                      <HiSwitchHorizontal className="w-4 h-4 text-gray-400" />
+                    </button>
+
+                    {examMenuOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setExamMenuOpen(false)}
+                        />
+                        <div className="absolute left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-200 py-2 z-20">
+                          <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            Switch Exam
+                          </p>
+                          {getAllExamTypes().map((examType) => {
+                            const config = examConfigs[examType];
+                            const isActive = examType === user.preferredExamType;
+                            return (
+                              <button
+                                key={examType}
+                                onClick={() => handleExamChange(examType)}
+                                disabled={isChangingExam}
+                                className={`flex items-center gap-3 w-full px-4 py-2.5 transition-all ${
+                                  isActive
+                                    ? 'bg-gray-100'
+                                    : 'hover:bg-gray-50'
+                                }`}
+                              >
+                                <div
+                                  className={`w-8 h-8 rounded-lg bg-gradient-to-br ${config.colors.gradient} flex items-center justify-center text-white text-sm font-bold`}
+                                >
+                                  {config.shortName.charAt(0)}
+                                </div>
+                                <div className="text-left">
+                                  <p className="font-semibold text-sm text-gray-800">
+                                    {config.name}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {config.scoreLabel}: {config.scoreRange.min}-{config.scoreRange.max}
+                                  </p>
+                                </div>
+                                {isActive && (
+                                  <span className="ml-auto text-emerald-500 text-xs font-semibold">
+                                    Active
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <Link
                   href="/dashboard"
                   className="px-4 py-2 text-[#5a6c7d] hover:text-[#e4002b] hover:bg-[#ffe5ea]/30 rounded-xl font-semibold transition-all"
@@ -150,6 +246,26 @@ export default function Navbar() {
           <div className="px-4 py-3 space-y-1">
             {user ? (
               <>
+                {/* Mobile Exam Switcher */}
+                {currentExam && (
+                  <Link
+                    href="/select-exam"
+                    className="flex items-center gap-3 px-4 py-3 mb-2 bg-gray-50 rounded-xl border border-gray-200"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-xl bg-gradient-to-br ${currentExam.colors.gradient} flex items-center justify-center text-white font-bold`}
+                    >
+                      {currentExam.shortName.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800">{currentExam.name}</p>
+                      <p className="text-xs text-gray-500">Tap to change exam</p>
+                    </div>
+                    <HiSwitchHorizontal className="w-5 h-5 text-gray-400" />
+                  </Link>
+                )}
+
                 <Link
                   href="/dashboard"
                   className="block px-4 py-2.5 text-[#2c3e50] hover:bg-[#ffe5ea]/30 hover:text-[#e4002b] rounded-xl font-semibold transition-all"

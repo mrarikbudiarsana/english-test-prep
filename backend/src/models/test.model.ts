@@ -37,7 +37,7 @@ export async function findById(id: string) {
 }
 
 export async function findAll(
-  filters: { isPublished?: boolean; testType?: string } = {},
+  filters: { isPublished?: boolean; testType?: string; testTypes?: string[] } = {},
   offset: number = 0,
   limit: number = 20,
 ) {
@@ -45,7 +45,13 @@ export async function findAll(
   const values: any[] = [];
   let paramIndex = 1;
 
-  if (filters.testType !== undefined) {
+  // Support filtering by multiple test types (array)
+  if (filters.testTypes !== undefined && filters.testTypes.length > 0) {
+    conditions.push(`test_type = ANY($${paramIndex}::text[])`);
+    values.push(filters.testTypes);
+    paramIndex++;
+  } else if (filters.testType !== undefined) {
+    // Support single test type filter (backwards compatible)
     conditions.push(`test_type = $${paramIndex}`);
     values.push(filters.testType);
     paramIndex++;

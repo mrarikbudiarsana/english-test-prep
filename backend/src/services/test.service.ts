@@ -4,9 +4,16 @@ import { NotFoundError } from '../middleware/errorHandler';
 
 /**
  * Get all published tests with pagination.
+ * @param offset - Pagination offset
+ * @param limit - Pagination limit
+ * @param testTypes - Optional array of test types to filter by
  */
-export async function getPublishedTests(offset: number = 0, limit: number = 20) {
-  return testModel.findAll({ isPublished: true }, offset, limit);
+export async function getPublishedTests(
+  offset: number = 0,
+  limit: number = 20,
+  testTypes?: string[],
+) {
+  return testModel.findAll({ isPublished: true, testTypes }, offset, limit);
 }
 
 /**

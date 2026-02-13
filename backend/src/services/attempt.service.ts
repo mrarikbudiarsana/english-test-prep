@@ -7,11 +7,20 @@ import * as aiScoringService from './ai-scoring.service';
 import { NotFoundError, ForbiddenError, ValidationError } from '../middleware/errorHandler';
 import { AttemptMode, SectionType } from '../types/test.types';
 
+/** Map a DB test_type to its exam type for subscription checks. */
+function testTypeToExamType(testType: string): string {
+  if (testType === 'academic' || testType === 'general_training') return 'ielts';
+  if (testType === 'toefl_ibt') return 'toefl_ibt';
+  if (testType === 'toefl_itp') return 'toefl_itp';
+  if (testType === 'pte_academic') return 'pte';
+  return 'ielts';
+}
+
 /**
  * Check whether a user has access to take a test.
  * Access is granted if:
  *  - The test is free, OR
- *  - The user has an active subscription, OR
+ *  - The user has an active subscription for the test's exam type, OR
  *  - The user has free tests remaining
  */
 export async function checkTestAccess(userId: string, testId: string): Promise<boolean> {
@@ -20,8 +29,9 @@ export async function checkTestAccess(userId: string, testId: string): Promise<b
   if (!test) return false;
   if (test.isFree) return true;
 
-  // Check for an active subscription
-  const activeSub = await subscriptionModel.findActiveByUserId(userId);
+  // Check for an active subscription covering this exam type
+  const examType = testTypeToExamType(test.testType);
+  const activeSub = await subscriptionModel.findActiveByUserIdAndExam(userId, examType);
   if (activeSub) return true;
 
   // Check for remaining free tests
@@ -64,9 +74,10 @@ export async function startAttempt(
     );
   }
 
-  // If the test is not free and user has no active subscription, decrement free tests
+  // If the test is not free and user has no active subscription for this exam, decrement free tests
   if (!test.isFree) {
-    const activeSub = await subscriptionModel.findActiveByUserId(userId);
+    const examType = testTypeToExamType(test.testType);
+    const activeSub = await subscriptionModel.findActiveByUserIdAndExam(userId, examType);
     if (!activeSub) {
       const updated = await userModel.decrementFreeTests(userId);
       if (!updated) {

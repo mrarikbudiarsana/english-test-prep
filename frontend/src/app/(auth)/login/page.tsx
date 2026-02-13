@@ -13,9 +13,14 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Helper to determine redirect path based on user's exam preference
+  const getRedirectPath = (userData: typeof user) => {
+    return userData?.preferredExamType ? '/dashboard' : '/select-exam';
+  };
+
   // Redirect if already logged in
   React.useEffect(() => {
-    if (user) router.push('/dashboard');
+    if (user) router.push(getRedirectPath(user));
   }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,10 +29,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      router.push('/dashboard');
+      // The user state will be updated by login(), then useEffect will redirect
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
-    } finally {
       setLoading(false);
     }
   };
@@ -37,10 +41,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await loginWithGoogle();
-      router.push('/dashboard');
+      // The user state will be updated by loginWithGoogle(), then useEffect will redirect
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Google');
-    } finally {
       setLoading(false);
     }
   };

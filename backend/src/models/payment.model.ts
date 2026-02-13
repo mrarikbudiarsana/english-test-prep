@@ -11,6 +11,7 @@ const SELECT_COLUMNS = `
   snap_token             AS "snapToken",
   amount,
   currency,
+  exam_type              AS "examType",
   status,
   payment_type           AS "paymentType",
   midtrans_response      AS "midtransResponse",
@@ -73,10 +74,11 @@ export async function create(data: {
   snapToken?: string;
   amount: number;
   currency?: string;
+  examType?: string;
 }) {
   const result = await query(
-    `INSERT INTO payments (user_id, midtrans_order_id, snap_token, amount, currency)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO payments (user_id, midtrans_order_id, snap_token, amount, currency, exam_type)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.userId,
@@ -84,6 +86,7 @@ export async function create(data: {
       data.snapToken ?? null,
       data.amount,
       data.currency ?? 'IDR',
+      data.examType ?? 'ielts',
     ],
   );
   return result.rows[0];

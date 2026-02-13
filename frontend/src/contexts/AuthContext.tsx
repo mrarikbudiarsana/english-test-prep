@@ -14,7 +14,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 import api from '@/lib/api';
-import { User } from '@/types/user';
+import { User, ExamType } from '@/types/user';
 
 interface AuthContextType {
   firebaseUser: FirebaseUser | null;
@@ -27,6 +27,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   updateUserProfile: (displayName: string, photoUrl?: string) => Promise<void>;
   updateUserPassword: (password: string) => Promise<void>;
+  updateExamPreference: (examType: ExamType) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -116,6 +117,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateExamPreference = async (examType: ExamType) => {
+    const response = await api.put('/auth/me/exam-preference', { preferredExamType: examType });
+    setUser(response.data);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -129,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resetPassword,
         updateUserProfile,
         updateUserPassword,
+        updateExamPreference,
       }}
     >
       {children}

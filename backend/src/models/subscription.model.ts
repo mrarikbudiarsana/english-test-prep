@@ -6,6 +6,7 @@ const SELECT_COLUMNS = `
   id,
   user_id      AS "userId",
   plan_type    AS "planType",
+  exam_type    AS "examType",
   status,
   starts_at    AS "startsAt",
   expires_at   AS "expiresAt",
@@ -38,6 +39,24 @@ export async function findActiveByUserId(userId: string) {
   return result.rows[0] || null;
 }
 
+/**
+ * Find an active subscription for a user that covers a specific exam type.
+ */
+export async function findActiveByUserIdAndExam(userId: string, examType: string) {
+  const result = await query(
+    `SELECT ${SELECT_COLUMNS}
+     FROM subscriptions
+     WHERE user_id = $1
+       AND exam_type = $2
+       AND status = 'active'
+       AND expires_at > NOW()
+     ORDER BY expires_at DESC
+     LIMIT 1`,
+    [userId, examType],
+  );
+  return result.rows[0] || null;
+}
+
 export async function findByUserId(userId: string) {
   const result = await query(
     `SELECT ${SELECT_COLUMNS}
@@ -52,14 +71,15 @@ export async function findByUserId(userId: string) {
 export async function create(data: {
   userId: string;
   planType: string;
+  examType?: string;
   startsAt: string | Date;
   expiresAt: string | Date;
 }) {
   const result = await query(
-    `INSERT INTO subscriptions (user_id, plan_type, status, starts_at, expires_at)
-     VALUES ($1, $2, 'pending', $3, $4)
+    `INSERT INTO subscriptions (user_id, plan_type, exam_type, status, starts_at, expires_at)
+     VALUES ($1, $2, $3, 'pending', $4, $5)
      RETURNING ${SELECT_COLUMNS}`,
-    [data.userId, data.planType, data.startsAt, data.expiresAt],
+    [data.userId, data.planType, data.examType ?? 'ielts', data.startsAt, data.expiresAt],
   );
   return result.rows[0];
 }

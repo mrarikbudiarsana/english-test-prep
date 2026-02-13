@@ -242,7 +242,25 @@ export async function countCompletedByUserId(userId: string) {
   return parseInt(result.rows[0].count, 10);
 }
 
-export async function getStatsForUser(userId: string) {
+/**
+ * Map exam type preference to actual test types in DB.
+ * e.g., 'ielts' maps to ['academic', 'general_training']
+ */
+const EXAM_TYPE_MAP: Record<string, string[]> = {
+  ielts: ['academic', 'general_training'],
+  toefl_ibt: ['toefl_ibt'],
+  toefl_itp: ['toefl_itp'],
+  pte: ['pte_academic'],
+};
+
+export async function getStatsForUser(userId: string, examType?: string) {
+  // Build test type filter if examType is provided
+  const testTypes = examType ? EXAM_TYPE_MAP[examType] : null;
+  const testTypeFilter = testTypes
+    ? `AND t.test_type = ANY($2::text[])`
+    : '';
+  const queryParams = testTypes ? [userId, testTypes] : [userId];
+
   // Get completed attempts with test info
   const attemptsResult = await query(
     `SELECT
@@ -267,19 +285,33 @@ export async function getStatsForUser(userId: string) {
       a.speaking_feedback AS "speakingFeedback",
       a.created_at AS "createdAt",
       a.updated_at AS "updatedAt",
-      t.title AS "testTitle"
+      t.title AS "testTitle",
+      t.test_type AS "testType"
      FROM attempts a
      JOIN tests t ON a.test_id = t.id
      WHERE a.user_id = $1 AND a.status = 'completed'
+     ${testTypeFilter}
      ORDER BY a.completed_at DESC
      LIMIT 10`,
-    [userId],
+    queryParams,
   );
 
   const completedAttempts = attemptsResult.rows;
 
-  // Calculate total completed
-  const totalCompleted = await countCompletedByUserId(userId);
+  // Calculate total completed (with exam type filter if provided)
+  let totalCompleted: number;
+  if (testTypes) {
+    const countResult = await query(
+      `SELECT COUNT(*) FROM attempts a
+       JOIN tests t ON a.test_id = t.id
+       WHERE a.user_id = $1 AND a.status = 'completed'
+       AND t.test_type = ANY($2::text[])`,
+      [userId, testTypes],
+    );
+    totalCompleted = parseInt(countResult.rows[0].count, 10);
+  } else {
+    totalCompleted = await countCompletedByUserId(userId);
+  }
 
   // Calculate averages
   const validAttempts = completedAttempts.filter((a: any) => a.overallBand !== null);

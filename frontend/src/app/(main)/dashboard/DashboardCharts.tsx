@@ -14,13 +14,20 @@ import {
     Radar,
 } from 'recharts';
 import { sectionTypeLabel } from '@/lib/utils';
+import { ExamType } from '@/types/user';
+import { getExamConfig } from '@/config/examConfig';
 
 interface DashboardChartsProps {
     recentAttempts: any[];
     sectionAverages: Record<string, number | null>;
+    examType?: ExamType;
 }
 
-export function DashboardCharts({ recentAttempts, sectionAverages }: DashboardChartsProps) {
+export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'ielts' }: DashboardChartsProps) {
+    const examConfig = getExamConfig(examType);
+    const { scoreRange, scoreLabel, sections: examSections, theme } = examConfig;
+    const chartColor = theme.chartColor;
+
     // Prepare data for Progress Chart (reverse recentAttempts to show oldest to newest)
     const progressData = [...recentAttempts].reverse().slice(-10).map((attempt, index) => ({
         name: `Test ${index + 1}`,
@@ -29,12 +36,11 @@ export function DashboardCharts({ recentAttempts, sectionAverages }: DashboardCh
         title: attempt.testTitle,
     }));
 
-    // Prepare data for Skills Radar Chart
-    const sections = ['listening', 'reading', 'writing', 'speaking'];
-    const skillsData = sections.map((section) => ({
-        subject: sectionTypeLabel(section),
-        score: sectionAverages[section] || 0,
-        fullMark: 9,
+    // Prepare data for Skills Radar Chart based on exam sections
+    const skillsData = examSections.map((section) => ({
+        subject: section.label,
+        score: sectionAverages[section.key] || 0,
+        fullMark: scoreRange.max,
     }));
 
     return (
@@ -51,12 +57,12 @@ export function DashboardCharts({ recentAttempts, sectionAverages }: DashboardCh
                             <LineChart data={progressData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
                                 <defs>
                                     <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                                        <stop offset="0%" stopColor="#6366f1" />
-                                        <stop offset="100%" stopColor="#a855f7" />
+                                        <stop offset="0%" stopColor={chartColor} />
+                                        <stop offset="100%" stopColor={chartColor} />
                                     </linearGradient>
                                     <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.15} />
-                                        <stop offset="95%" stopColor="#a855f7" stopOpacity={0.01} />
+                                        <stop offset="0%" stopColor={chartColor} stopOpacity={0.15} />
+                                        <stop offset="95%" stopColor={chartColor} stopOpacity={0.01} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -67,8 +73,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages }: DashboardCh
                                     tickLine={false}
                                 />
                                 <YAxis
-                                    domain={[0, 9]}
-                                    ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
+                                    domain={[scoreRange.min, scoreRange.max]}
                                     tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
                                     axisLine={{ stroke: '#e2e8f0' }}
                                     tickLine={false}
@@ -82,15 +87,15 @@ export function DashboardCharts({ recentAttempts, sectionAverages }: DashboardCh
                                         padding: '12px'
                                     }}
                                     labelStyle={{ fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}
-                                    cursor={{ stroke: '#c7d2fe', strokeWidth: 2 }}
+                                    cursor={{ stroke: `${chartColor}40`, strokeWidth: 2 }}
                                 />
                                 <Line
                                     type="monotone"
                                     dataKey="score"
-                                    stroke="url(#lineGradient)"
+                                    stroke={chartColor}
                                     strokeWidth={3}
-                                    dot={{ r: 5, strokeWidth: 3, fill: '#fff', stroke: '#6366f1' }}
-                                    activeDot={{ r: 7, strokeWidth: 0, fill: '#6366f1' }}
+                                    dot={{ r: 5, strokeWidth: 3, fill: '#fff', stroke: chartColor }}
+                                    activeDot={{ r: 7, strokeWidth: 0, fill: chartColor }}
                                     animationDuration={1500}
                                 />
                             </LineChart>
@@ -121,8 +126,8 @@ export function DashboardCharts({ recentAttempts, sectionAverages }: DashboardCh
                             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={skillsData}>
                                 <defs>
                                     <linearGradient id="radarGradient" x1="0" y1="0" x2="1" y2="1">
-                                        <stop offset="0%" stopColor="#8b5cf6" />
-                                        <stop offset="100%" stopColor="#ec4899" />
+                                        <stop offset="0%" stopColor={chartColor} />
+                                        <stop offset="100%" stopColor={theme.primaryDark} />
                                     </linearGradient>
                                 </defs>
                                 <PolarGrid stroke="#e2e8f0" strokeWidth={1.5} />
@@ -132,12 +137,12 @@ export function DashboardCharts({ recentAttempts, sectionAverages }: DashboardCh
                                 />
                                 <PolarRadiusAxis
                                     angle={30}
-                                    domain={[0, 9]}
+                                    domain={[scoreRange.min, scoreRange.max]}
                                     tick={{ fill: '#94a3b8', fontSize: 11 }}
                                     axisLine={false}
                                 />
                                 <Radar
-                                    name="Band Score"
+                                    name={scoreLabel}
                                     dataKey="score"
                                     stroke="url(#radarGradient)"
                                     strokeWidth={3}

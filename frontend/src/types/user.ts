@@ -1,3 +1,5 @@
+export type ExamType = 'ielts' | 'toefl_ibt' | 'toefl_itp' | 'pte';
+
 export interface User {
   id: string;
   firebaseUid: string;
@@ -6,6 +8,7 @@ export interface User {
   photoUrl: string | null;
   role: 'user' | 'admin';
   freeTestsRemaining: number;
+  preferredExamType: ExamType | null;
   createdAt: string;
 }
 

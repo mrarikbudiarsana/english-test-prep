@@ -4,9 +4,11 @@ import * as subscriptionModel from '../models/subscription.model';
 /**
  * Get dashboard statistics for a user.
  * Returns total completed attempts, averages, best score, recent attempts, etc.
+ * @param userId - The user's ID
+ * @param examType - Optional exam type filter (ielts, toefl_ibt, toefl_itp, pte)
  */
-export async function getStats(userId: string) {
-  const stats = await attemptModel.getStatsForUser(userId);
+export async function getStats(userId: string, examType?: string) {
+  const stats = await attemptModel.getStatsForUser(userId, examType);
   return stats;
 }
 

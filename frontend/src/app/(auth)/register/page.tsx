@@ -15,8 +15,13 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Helper to determine redirect path based on user's exam preference
+  const getRedirectPath = (userData: typeof user) => {
+    return userData?.preferredExamType ? '/dashboard' : '/select-exam';
+  };
+
   React.useEffect(() => {
-    if (user) router.push('/dashboard');
+    if (user) router.push(getRedirectPath(user));
   }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,10 +41,9 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(email, password, displayName);
-      router.push('/dashboard');
+      // New users will be redirected to /select-exam via useEffect
     } catch (err: any) {
       setError(err.message || 'Failed to create account');
-    } finally {
       setLoading(false);
     }
   };
@@ -49,10 +53,9 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await loginWithGoogle();
-      router.push('/dashboard');
+      // The user state will be updated, then useEffect will redirect
     } catch (err: any) {
       setError(err.message || 'Failed to sign up with Google');
-    } finally {
       setLoading(false);
     }
   };

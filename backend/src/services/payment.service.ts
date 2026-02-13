@@ -28,13 +28,19 @@ export function isPaymentAvailable(): boolean {
  * Create a new payment using Midtrans Snap.
  * Generates a Snap token for frontend checkout and saves the payment record.
  */
-export async function createPayment(userId: string, planType: PlanType) {
+export async function createPayment(userId: string, planType: PlanType, examType: string = 'ielts') {
   ensureMidtransConfigured();
 
   // Validate plan type
   const plan = PLAN_CONFIGS[planType];
   if (!plan) {
     throw new ValidationError(`Invalid plan type: ${planType}`);
+  }
+
+  // Validate exam type
+  const validExamTypes = ['ielts', 'toefl_ibt', 'toefl_itp', 'pte'];
+  if (!validExamTypes.includes(examType)) {
+    throw new ValidationError(`Invalid exam type: ${examType}`);
   }
 
   // Get the user for transaction details
@@ -44,7 +50,7 @@ export async function createPayment(userId: string, planType: PlanType) {
   }
 
   // Generate a unique order ID
-  const orderId = `IELTS-${planType.toUpperCase()}-${userId.substring(0, 8)}-${Date.now()}`;
+  const orderId = `${examType.toUpperCase()}-${planType.toUpperCase()}-${userId.substring(0, 8)}-${Date.now()}`;
 
   // Create Midtrans Snap transaction parameters
   const transactionParams = {
@@ -81,6 +87,7 @@ export async function createPayment(userId: string, planType: PlanType) {
       snapToken,
       amount: plan.price,
       currency: plan.currency,
+      examType,
     });
 
     return {

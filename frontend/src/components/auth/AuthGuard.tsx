@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AuthGuardProps {
@@ -12,6 +12,7 @@ interface AuthGuardProps {
 export default function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -20,7 +21,12 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
     if (!loading && user && requireAdmin && user.role !== 'admin') {
       router.push('/dashboard');
     }
-  }, [user, loading, requireAdmin, router]);
+    // Redirect to exam selection if user hasn't selected an exam
+    // (but not if they're already on the select-exam page)
+    if (!loading && user && !user.preferredExamType && pathname !== '/select-exam') {
+      router.push('/select-exam');
+    }
+  }, [user, loading, requireAdmin, router, pathname]);
 
   if (loading) {
     return (
