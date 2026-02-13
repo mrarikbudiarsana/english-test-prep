@@ -347,6 +347,7 @@ export default function AdminSectionQuestionsPage() {
                 questionNumber: editingQuestion.questionNumber,
                 questionType: editingQuestion.questionType,
                 questionText: editingQuestion.questionText,
+                audioUrl: editingQuestion.audioUrl || null,
                 questionData: editingQuestion.questionData,
                 correctAnswer: editingQuestion.correctAnswer,
                 points: editingQuestion.points,

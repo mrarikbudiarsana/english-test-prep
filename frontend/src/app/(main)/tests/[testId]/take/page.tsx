@@ -343,15 +343,22 @@ function TestTakingContent() {
         return;
       }
 
-      // Part B/C: treat entire recording as one unit — Next advances to next recording
+      // Part B/C: advance question-by-question within a recording.
+      // Move to the next recording only after the last question of the current recording.
       if (isPartBCMode) {
-        if (activePartIndex < currentSectionParts.length - 1) {
+        const currentPartQuestions = questions.filter(q => q.sectionId === currentSectionPart.id);
+        const localIndex = currentPartQuestions.findIndex(q => questions.indexOf(q) === currentQuestionIndex);
+
+        if (localIndex !== -1 && localIndex < currentPartQuestions.length - 1) {
+          const nextQuestion = currentPartQuestions[localIndex + 1];
+          selectQuestionIndex(questions.indexOf(nextQuestion));
+        } else if (activePartIndex < currentSectionParts.length - 1) {
           const nextPartIdx = activePartIndex + 1;
           const nextPart = currentSectionParts[nextPartIdx];
           const firstQOfNextPart = questions.find(q => q.sectionId === nextPart.id);
           if (firstQOfNextPart) {
             setActivePartIndex(nextPartIdx);
-            setCurrentQuestionIndex(questions.indexOf(firstQOfNextPart));
+            selectQuestionIndex(questions.indexOf(firstQOfNextPart));
             setViewingDirections(shouldShowDirectionsBetweenParts(activePartIndex, nextPartIdx));
           }
         } else {

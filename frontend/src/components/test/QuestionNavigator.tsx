@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface QuestionNavigatorProps {
@@ -16,6 +16,7 @@ interface QuestionNavigatorProps {
     isLast?: boolean;
     previousLabel?: string;
     nextLabel?: string;
+    pageSize?: number;
 }
 
 export default function QuestionNavigator({
@@ -33,8 +34,10 @@ export default function QuestionNavigator({
     isLast = false,
     previousLabel = 'Previous',
     nextLabel = 'Next',
+    pageSize = 50,
 }: QuestionNavigatorProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [gridPage, setGridPage] = useState(1);
     const getNumberTileClass = (
         displayNumber: number,
         isCurrent: boolean,
@@ -53,8 +56,27 @@ export default function QuestionNavigator({
             !isClickable && isCurrent && "cursor-default"
         );
 
-    // Auto-scroll to active question
+    const totalPages = Math.max(1, Math.ceil(totalQuestions / pageSize));
+    const currentPage = Math.min(totalPages, Math.max(1, Math.ceil((currentIndex + 1) / pageSize)));
+    const pageStart = (gridPage - 1) * pageSize;
+    const pageEnd = Math.min(totalQuestions, pageStart + pageSize);
+
+    const visibleIndices = useMemo(
+        () => Array.from({ length: Math.max(0, pageEnd - pageStart) }, (_, i) => pageStart + i),
+        [pageStart, pageEnd]
+    );
+
+    // Keep page synced only when current question is outside the visible page.
     useEffect(() => {
+        if (variant !== 'grid') return;
+        if (currentIndex < pageStart || currentIndex >= pageEnd) {
+            setGridPage(currentPage);
+        }
+    }, [variant, currentIndex, pageStart, pageEnd, currentPage]);
+
+    // Auto-scroll to active question (non-grid variants).
+    useEffect(() => {
+        if (variant === 'grid') return;
         if (scrollContainerRef.current) {
             const activeBtn = scrollContainerRef.current.querySelector(`[data-question-index="${currentIndex}"]`) as HTMLElement | null;
             if (activeBtn) {
@@ -76,13 +98,41 @@ export default function QuestionNavigator({
     if (variant === 'grid') {
         return (
             <div className="w-full rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
-                <div
-                    ref={scrollContainerRef}
-                    className="max-h-[24rem] overflow-y-auto scrollbar-hide pr-1"
-                    style={{ scrollBehavior: 'smooth' }}
-                >
+                {totalPages > 1 && (
+                    <div className="mb-2 flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-2 py-1.5">
+                        <button
+                            onClick={() => setGridPage((p) => Math.max(1, p - 1))}
+                            disabled={gridPage <= 1}
+                            className={cn(
+                                "h-8 rounded-md border px-2 text-xs font-medium transition-colors",
+                                gridPage <= 1
+                                    ? "cursor-not-allowed border-gray-100 bg-gray-50 text-gray-300"
+                                    : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                            )}
+                        >
+                            Previous Page
+                        </button>
+                        <span className="text-xs font-medium text-gray-600">
+                            Page {gridPage} / {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setGridPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={gridPage >= totalPages}
+                            className={cn(
+                                "h-8 rounded-md border px-2 text-xs font-medium transition-colors",
+                                gridPage >= totalPages
+                                    ? "cursor-not-allowed border-gray-100 bg-gray-50 text-gray-300"
+                                    : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                            )}
+                        >
+                            Next Page
+                        </button>
+                    </div>
+                )}
+
+                <div className="pr-1">
                     <div className="grid grid-cols-5 justify-items-center gap-2">
-                        {Array.from({ length: totalQuestions }).map((_, idx) => {
+                        {visibleIndices.map((idx) => {
                             const isCurrent = idx === currentIndex;
                             const isAnswered = answeredIndices.has(idx);
                             const displayNumber = startIndex + idx;

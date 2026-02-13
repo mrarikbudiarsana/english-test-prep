@@ -14,26 +14,12 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
   const options = data.options || [];
   const multiSelect = data.multiSelect || false;
   const expectedAnswers = data.expectedAnswers || 2;
+  const displayKey = (index: number, key?: string) => (key && key.trim() ? key : String.fromCharCode(65 + index));
 
   const handleOptionTextChange = (index: number, text: string) => {
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], text };
     onChange({ ...data, options: newOptions }, correctAnswer);
-  };
-
-  const handleOptionKeyChange = (index: number, key: string) => {
-    const newOptions = [...options];
-    const oldKey = newOptions[index].key;
-    newOptions[index] = { ...newOptions[index], key };
-    onChange({ ...data, options: newOptions }, updateKeyInAnswer(oldKey, key));
-  };
-
-  const updateKeyInAnswer = (oldKey: string, newKey: string) => {
-    if (multiSelect) {
-      const arr = Array.isArray(correctAnswer) ? correctAnswer : [];
-      return arr.map((k: string) => (k === oldKey ? newKey : k));
-    }
-    return correctAnswer === oldKey ? newKey : correctAnswer;
   };
 
   const addOption = () => {
@@ -43,7 +29,7 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
   };
 
   const removeOption = (index: number) => {
-    const removedKey = options[index].key;
+    const removedKey = displayKey(index, options[index].key);
     const newOptions = options.filter((_, i) => i !== index);
     let newCorrect = correctAnswer;
     if (multiSelect) {
@@ -126,37 +112,48 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
         {options.map((option, index) => (
           <div key={index} className="flex items-center gap-2">
             <div className="flex-shrink-0">
+              {(() => {
+                const key = displayKey(index, option.key);
+                if (multiSelect) {
+                  return (
+                    <input
+                      type="checkbox"
+                      checked={Array.isArray(correctAnswer) && correctAnswer.includes(key)}
+                      onChange={() => handleCorrectAnswerChange(key)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      title="Mark as correct"
+                    />
+                  );
+                }
+                return (
+                  <input
+                    type="radio"
+                    name="correct-answer"
+                    checked={correctAnswer === key}
+                    onChange={() => handleCorrectAnswerChange(key)}
+                    className="border-gray-300 text-blue-600 focus:ring-blue-500"
+                    title="Mark as correct"
+                  />
+                );
+              })()}
+            </div>
+            <span className="w-8 text-center text-sm font-medium text-gray-500">
+              {displayKey(index, option.key)}
+            </span>
+            <div className="flex-1">
               {multiSelect ? (
-                <input
-                  type="checkbox"
-                  checked={Array.isArray(correctAnswer) && correctAnswer.includes(option.key)}
-                  onChange={() => handleCorrectAnswerChange(option.key)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  title="Mark as correct"
+                <Input
+                  value={option.text}
+                  onChange={(e) => handleOptionTextChange(index, e.target.value)}
+                  placeholder={`Option ${displayKey(index, option.key)} text`}
                 />
               ) : (
-                <input
-                  type="radio"
-                  name="correct-answer"
-                  checked={correctAnswer === option.key}
-                  onChange={() => handleCorrectAnswerChange(option.key)}
-                  className="border-gray-300 text-blue-600 focus:ring-blue-500"
-                  title="Mark as correct"
+                <Input
+                  value={option.text}
+                  onChange={(e) => handleOptionTextChange(index, e.target.value)}
+                  placeholder={`Option ${displayKey(index, option.key)} text`}
                 />
               )}
-            </div>
-            <Input
-              value={option.key}
-              onChange={(e) => handleOptionKeyChange(index, e.target.value)}
-              className="w-16 text-center"
-              placeholder="Key"
-            />
-            <div className="flex-1">
-              <Input
-                value={option.text}
-                onChange={(e) => handleOptionTextChange(index, e.target.value)}
-                placeholder={`Option ${option.key} text`}
-              />
             </div>
             <Button
               variant="ghost"
@@ -182,13 +179,13 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
           if (multiSelect) {
             if (!Array.isArray(correctAnswer) || correctAnswer.length === 0) return 'None selected';
             const texts = correctAnswer.map((key: string) => {
-              const opt = options.find((o) => o.key === key);
+              const opt = options.find((o, i) => displayKey(i, o.key) === key);
               return opt?.text || key;
             });
             return texts.join(', ');
           } else {
             if (!correctAnswer) return 'None selected';
-            const opt = options.find((o) => o.key === correctAnswer);
+            const opt = options.find((o, i) => displayKey(i, o.key) === correctAnswer);
             return opt?.text || correctAnswer;
           }
         })()}

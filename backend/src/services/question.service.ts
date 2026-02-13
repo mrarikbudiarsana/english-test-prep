@@ -40,6 +40,7 @@ export async function getQuestionsBySectionId(sectionId: string) {
     questionNumber: q.questionNumber,
     questionType: q.questionType,
     questionText: q.questionText,
+    audioUrl: q.audioUrl,
     questionData: q.questionData,
     points: q.points,
     groupLabel: q.groupLabel,
