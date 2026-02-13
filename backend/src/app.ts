@@ -9,7 +9,10 @@ import routes from './routes';
 const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 app.use(cors({
   origin: env.corsOrigin.split(',').map(o => o.trim()),
   credentials: true,
