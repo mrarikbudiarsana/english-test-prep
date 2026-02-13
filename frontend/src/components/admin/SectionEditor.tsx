@@ -116,8 +116,8 @@ function getStructureGuide(testType: string): { title: string; lines: string[] }
         '    Part B: Longer conversations (8 Qs, shared audio)',
         '    Part C: Talks/lectures (12 Qs, shared audio)',
         'Section 2 — Structure: 2 parts, 25 min, 40 questions',
-        '    Part 1: Sentence completion (15 Qs, MCQ)',
-        '    Part 2: Error identification (25 Qs, Dropdown)',
+        '    Part 1: Structure (15 Qs, MCQ)',
+        '    Part 2: Written Expression (25 Qs, MCQ)',
         'Section 3 — Reading: 5 passages, 55 min, 50 questions',
       ],
     };
@@ -415,8 +415,8 @@ export default function SectionEditor({ testId, testType, existingSections = [],
               value={String(partNumber)}
               onChange={(e) => setPartNumber(parseInt(e.target.value))}
               options={[
-                { value: '1', label: 'Part 1 — Sentence Completion (MCQ)' },
-                { value: '2', label: 'Part 2 — Written Expression (MCQ)' },
+                { value: '1', label: 'Part 1 — Structure' },
+                { value: '2', label: 'Part 2 — Written Expression' },
               ]}
             />
           </div>

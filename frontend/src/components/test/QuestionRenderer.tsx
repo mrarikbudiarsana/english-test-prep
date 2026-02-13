@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import AudioPlayer from './AudioPlayer';
 
 import {
   Question,
@@ -27,6 +28,8 @@ interface QuestionRendererProps {
   /** Override the displayed question number (for continuous numbering across parts). */
   displayNumber?: number | string;
   isActive?: boolean;
+  onAudioEnd?: () => void;
+  playOnce?: boolean;
 }
 
 export default function QuestionRenderer({
@@ -36,6 +39,8 @@ export default function QuestionRenderer({
   readOnly = false,
   displayNumber,
   isActive = false,
+  onAudioEnd,
+  playOnce = false,
 }: QuestionRendererProps) {
   const handleChange = (newAnswer: any) => {
     onAnswerChange(question.id, newAnswer);
@@ -85,6 +90,7 @@ export default function QuestionRenderer({
             readOnly={readOnly}
             correctAnswer={readOnly ? (question.correctAnswer as string | undefined) : undefined}
             questionNumber={resolvedNumber}
+            isActive={isActive}
           />
         );
 
@@ -211,7 +217,11 @@ export default function QuestionRenderer({
           <div className="flex-1">
             {question.audioUrl && (
               <div className="mb-3">
-                <audio controls src={question.audioUrl} className="w-full max-w-md h-8" preload="metadata" />
+                <AudioPlayer
+                  src={question.audioUrl}
+                  playOnce={playOnce}
+                  onEnd={onAudioEnd}
+                />
               </div>
             )}
             {!isRedundantHeader && (
@@ -243,4 +253,3 @@ export default function QuestionRenderer({
     </div>
   );
 }
-

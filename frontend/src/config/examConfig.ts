@@ -123,9 +123,9 @@ export const examConfigs: Record<ExamType, ExamConfig> = {
     scoreRange: { min: 310, max: 677 },
     scorePrecision: 1,
     sections: [
-      { key: 'listening', label: 'Listening', icon: HiOutlineVolumeUp },
-      { key: 'structure', label: 'Structure', icon: HiOutlineTemplate },
-      { key: 'reading', label: 'Reading', icon: HiOutlineBookOpen },
+      { key: 'listening', label: 'Listening Comprehension', icon: HiOutlineVolumeUp },
+      { key: 'structure', label: 'Structure and Written Expression', icon: HiOutlineTemplate },
+      { key: 'reading', label: 'Reading Comprehension', icon: HiOutlineBookOpen },
     ],
     theme: {
       // TOEFL brand — darker purple to distinguish from iBT

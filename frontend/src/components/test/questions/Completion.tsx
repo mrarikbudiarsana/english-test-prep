@@ -10,6 +10,7 @@ interface CompletionProps {
   readOnly?: boolean;
   correctAnswer?: string;
   questionNumber?: number | string;
+  isActive?: boolean;
 }
 
 export default function Completion({
@@ -19,6 +20,7 @@ export default function Completion({
   readOnly,
   correctAnswer,
   questionNumber,
+  isActive = false,
 }: CompletionProps) {
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,7 +105,8 @@ export default function Completion({
                         onChange={handleChange}
                         readOnly={readOnly}
                         className={`
-                            border-b-2 border-gray-300 px-1 py-0 min-w-[80px] text-center font-medium transition-all bg-transparent focus:outline-none focus:border-blue-600 focus:bg-blue-50/20
+                            border-b-2 px-1 py-0 min-w-[80px] text-center font-medium transition-all bg-transparent focus:outline-none focus:border-blue-600 focus:bg-blue-50/20
+                            ${isActive ? 'border-blue-500 bg-blue-50/30' : 'border-gray-300'}
                             ${status === 'correct' ? '!border-green-500 text-green-700' : ''}
                             ${status === 'incorrect' ? '!border-red-500 text-red-700' : ''}
                             ${readOnly ? 'cursor-default' : ''}
@@ -133,7 +136,8 @@ export default function Completion({
         const isListMode = /^\s*([\-*\u2022\u2013\u2014]|\d+\.)/.test(normalizedText);
 
         const noteInputClass = `
-          h-8 w-32 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 font-medium text-center
+          h-8 w-32 rounded-md border bg-white px-2 text-sm text-gray-900 font-medium text-center transition-colors
+          ${isActive ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-300'}
           focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
           ${inputStyle.includes('green') ? 'border-green-500 bg-green-50 text-green-900' : ''}
           ${inputStyle.includes('red') ? 'border-red-500 bg-red-50 text-red-900' : ''}
@@ -400,5 +404,3 @@ export default function Completion({
     </div>
   );
 }
-
-

@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { useLayout } from '@/contexts/LayoutContext';
 import { EnterFullScreenIcon, ExitFullScreenIcon } from '@radix-ui/react-icons';
 import CongratulationsModal from '@/components/test/CongratulationsModal';
+import QuestionNavigator from '@/components/test/QuestionNavigator';
 
 const SECTION_ORDER: SectionType[] = ['listening', 'reading', 'writing', 'speaking', 'structure'];
 const SECTION_ORDER_TOEFL: SectionType[] = ['listening', 'structure', 'reading'];
@@ -171,7 +172,7 @@ function TestTakingContent() {
         const firstType = sectionTypes[0];
         const firstSections = filteredSections.filter(s => s.sectionType === firstType);
         if (firstSections.length > 0) {
-          await loadSectionQuestions(firstSections, firstType, filteredSections);
+          await loadSectionQuestions(firstSections, firstType, filteredSections, fetchedTestType);
         }
       } catch (err) {
         console.error('Failed to initialize test:', err);
@@ -185,7 +186,8 @@ function TestTakingContent() {
   async function loadSectionQuestions(
     sectionParts: Section[],
     sectionType: SectionType,
-    allSections: Section[]
+    allSections: Section[],
+    resolvedTestType?: TestType
   ) {
     const allQuestions: Question[] = [];
     for (const section of sectionParts) {
@@ -198,7 +200,8 @@ function TestTakingContent() {
 
     // Calculate total duration for this section type
     const totalDuration = sectionParts.reduce((sum, s) => sum + s.durationMinutes, 0);
-    const currentSectionOrder = testType === 'toefl_itp' ? SECTION_ORDER_TOEFL : SECTION_ORDER;
+    const activeTestType = resolvedTestType ?? testType;
+    const currentSectionOrder = activeTestType === 'toefl_itp' ? SECTION_ORDER_TOEFL : SECTION_ORDER;
 
     dispatch({
       type: 'SET_SECTION',
@@ -214,7 +217,7 @@ function TestTakingContent() {
     await api.put(`/attempts/${attemptId}/section-start`, { sectionType });
 
     // For TOEFL iTP, show directions initially
-    if (testType === 'toefl_itp') {
+    if (activeTestType === 'toefl_itp') {
       setViewingDirections(true);
     }
   }
@@ -237,7 +240,7 @@ function TestTakingContent() {
     const nextType = currentSectionOrder[currentIdx + 1];
     const nextSections = sections.filter(s => s.sectionType === nextType);
     if (nextSections.length > 0) {
-      loadSectionQuestions(nextSections, nextType, sections);
+      loadSectionQuestions(nextSections, nextType, sections, testType);
     }
   }
 
@@ -249,7 +252,26 @@ function TestTakingContent() {
     dispatch({ type: 'FLAG_QUESTION', payload: { questionId } });
   };
 
+  const focusQuestionAtIndex = useCallback((index: number) => {
+    setTimeout(() => {
+      const element = document.getElementById(`question-${index}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const input = element.querySelector('input, textarea, select') as HTMLElement | null;
+        if (input) {
+          input.focus({ preventScroll: true });
+        }
+      }
+    }, 0);
+  }, []);
+
+  const selectQuestionIndex = useCallback((index: number) => {
+    setCurrentQuestionIndex(index);
+    focusQuestionAtIndex(index);
+  }, [focusQuestionAtIndex]);
+
   const handleNextQuestion = () => {
+    // TOEFL ITP Navigation Logic
     if (testType === 'toefl_itp' && state.currentSectionType !== 'reading') {
       handleToeflNavigation('next');
       return;
@@ -258,13 +280,25 @@ function TestTakingContent() {
     const currentSectionOrder = testType === 'toefl_itp' ? SECTION_ORDER_TOEFL : SECTION_ORDER;
 
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+      selectQuestionIndex(currentQuestionIndex + 1);
     } else if (mode === 'full' && currentSectionOrder.indexOf(state.currentSectionType!) < currentSectionOrder.length - 1) {
       openSubmitModal('section');
     } else {
       openSubmitModal('test');
     }
   };
+
+  const handleAudioEnd = useCallback(() => {
+    if (testType === 'toefl_itp' && state.currentSectionType === 'listening') {
+      // Auto-advance when audio ends
+      // We use a small timeout to allow the user to see the "Audio Finished" state briefly if needed,
+      // but usually immediate is better for this test type.
+      // However, we must ensure we don't double-advance if the user clicked next manually.
+      // This simple call is usually safe as it updates state based on current state.
+      handleNextQuestion();
+    }
+  }, [testType, state.currentSectionType, handleNextQuestion]);
+
 
   const handlePreviousQuestion = () => {
     if (testType === 'toefl_itp' && state.currentSectionType !== 'reading') {
@@ -273,14 +307,37 @@ function TestTakingContent() {
     }
 
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
+      selectQuestionIndex(currentQuestionIndex - 1);
     }
   };
 
   const handleToeflNavigation = (dir: 'next' | 'prev') => {
+    const shouldShowDirectionsBetweenParts = (fromIdx: number, toIdx: number) => {
+      const fromPartNo = getResolvedPartNumber(fromIdx);
+      const toPartNo = getResolvedPartNumber(toIdx);
+      return fromPartNo !== toPartNo;
+    };
+
     if (dir === 'next') {
       if (viewingDirections) {
         setViewingDirections(false);
+        return;
+      }
+
+      // Part B/C: treat entire recording as one unit — Next advances to next recording
+      if (isPartBCMode) {
+        if (activePartIndex < currentSectionParts.length - 1) {
+          const nextPartIdx = activePartIndex + 1;
+          const nextPart = currentSectionParts[nextPartIdx];
+          const firstQOfNextPart = questions.find(q => q.sectionId === nextPart.id);
+          if (firstQOfNextPart) {
+            setActivePartIndex(nextPartIdx);
+            setCurrentQuestionIndex(questions.indexOf(firstQOfNextPart));
+            setViewingDirections(shouldShowDirectionsBetweenParts(activePartIndex, nextPartIdx));
+          }
+        } else {
+          openSubmitModal('section');
+        }
         return;
       }
 
@@ -297,7 +354,7 @@ function TestTakingContent() {
           if (firstQOfNextPart) {
             setActivePartIndex(nextPartIdx);
             setCurrentQuestionIndex(questions.indexOf(firstQOfNextPart));
-            setViewingDirections(true);
+            setViewingDirections(shouldShowDirectionsBetweenParts(activePartIndex, nextPartIdx));
           }
         } else {
           // End of section
@@ -310,7 +367,9 @@ function TestTakingContent() {
         }
       }
     } else {
-      // Previous
+      // Previous — disabled for Part B/C (no going back in TOEFL ITP)
+      if (isPartBCMode) return;
+
       if (viewingDirections) {
         if (activePartIndex > 0) {
           // Go back to last question of previous part
@@ -380,15 +439,46 @@ function TestTakingContent() {
   // Current active part based on tab selection
   const currentSectionPart = currentSectionParts[activePartIndex] || currentSectionParts[0];
 
-  // Sync activePartIndex with currentQuestion for proper passage display (Reading)
+  const resolvedPartNumbers = useMemo(() => {
+    return currentSectionParts.map((part, idx) => {
+      // TOEFL ITP Listening: infer from title/instructions first to avoid bad legacy part_number data
+      if (testType === 'toefl_itp' && state.currentSectionType === 'listening') {
+        const source = `${part?.title || ''} ${part?.instructions || ''}`.toLowerCase();
+        if (/\bpart\s*a\b/.test(source)) return 1;
+        if (/\bpart\s*b\b/.test(source)) return 2;
+        if (/\bpart\s*c\b/.test(source)) return 3;
+      }
+
+      if (part?.partNumber != null) return part.partNumber;
+
+      // If missing, keep same logical part as previous for listening recordings
+      if (testType === 'toefl_itp' && state.currentSectionType === 'listening' && idx > 0) {
+        return currentSectionParts[idx - 1]?.partNumber ?? idx;
+      }
+
+      return idx + 1;
+    });
+  }, [currentSectionParts, testType, state.currentSectionType]);
+
+  const getResolvedPartNumber = useCallback((index: number) => {
+    return resolvedPartNumbers[index] ?? index + 1;
+  }, [resolvedPartNumbers]);
+
+  // TOEFL ITP Part B/C: all questions for one recording shown scrollably, Next advances recording
+  const isPartBCMode = testType === 'toefl_itp' &&
+    state.currentSectionType === 'listening' &&
+    getResolvedPartNumber(activePartIndex) >= 2;
+
+  // Sync activePartIndex with the currently selected question so footer navigation
+  // (next/previous/question click) keeps the visible part in sync across sections.
   useEffect(() => {
-    if (state.currentSectionType === 'reading' && currentQuestion) {
+    if (currentQuestion) {
       const partIndex = currentSectionParts.findIndex(p => p.id === currentQuestion.sectionId);
       if (partIndex !== -1 && partIndex !== activePartIndex) {
         setActivePartIndex(partIndex);
       }
     }
-  }, [currentQuestionIndex, state.currentSectionType]); // Depend on index change, not object identity ideally, but object works if referentially stable
+  }, [currentQuestion, currentSectionParts, activePartIndex]);
 
   // Filter questions for the active part
   const activePartQuestions = useMemo(() => {
@@ -552,9 +642,52 @@ function TestTakingContent() {
                   )}
                   */}
 
+                  {/* Question Navigator */}
+                  <div className="mb-4">
+                    <QuestionNavigator
+                      totalQuestions={questions.length}
+                      currentIndex={currentQuestionIndex}
+                      onSelect={(index) => {
+                        if (state.currentSectionType !== 'listening') {
+                          setCurrentQuestionIndex(index);
+                        }
+                      }}
+                      answeredIndices={
+                        new Set(
+                          questions
+                            .map((q, idx) => state.answers[q.id] ? idx : -1)
+                            .filter(idx => idx !== -1)
+                        )
+                      }
+                      allowNavigation={state.currentSectionType !== 'listening'}
+                      startIndex={1}
+                    />
+                  </div>
+
                   {/* Question Content */}
                   <div className="flex-1 overflow-y-auto min-h-0 bg-white rounded-xl border border-gray-200 shadow-sm p-8">
-                    {currentQuestion && (
+                    {isPartBCMode ? (
+                      // Part B/C: all questions for this recording, scrollable
+                      <div className="space-y-2">
+                        {questions
+                          .filter(q => q.sectionId === currentSectionPart.id)
+                          .map((question) => {
+                            const partQs = questions.filter(q => q.sectionId === currentSectionPart.id);
+                            const prevQs = partQs.slice(0, partQs.indexOf(question));
+                            const startNum = partNumberOffset + prevQs.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
+                            return (
+                              <QuestionRenderer
+                                key={question.id}
+                                question={question}
+                                answer={state.answers[question.id]}
+                                onAnswerChange={handleAnswerChange}
+                                displayNumber={startNum}
+                                isActive={false}
+                              />
+                            );
+                          })}
+                      </div>
+                    ) : currentQuestion && (
                       <div className="space-y-6">
                         {/* Group Instructions if present */}
                         {currentQuestion.groupLabel && (
@@ -572,34 +705,14 @@ function TestTakingContent() {
                           onAnswerChange={handleAnswerChange}
                           displayNumber={currentQuestionIndex + 1}
                           isActive={true}
+                          onAudioEnd={handleAudioEnd}
+                          playOnce={testType === 'toefl_itp'}
                         />
                       </div>
                     )}
                   </div>
 
-                  {/* Navigation Controls */}
-                  <div className="mt-6 flex items-center justify-between">
-                    <button
-                      onClick={handlePreviousQuestion}
-                      className="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Previous
-                    </button>
-
-                    <button
-                      onClick={handleNextQuestion}
-                      className="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors shadow-sm"
-                    >
-                      {(() => {
-                        const currentSectionOrder = testType === 'toefl_itp' ? SECTION_ORDER_TOEFL : SECTION_ORDER;
-                        return currentQuestionIndex === questions.length - 1 && currentSectionOrder.indexOf(state.currentSectionType!) === currentSectionOrder.length - 1
-                          ? 'Finish Test'
-                          : activePartIndex === currentSectionParts.length - 1 && questions.indexOf(questions.filter(q => q.sectionId === currentSectionPart.id).pop()!) === currentQuestionIndex
-                            ? 'Next Section' // Or Submit Section
-                            : 'Next';
-                      })()}
-                    </button>
-                  </div>
+                  {/* Footer provides the only navigation controls to avoid duplicate Previous/Next UI */}
                 </>
               )}
             </div>
@@ -630,7 +743,7 @@ function TestTakingContent() {
                                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                             )}
                           >
-                            Part {part.partNumber || idx + 1}
+                            Part {getResolvedPartNumber(idx)}
                           </button>
                         ))}
                       </div>
@@ -639,7 +752,7 @@ function TestTakingContent() {
                     {currentSectionPart?.audioUrl && (
                       <AudioPlayer
                         src={currentSectionPart.audioUrl}
-                        playOnce={true}
+                        playOnce={mode === 'full'}
                       />
                     )}
 
@@ -769,9 +882,35 @@ function TestTakingContent() {
 
                     {/* Right Pane: Questions */}
                     <div
-                      className="h-full bg-white grow min-w-0" // min-w-0 used to allow flex child to shrink below content size
+                      className="h-full bg-white grow min-w-0 flex flex-col" // min-w-0 used to allow flex child to shrink below content size
                     >
-                      <div className="h-full overflow-y-auto px-8 py-6 space-y-8">
+                      {/* Question Navigator for Reading */}
+                      {testType === 'toefl_itp' && (
+                        <div className="shrink-0">
+                          <QuestionNavigator
+                            totalQuestions={questions.length}
+                            currentIndex={currentQuestionIndex}
+                            onSelect={(index) => {
+                              setCurrentQuestionIndex(index);
+                              // Ensure right pane scrolls to top or specific question if possible?
+                              // The navigator already syncs index, which renders proper active state.
+                              // Ideally we scroll to the question in the list.
+                              // For now, index sync is enough as reading usually scrolls the user or we'd needrefs.
+                            }}
+                            answeredIndices={
+                              new Set(
+                                questions
+                                  .map((q, idx) => state.answers[q.id] ? idx : -1)
+                                  .filter(idx => idx !== -1)
+                              )
+                            }
+                            allowNavigation={true}
+                            startIndex={1}
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
 
 
                         {/* Group questions by groupLabel */}
@@ -853,7 +992,12 @@ function TestTakingContent() {
                                                           type="text"
                                                           value={state.answers[question.id] || ''}
                                                           onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                                          className="h-8 w-32 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 font-medium text-center focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                          className={cn(
+                                                            "h-8 w-32 rounded-md border bg-white px-2 text-sm text-gray-900 font-medium text-center focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
+                                                            qIndex === currentQuestionIndex
+                                                              ? "border-blue-500 ring-2 ring-blue-100"
+                                                              : "border-gray-300"
+                                                          )}
                                                         />
                                                         {!state.answers[question.id] && (
                                                           <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium">
@@ -980,7 +1124,12 @@ function TestTakingContent() {
                                                               type="text"
                                                               value={state.answers[question.id] || ''}
                                                               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                                              className="h-8 w-32 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 font-medium text-center focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                              className={cn(
+                                                                "h-8 w-32 rounded-md border bg-white px-2 text-sm text-gray-900 font-medium text-center focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
+                                                                qIndex === currentQuestionIndex
+                                                                  ? "border-blue-500 ring-2 ring-blue-100"
+                                                                  : "border-gray-300"
+                                                              )}
                                                             />
                                                             {!state.answers[question.id] && (
                                                               <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium whitespace-nowrap">
@@ -1130,29 +1279,6 @@ function TestTakingContent() {
                 <div className="h-full overflow-y-auto">
                   <div className="max-w-7xl mx-auto px-4 py-6">
 
-                    {/* Speaking part navigation */}
-                    {currentSectionParts.length > 1 && (
-                      <div className="mb-6 flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit mx-auto">
-                        {currentSectionParts.map((part, idx) => {
-                          const isActive = activePartIndex === idx;
-                          return (
-                            <button
-                              key={part.id}
-                              onClick={() => {
-                                setActivePartIndex(idx);
-                              }}
-                              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${isActive
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                                }`}
-                            >
-                              Part {part.partNumber}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-
                     <div className="max-w-2xl mx-auto space-y-6">
                       {currentSectionPart && (
                         <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -1260,7 +1386,7 @@ function TestTakingContent() {
         answeredQuestions={state.answeredQuestions}
         flaggedQuestions={state.flaggedQuestions}
         onQuestionSelect={(index) => {
-          setCurrentQuestionIndex(index);
+          selectQuestionIndex(index);
 
           // If this is a Reading/Listening section with multiple parts,
           // ensure we switch the activePartIndex if the question belongs to a different part
@@ -1271,25 +1397,11 @@ function TestTakingContent() {
               setActivePartIndex(partIdx);
             }
           }
-
-          // Scroll and focus
-          setTimeout(() => {
-            const element = document.getElementById(`question-${index}`);
-            if (element) {
-              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-              // Find and focus the input element if it exists (for completion questions)
-              const input = element.querySelector('input');
-              if (input) {
-                input.focus({ preventScroll: true }); // Prevent jumping, let scrollIntoView handle it
-              }
-            }
-          }, 0);
         }}
         onNext={handleNextQuestion}
         onPrevious={handlePreviousQuestion}
-        isFirst={currentQuestionIndex === 0}
-        isLast={currentQuestionIndex === questions.length - 1 && mode !== 'full'} // Logic can be improved for full test sequence
+        isFirst={isPartBCMode ? true : currentQuestionIndex === 0}
+        isLast={isPartBCMode ? false : (currentQuestionIndex === questions.length - 1 && mode !== 'full')}
         onToggleFlag={handleToggleFlag}
       />
 

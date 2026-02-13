@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { Attempt } from '@/types/test';
 import { formatBand, formatDate, getBandColor, getBandBgColor } from '@/lib/utils';
@@ -72,9 +73,11 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     const [attempt, setAttempt] = useState<Attempt | null>(null);
     const [loading, setLoading] = useState(true);
     const [showShareModal, setShowShareModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
         if (!attemptId || attemptId === 'undefined') {
+            setErrorMessage('Invalid result link.');
             setLoading(false);
             return;
         }
@@ -83,14 +86,32 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
     async function fetchResults() {
         try {
+            setErrorMessage(null);
             const res = await api.get(`/attempts/${attemptId}/results`);
             setAttempt(res.data);
 
             if (res.data.status === 'scoring') {
                 setTimeout(fetchResults, 5000);
             }
-        } catch {
-            console.error('Failed to fetch results');
+        } catch (error) {
+            if (isAxiosError(error)) {
+                const status = error.response?.status;
+                if (status === 401) {
+                    setErrorMessage('Your session expired. Please sign in again.');
+                } else if (status === 403) {
+                    setErrorMessage('You do not have access to this result.');
+                } else if (status === 404) {
+                    setErrorMessage('Result not found.');
+                } else {
+                    const apiMessage = (error.response?.data as { error?: string; message?: string } | undefined)?.error
+                        || (error.response?.data as { error?: string; message?: string } | undefined)?.message;
+                    setErrorMessage(apiMessage || 'Failed to load result. Please try again.');
+                }
+                console.error('Failed to fetch results:', status, error.response?.data);
+            } else {
+                setErrorMessage('Failed to load result. Please try again.');
+                console.error('Failed to fetch results:', error);
+            }
         } finally {
             setLoading(false);
         }
@@ -110,8 +131,14 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
     if (!attempt) {
         return (
-            <div className="text-center py-12">
-                <p className="text-gray-500">Results not found</p>
+            <div className="text-center py-12 space-y-4">
+                <p className="text-gray-500">{errorMessage || 'Results not found'}</p>
+                <button
+                    onClick={fetchResults}
+                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium"
+                >
+                    Retry
+                </button>
             </div>
         );
     }
