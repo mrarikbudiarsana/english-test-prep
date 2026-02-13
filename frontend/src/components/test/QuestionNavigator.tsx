@@ -78,7 +78,7 @@ export default function QuestionNavigator({
                                     onClick={() => isClickable && onSelect(idx)}
                                     disabled={!isClickable}
                                     className={cn(
-                                        "h-[3.65rem] rounded-xl border text-[1.9rem] leading-none font-normal transition-all",
+                                        "h-12 rounded-lg border text-xl leading-none font-medium transition-all",
                                         isCurrent
                                             ? "bg-[#f7f7f7] text-black border-[#4f4f4f] ring-2 ring-[#bdd4ff]"
                                         : isAnswered
@@ -101,7 +101,7 @@ export default function QuestionNavigator({
                             onClick={onPrevious}
                             disabled={!onPrevious || isFirst}
                             className={cn(
-                                "h-[4.25rem] rounded-2xl border text-[2rem] font-normal transition-colors",
+                                "h-14 rounded-xl border text-xl font-medium transition-colors",
                                 (!onPrevious || isFirst)
                                     ? "text-gray-400 border-[#b8b8b8] bg-[#e2e2e2] cursor-not-allowed"
                                     : "text-gray-900 border-[#8f8f8f] bg-[#e9e9e9] hover:bg-[#dedede]"
@@ -113,7 +113,7 @@ export default function QuestionNavigator({
                             onClick={onNext}
                             disabled={!onNext || isLast}
                             className={cn(
-                                "h-[4.25rem] rounded-2xl border text-[2rem] font-normal transition-colors leading-tight",
+                                "h-14 rounded-xl border px-2 text-base font-semibold transition-colors leading-tight",
                                 (!onNext || isLast)
                                     ? "text-gray-400 border-[#b8b8b8] bg-[#e2e2e2] cursor-not-allowed"
                                     : "text-gray-900 border-[#8f8f8f] bg-[#e9e9e9] hover:bg-[#dedede]"

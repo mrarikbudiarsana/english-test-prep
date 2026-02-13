@@ -423,6 +423,24 @@ function TestTakingContent() {
 
   const currentQuestion = questions[currentQuestionIndex];
   const currentSectionParts = sections.filter(s => s.sectionType === state.currentSectionType);
+  const currentSectionOrder = testType === 'toefl_itp' ? SECTION_ORDER_TOEFL : SECTION_ORDER;
+  const currentSectionIndex = state.currentSectionType
+    ? currentSectionOrder.indexOf(state.currentSectionType)
+    : -1;
+  const upcomingSectionType =
+    currentSectionIndex >= 0 && currentSectionIndex < currentSectionOrder.length - 1
+      ? currentSectionOrder[currentSectionIndex + 1]
+      : null;
+  const topActionLabel =
+    mode === 'full' && upcomingSectionType
+      ? `Go to ${sectionTypeLabel(upcomingSectionType)}`
+      : 'Submit Test';
+  const navigatorActionLabel =
+    currentQuestionIndex < questions.length - 1
+      ? 'Continue'
+      : mode === 'full' && upcomingSectionType
+        ? `Go to ${sectionTypeLabel(upcomingSectionType)}`
+        : 'Review & Submit';
 
   // Reset activePartIndex and currentPromptIndex when changing section type
   useEffect(() => {
@@ -608,21 +626,15 @@ function TestTakingContent() {
 
             <button
               onClick={() => {
-                const currentSectionOrder = testType === 'toefl_itp' ? SECTION_ORDER_TOEFL : SECTION_ORDER;
                 openSubmitModal(
-                  mode === 'full' && currentSectionOrder.indexOf(state.currentSectionType!) < currentSectionOrder.length - 1
+                  mode === 'full' && currentSectionIndex < currentSectionOrder.length - 1
                     ? 'section'
                     : 'test'
                 )
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
             >
-              {(() => {
-                const currentSectionOrder = testType === 'toefl_itp' ? SECTION_ORDER_TOEFL : SECTION_ORDER;
-                return mode === 'full' && currentSectionOrder.indexOf(state.currentSectionType!) < currentSectionOrder.length - 1
-                  ? 'Next Section'
-                  : 'Submit Test';
-              })()}
+              {topActionLabel}
             </button>
           </div>
         </div>
@@ -724,7 +736,7 @@ function TestTakingContent() {
                     </div>
 
                     {/* Right-side Question Navigator */}
-                    <div className="w-full xl:w-[26rem] shrink-0 min-h-0 h-[24rem] xl:h-auto">
+                    <div className="w-full xl:w-[23rem] shrink-0 min-h-0 h-[22rem] xl:h-auto">
                       <QuestionNavigator
                         totalQuestions={questions.length}
                         currentIndex={currentQuestionIndex}
@@ -748,7 +760,7 @@ function TestTakingContent() {
                         isFirst={isPartBCMode ? true : currentQuestionIndex === 0}
                         isLast={isPartBCMode ? false : (currentQuestionIndex === questions.length - 1 && mode !== 'full')}
                         previousLabel="Previous"
-                        nextLabel="Next / Next Section"
+                        nextLabel={navigatorActionLabel}
                       />
                     </div>
                   </div>
@@ -1206,7 +1218,7 @@ function TestTakingContent() {
 
                       {/* Right-side Question Navigator for Reading */}
                       {testType === 'toefl_itp' && (
-                        <div className="w-[26rem] shrink-0 min-h-0 pl-4">
+                        <div className="w-[23rem] shrink-0 min-h-0 pl-4">
                           <QuestionNavigator
                             totalQuestions={questions.length}
                             currentIndex={currentQuestionIndex}
@@ -1228,7 +1240,7 @@ function TestTakingContent() {
                             isFirst={isPartBCMode ? true : currentQuestionIndex === 0}
                             isLast={isPartBCMode ? false : (currentQuestionIndex === questions.length - 1 && mode !== 'full')}
                             previousLabel="Previous"
-                            nextLabel="Next / Next Section"
+                            nextLabel={navigatorActionLabel}
                           />
                         </div>
                       )}
