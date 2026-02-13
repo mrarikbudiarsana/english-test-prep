@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useMemo, type FormEvent } from 'react';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
@@ -12,6 +12,8 @@ import CompletionEditor from './QuestionTypeEditors/CompletionEditor';
 import MatchingEditor from './QuestionTypeEditors/MatchingEditor';
 import DropdownEditor from './QuestionTypeEditors/DropdownEditor';
 import type {
+  TestType,
+  SectionType,
   QuestionType,
   QuestionData,
   MCQData,
@@ -36,13 +38,18 @@ interface QuestionFormData {
 
 interface QuestionEditorProps {
   sectionId: string;
+  testType?: TestType;
+  sectionType?: SectionType;
+  partNumber?: number;
   initialData?: Partial<QuestionFormData> & { id?: string };
   onSubmit: (data: QuestionFormData) => void | Promise<void>;
   onCancel: () => void;
   nextQuestionNumber?: number;
 }
 
-const questionTypeOptions = [
+// ---------- Question type filtering per test/section ----------
+
+const ALL_QUESTION_TYPES: { value: QuestionType; label: string }[] = [
   { value: 'multiple_choice', label: 'Multiple Choice' },
   { value: 'true_false_not_given', label: 'True / False / Not Given' },
   { value: 'yes_no_not_given', label: 'Yes / No / Not Given' },
@@ -50,6 +57,150 @@ const questionTypeOptions = [
   { value: 'matching', label: 'Matching' },
   { value: 'dropdown', label: 'Dropdown' },
 ];
+
+function getAllowedTypes(
+  testType?: TestType,
+  sectionType?: SectionType,
+): QuestionType[] | null {
+  if (!testType || !sectionType) return null; // show all
+
+  const isIelts = testType === 'academic' || testType === 'general_training';
+
+  if (isIelts) {
+    switch (sectionType) {
+      case 'listening':
+        return ['multiple_choice', 'completion', 'matching', 'dropdown'];
+      case 'reading':
+        return [
+          'multiple_choice',
+          'true_false_not_given',
+          'yes_no_not_given',
+          'completion',
+          'matching',
+          'dropdown',
+        ];
+      case 'writing':
+      case 'speaking':
+        return ['multiple_choice']; // rare edge-case fallback
+      default:
+        return null;
+    }
+  }
+
+  if (testType === 'toefl_itp') {
+    switch (sectionType) {
+      case 'listening':
+        return ['multiple_choice'];
+      case 'structure':
+        return ['multiple_choice'];
+      case 'reading':
+        return ['multiple_choice'];
+      default:
+        return null;
+    }
+  }
+
+  return null; // unknown test type — show all
+}
+
+// ---------- Contextual guidance ----------
+
+function getGuidance(
+  testType?: TestType,
+  sectionType?: SectionType,
+  partNumber?: number,
+): { icon: string; title: string; description: string } | null {
+  if (!testType || !sectionType) return null;
+
+  const isIelts = testType === 'academic' || testType === 'general_training';
+
+  if (isIelts) {
+    switch (sectionType) {
+      case 'listening':
+        return {
+          icon: '🎧',
+          title: 'IELTS Listening',
+          description:
+            'Group questions with a shared label (e.g., "Questions 1-7"). Use Completion for fill-in-the-blank, Matching for matching tasks, and Dropdown for map/diagram labelling.',
+        };
+      case 'reading':
+        return {
+          icon: '📖',
+          title: 'IELTS Reading',
+          description:
+            'Use TFNG for factual passages and YNNG for opinion passages. Use Dropdown for matching headings — list headings as dropdown options for each paragraph. Group questions with shared instructions.',
+        };
+      case 'writing':
+        return {
+          icon: '✍️',
+          title: 'IELTS Writing',
+          description:
+            'Writing tasks are defined at the section level (task description + rich text editor). Questions here are typically not needed — the student writes in the test-taking editor directly.',
+        };
+      case 'speaking':
+        return {
+          icon: '🎙️',
+          title: 'IELTS Speaking',
+          description:
+            'Speaking prompts are defined at the section level. Questions here are typically not needed — the student records audio responses directly.',
+        };
+    }
+  }
+
+  if (testType === 'toefl_itp') {
+    switch (sectionType) {
+      case 'listening':
+        if (partNumber === 1) {
+          return {
+            icon: '🎧',
+            title: 'TOEFL ITP — Listening Part A (Short Conversations)',
+            description:
+              'Each question has its own short conversation audio. Upload audio per-question using the uploader below. All questions are multiple choice with 4 options (A-D).',
+          };
+        }
+        if (partNumber === 2) {
+          return {
+            icon: '🎧',
+            title: 'TOEFL ITP — Listening Part B (Longer Conversations)',
+            description:
+              'Questions share a longer conversation audio uploaded at the section level. No per-question audio needed. All questions are multiple choice with 4 options (A-D).',
+          };
+        }
+        return {
+          icon: '🎧',
+          title: 'TOEFL ITP — Listening Part C (Talks/Lectures)',
+          description:
+            'Questions share a talk/lecture audio uploaded at the section level. No per-question audio needed. All questions are multiple choice with 4 options (A-D).',
+        };
+      case 'structure':
+        if (partNumber === 1) {
+          return {
+            icon: '📝',
+            title: 'TOEFL ITP — Structure Part 1 (Sentence Completion)',
+            description:
+              'Choose the word or phrase that best completes the sentence. All questions are multiple choice with 4 options (A-D).',
+          };
+        }
+        return {
+          icon: '📝',
+          title: 'TOEFL ITP — Structure Part 2 (Written Expression)',
+          description:
+            'Identify the underlined word/phrase that is incorrect. Use Multiple Choice (A-D). In the question text, use <u>text</u> to underline the four choices.',
+        };
+      case 'reading':
+        return {
+          icon: '📖',
+          title: 'TOEFL ITP — Reading Comprehension',
+          description:
+            'All questions are multiple choice with 4 options (A-D). Each passage is a separate section with ~10 questions.',
+        };
+    }
+  }
+
+  return null;
+}
+
+// ---------- Helpers ----------
 
 function getDefaultQuestionData(type: QuestionType): QuestionData {
   switch (type) {
@@ -133,16 +284,18 @@ function normalizeCorrectAnswer(type: QuestionType, answer: any): any {
   return answer;
 }
 
+// ---------- Component ----------
+
 export default function QuestionEditor({
   sectionId,
+  testType,
+  sectionType,
+  partNumber,
   initialData,
   onSubmit,
   onCancel,
   nextQuestionNumber = 1,
 }: QuestionEditorProps) {
-  // Add key to force re-render when switching between add/edit or different questions
-  // This is handled by the parent typically, but we should make sure our state inits correctly
-
   const [questionNumber, setQuestionNumber] = useState(initialData?.questionNumber || nextQuestionNumber);
   const [questionType, setQuestionType] = useState<QuestionType>(
     initialData?.questionType || 'multiple_choice'
@@ -164,6 +317,32 @@ export default function QuestionEditor({
   const [groupInstructions, setGroupInstructions] = useState(initialData?.groupInstructions || '');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Derive filtered question types
+  const allowedTypes = getAllowedTypes(testType, sectionType);
+  const questionTypeOptions = useMemo(() => {
+    if (!allowedTypes) return ALL_QUESTION_TYPES;
+    const filtered = ALL_QUESTION_TYPES.filter((t) => allowedTypes.includes(t.value));
+    // If editing an existing question whose type isn't in the filtered list, include it
+    if (initialData?.questionType && !allowedTypes.includes(initialData.questionType)) {
+      const existing = ALL_QUESTION_TYPES.find((t) => t.value === initialData.questionType);
+      if (existing) filtered.push(existing);
+    }
+    return filtered;
+  }, [allowedTypes, initialData?.questionType]);
+
+  // Contextual guidance
+  const guidance = getGuidance(testType, sectionType, partNumber);
+
+  // Determine which UI sections to show
+  const isIelts = testType === 'academic' || testType === 'general_training';
+  const isToeflItp = testType === 'toefl_itp';
+
+  // Audio uploader: show for TOEFL ITP Listening Part A (per-question audio), or when no test type context
+  const showAudioUploader = !testType || (isToeflItp && sectionType === 'listening' && partNumber === 1);
+
+  // Question grouping: show for IELTS (always relevant), or when no test type context
+  const showGrouping = !testType || isIelts;
 
   const handleTypeChange = (newType: QuestionType) => {
     setQuestionType(newType);
@@ -272,6 +451,19 @@ export default function QuestionEditor({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Contextual guidance banner */}
+      {guidance && (
+        <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+          <div className="flex items-start gap-3">
+            <span className="text-xl flex-shrink-0">{guidance.icon}</span>
+            <div>
+              <h4 className="text-sm font-semibold text-indigo-900">{guidance.title}</h4>
+              <p className="text-xs text-indigo-700 mt-0.5">{guidance.description}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Input
           label="Question Number"
@@ -297,15 +489,21 @@ export default function QuestionEditor({
         />
       </div>
 
-      {/* Audio Uploader (Optional) */}
-      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
-        <h4 className="text-sm font-semibold text-gray-700">Question Audio (Optional)</h4>
-        <p className="text-xs text-gray-500">Upload a specific audio clip for this question (e.g., TOEFL Part A conversations).</p>
-        <AudioUploader
-          onUpload={(url) => setAudioUrl(url)}
-          currentUrl={audioUrl}
-        />
-      </div>
+      {/* Audio Uploader — only for relevant contexts */}
+      {showAudioUploader && (
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+          <h4 className="text-sm font-semibold text-gray-700">Question Audio {isToeflItp ? '(Required for Part A)' : '(Optional)'}</h4>
+          <p className="text-xs text-gray-500">
+            {isToeflItp && sectionType === 'listening' && partNumber === 1
+              ? 'Upload the short conversation audio for this question.'
+              : 'Upload a specific audio clip for this question (e.g., TOEFL Part A conversations).'}
+          </p>
+          <AudioUploader
+            onUpload={(url) => setAudioUrl(url)}
+            currentUrl={audioUrl}
+          />
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <Textarea
@@ -317,32 +515,37 @@ export default function QuestionEditor({
           error={errors.questionText}
           required
         />
-        <p className="text-xs text-gray-500">
-          Tip: You can use &lt;u&gt;text&lt;/u&gt; to underline specific words (e.g., for Written Expression).
-        </p>
+        {(isToeflItp && sectionType === 'structure') && (
+          <p className="text-xs text-gray-500">
+            Tip: Use &lt;u&gt;text&lt;/u&gt; to underline words for Written Expression (error identification) questions.
+          </p>
+        )}
       </div>
 
-      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-4">
-        <h4 className="text-sm font-semibold text-blue-800">Question Grouping (Optional - for IELTS format)</h4>
-        <p className="text-xs text-gray-600">Use this to group related questions with shared instructions (e.g., "Questions 1-7" all share the same completion instructions)</p>
-        <Input
-          label="Group Label"
-          value={groupLabel}
-          onChange={(e) => setGroupLabel(e.target.value)}
-          placeholder="e.g., Questions 1-7"
-        />
-        <Textarea
-          label="Group Instructions"
-          value={groupInstructions}
-          onChange={(e) => setGroupInstructions(e.target.value)}
-          placeholder="e.g., Complete the notes below. Choose ONE WORD ONLY from the passage for each answer."
-          rows={3}
-        />
-      </div>
+      {/* Question Grouping — only for IELTS or when test type is unknown */}
+      {showGrouping && (
+        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-4">
+          <h4 className="text-sm font-semibold text-blue-800">Question Grouping (IELTS format)</h4>
+          <p className="text-xs text-gray-600">Group related questions with shared instructions (e.g., &quot;Questions 1-7&quot; all share the same completion instructions)</p>
+          <Input
+            label="Group Label"
+            value={groupLabel}
+            onChange={(e) => setGroupLabel(e.target.value)}
+            placeholder="e.g., Questions 1-7"
+          />
+          <Textarea
+            label="Group Instructions"
+            value={groupInstructions}
+            onChange={(e) => setGroupInstructions(e.target.value)}
+            placeholder="e.g., Complete the notes below. Choose ONE WORD ONLY from the passage for each answer."
+            rows={3}
+          />
+        </div>
+      )}
 
       <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
         <h4 className="text-sm font-semibold text-gray-700 mb-4">
-          {questionTypeOptions.find((o) => o.value === questionType)?.label} Settings
+          {ALL_QUESTION_TYPES.find((o) => o.value === questionType)?.label} Settings
         </h4>
         {renderTypeEditor()}
       </div>

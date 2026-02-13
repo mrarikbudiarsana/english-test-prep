@@ -11,13 +11,14 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Modal } from '@/components/ui/Modal';
 import QuestionEditor from '@/components/admin/QuestionEditor';
 import { sectionTypeLabel, questionTypeLabel } from '@/lib/utils';
-import type { Section, Question } from '@/types/test';
+import type { Test, Section, Question } from '@/types/test';
 
 export default function AdminSectionQuestionsPage() {
   const params = useParams();
   const testId = params.testId as string;
   const sectionId = params.sectionId as string;
 
+  const [test, setTest] = useState<Test | null>(null);
   const [section, setSection] = useState<Section | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,10 +33,13 @@ export default function AdminSectionQuestionsPage() {
     try {
       setLoading(true);
       setError(null);
-      const [sectionsRes, questionsRes] = await Promise.all([
+      const [testRes, sectionsRes, questionsRes] = await Promise.all([
+        api.get(`/admin/tests/${testId}`),
         api.get(`/tests/${testId}/sections`),
         api.get(`/admin/tests/${testId}/sections/${sectionId}/questions`),
       ]);
+
+      setTest(testRes.data.data || testRes.data);
 
       const allSections = sectionsRes.data.data || sectionsRes.data;
       const currentSection = Array.isArray(allSections)
@@ -189,13 +193,13 @@ export default function AdminSectionQuestionsPage() {
   // e.g., "Choose TWO" question 11 displays as 11-12, so next should be 13
   const nextQuestionNumber = questions.length > 0
     ? questions.reduce((maxEnd, q) => {
-        const qData = q.questionData as any;
-        const consumed = (q.questionType === 'multiple_choice' && qData?.multiSelect)
-          ? (qData.expectedAnswers || 2)
-          : 1;
-        const questionEnd = q.questionNumber + consumed - 1;
-        return Math.max(maxEnd, questionEnd);
-      }, 0) + 1
+      const qData = q.questionData as any;
+      const consumed = (q.questionType === 'multiple_choice' && qData?.multiSelect)
+        ? (qData.expectedAnswers || 2)
+        : 1;
+      const questionEnd = q.questionNumber + consumed - 1;
+      return Math.max(maxEnd, questionEnd);
+    }, 0) + 1
     : 1;
 
   return (
@@ -333,25 +337,28 @@ export default function AdminSectionQuestionsPage() {
       >
         <QuestionEditor
           sectionId={sectionId}
+          testType={test?.testType}
+          sectionType={section?.sectionType}
+          partNumber={section?.partNumber ?? undefined}
           initialData={
             editingQuestion && editingQuestion.id
               ? {
-                  id: editingQuestion.id,
-                  questionNumber: editingQuestion.questionNumber,
-                  questionType: editingQuestion.questionType,
-                  questionText: editingQuestion.questionText,
-                  questionData: editingQuestion.questionData,
-                  correctAnswer: editingQuestion.correctAnswer,
-                  points: editingQuestion.points,
-                  explanation: editingQuestion.explanation || null,
+                id: editingQuestion.id,
+                questionNumber: editingQuestion.questionNumber,
+                questionType: editingQuestion.questionType,
+                questionText: editingQuestion.questionText,
+                questionData: editingQuestion.questionData,
+                correctAnswer: editingQuestion.correctAnswer,
+                points: editingQuestion.points,
+                explanation: editingQuestion.explanation || null,
+                groupLabel: editingQuestion.groupLabel || null,
+                groupInstructions: editingQuestion.groupInstructions || null,
+              }
+              : editingQuestion
+                ? {
                   groupLabel: editingQuestion.groupLabel || null,
                   groupInstructions: editingQuestion.groupInstructions || null,
                 }
-              : editingQuestion
-                ? {
-                    groupLabel: editingQuestion.groupLabel || null,
-                    groupInstructions: editingQuestion.groupInstructions || null,
-                  }
                 : undefined
           }
           nextQuestionNumber={nextQuestionNumber}

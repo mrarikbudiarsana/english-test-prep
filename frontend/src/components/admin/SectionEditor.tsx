@@ -34,12 +34,14 @@ interface SectionFormData {
 
 interface SectionEditorProps {
   testId: string;
-  testType: string; // Add testType prop
+  testType: string;
   existingSections?: Section[];
   initialData?: Partial<Section>;
   onSubmit: (data: SectionFormData) => void | Promise<void>;
   onCancel: () => void;
 }
+
+// ---------- Section type options per test type ----------
 
 const allSectionTypeOptions = [
   { value: 'listening', label: 'Listening' },
@@ -49,28 +51,96 @@ const allSectionTypeOptions = [
   { value: 'structure', label: 'Structure & Written Expression' },
 ];
 
-export default function SectionEditor({ testId, testType, existingSections = [], initialData, onSubmit, onCancel }: SectionEditorProps) {
-  // Filter section types based on testType
-  const sectionTypeOptions = allSectionTypeOptions.filter(option => {
-    if (option.value === 'structure') {
-      return testType === 'toefl_itp';
-    }
-    // TOEFL iTP doesn't have speaking or writing in the traditional sense of the main test, 
-    // but often they are included in practice platforms. 
-    // strictly speaking: Listening, Structure, Reading.
-    // But let's leave them enabling if the user wants to add them, EXCEPT Structure which is unique to ITP.
+function getSectionTypeOptions(testType: string) {
+  if (testType === 'toefl_itp') {
+    // TOEFL ITP: Listening, Structure, Reading only
+    return allSectionTypeOptions.filter(o =>
+      ['listening', 'structure', 'reading'].includes(o.value)
+    );
+  }
+
+  // IELTS and others: all except Structure
+  return allSectionTypeOptions.filter(o => {
+    if (o.value === 'structure') return testType === 'toefl_itp';
     return true;
   });
+}
+
+// ---------- Smart defaults ----------
+
+function getDefaultDuration(testType: string, sectionType: SectionType): number {
+  const isIelts = testType === 'academic' || testType === 'general_training';
+  if (isIelts) {
+    switch (sectionType) {
+      case 'listening': return 30;
+      case 'reading': return 60;
+      case 'writing': return 60;
+      case 'speaking': return 14;
+      default: return 30;
+    }
+  }
+  if (testType === 'toefl_itp') {
+    switch (sectionType) {
+      case 'listening': return 35;
+      case 'structure': return 25;
+      case 'reading': return 55;
+      default: return 30;
+    }
+  }
+  return 30;
+}
+
+// ---------- Structure guide ----------
+
+function getStructureGuide(testType: string): { title: string; lines: string[] } | null {
+  const isIelts = testType === 'academic' || testType === 'general_training';
+
+  if (isIelts) {
+    return {
+      title: testType === 'academic' ? 'IELTS Academic Structure' : 'IELTS General Training Structure',
+      lines: [
+        'Listening — 4 sections (Parts 1-4), 30 min, ~40 questions',
+        'Reading — 3 sections (Passages 1-3), 60 min, ~40 questions',
+        'Writing — 2 sections (Task 1 + Task 2), 60 min',
+        'Speaking — 3 sections (Parts 1-3), 11-14 min',
+      ],
+    };
+  }
+
+  if (testType === 'toefl_itp') {
+    return {
+      title: 'TOEFL ITP Level 1 Structure',
+      lines: [
+        'Section 1 — Listening: 3 parts, 35 min, 50 questions',
+        '    Part A: Short conversations (30 Qs, audio per question)',
+        '    Part B: Longer conversations (8 Qs, shared audio)',
+        '    Part C: Talks/lectures (12 Qs, shared audio)',
+        'Section 2 — Structure: 2 parts, 25 min, 40 questions',
+        '    Part 1: Sentence completion (15 Qs, MCQ)',
+        '    Part 2: Error identification (25 Qs, Dropdown)',
+        'Section 3 — Reading: 5 passages, 55 min, 50 questions',
+      ],
+    };
+  }
+
+  return null;
+}
+
+// ---------- Component ----------
+
+export default function SectionEditor({ testId, testType, existingSections = [], initialData, onSubmit, onCancel }: SectionEditorProps) {
+  const sectionTypeOptions = getSectionTypeOptions(testType);
+  const structureGuide = getStructureGuide(testType);
+  const [showGuide, setShowGuide] = useState(false);
 
   const [sectionType, setSectionType] = useState<SectionType>(initialData?.sectionType || 'listening');
-  // ... (rest of state items are same)
   const [sectionOrder, setSectionOrder] = useState(initialData?.sectionOrder || 1);
   const [title, setTitle] = useState(initialData?.title || '');
   const [instructions, setInstructions] = useState(initialData?.instructions || '');
-  const [durationMinutes, setDurationMinutes] = useState(initialData?.durationMinutes || 30);
+  const [durationMinutes, setDurationMinutes] = useState(
+    initialData?.durationMinutes || getDefaultDuration(testType, initialData?.sectionType || 'listening')
+  );
   const [audioUrl, setAudioUrl] = useState<string | null>(initialData?.audioUrl || null);
-
-
 
   const [passageTitle, setPassageTitle] = useState(initialData?.passageTitle || '');
   const [passageText, setPassageText] = useState(initialData?.passageText || '');
@@ -105,13 +175,18 @@ export default function SectionEditor({ testId, testType, existingSections = [],
   const showDuration = isFirstSectionOfType();
 
   useEffect(() => {
-    // Only force reset if we are creating new and it's hidden. 
-    // If editing existing hidden one, keep as is (likely 0) or force to 0 if it was wrong?
-    // Let's force 0 if hidden to be safe.
     if (!showDuration) {
       setDurationMinutes(0);
     }
-  }, [showDuration]); // Removed initialData dependency to avoid infinite loop if initialData doesn't change
+  }, [showDuration]);
+
+  // Update default duration when section type changes (only for new sections)
+  const handleSectionTypeChange = (newType: SectionType) => {
+    setSectionType(newType);
+    if (!initialData?.id) {
+      setDurationMinutes(getDefaultDuration(testType, newType));
+    }
+  };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -169,11 +244,50 @@ export default function SectionEditor({ testId, testType, existingSections = [],
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Test structure guide */}
+      {structureGuide && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-lg overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowGuide(!showGuide)}
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-indigo-100 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-base">📋</span>
+              <span className="text-sm font-semibold text-indigo-900">{structureGuide.title}</span>
+            </div>
+            <svg
+              className={`w-4 h-4 text-indigo-600 transition-transform ${showGuide ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showGuide && (
+            <div className="px-4 pb-3 border-t border-indigo-200 pt-3">
+              <ul className="space-y-1">
+                {structureGuide.lines.map((line, i) => (
+                  <li
+                    key={i}
+                    className={`text-xs text-indigo-800 ${line.startsWith('    ') ? 'ml-4 text-indigo-600' : 'font-medium'
+                      }`}
+                  >
+                    {line.trim()}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Select
           label="Section Type"
           value={sectionType}
-          onChange={(e) => setSectionType(e.target.value as SectionType)}
+          onChange={(e) => handleSectionTypeChange(e.target.value as SectionType)}
           options={sectionTypeOptions}
         />
         <Input
@@ -222,13 +336,26 @@ export default function SectionEditor({ testId, testType, existingSections = [],
               label="Part Number"
               value={String(partNumber)}
               onChange={(e) => setPartNumber(parseInt(e.target.value))}
-              options={[
-                { value: '1', label: 'Part 1' },
-                { value: '2', label: 'Part 2' },
-                { value: '3', label: 'Part 3' },
-                { value: '4', label: 'Part 4' },
-              ]}
+              options={
+                testType === 'toefl_itp'
+                  ? [
+                    { value: '1', label: 'Part A — Short Conversations' },
+                    { value: '2', label: 'Part B — Longer Conversations' },
+                    { value: '3', label: 'Part C — Talks/Lectures' },
+                  ]
+                  : [
+                    { value: '1', label: 'Part 1' },
+                    { value: '2', label: 'Part 2' },
+                    { value: '3', label: 'Part 3' },
+                    { value: '4', label: 'Part 4' },
+                  ]
+              }
             />
+          )}
+          {testType === 'toefl_itp' && partNumber === 1 && (
+            <p className="text-xs text-purple-700 bg-purple-100 rounded p-2">
+              💡 Part A: Each question has its own short conversation audio. Upload audio per-question in the question editor.
+            </p>
           )}
           <AudioUploader
             onUpload={(url) => setAudioUrl(url || null)}
@@ -245,7 +372,7 @@ export default function SectionEditor({ testId, testType, existingSections = [],
             <span className="text-xs text-green-700 font-medium">1 Section = 1 Passage</span>
           </div>
           <p className="text-xs text-green-700 -mt-2">
-            To add multiple passages, create a separate "Reading" section for each passage.
+            To add multiple passages, create a separate &quot;Reading&quot; section for each passage.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <Select
@@ -288,8 +415,8 @@ export default function SectionEditor({ testId, testType, existingSections = [],
               value={String(partNumber)}
               onChange={(e) => setPartNumber(parseInt(e.target.value))}
               options={[
-                { value: '1', label: 'Part 1' },
-                { value: '2', label: 'Part 2' },
+                { value: '1', label: 'Part 1 — Sentence Completion (MCQ)' },
+                { value: '2', label: 'Part 2 — Written Expression (MCQ)' },
               ]}
             />
           </div>
