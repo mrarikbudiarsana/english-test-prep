@@ -140,8 +140,10 @@ export async function getQuestionsBySection(sectionId: string) {
 export async function createQuestion(
   sectionId: string,
   data: {
+    questionNumber?: number;
     questionType: string;
     questionText: string;
+    audioUrl?: string;
     questionData: any;
     correctAnswer: any;
     points?: number;
@@ -162,6 +164,7 @@ export async function updateQuestion(
     questionNumber: number;
     questionType: string;
     questionText: string;
+    audioUrl: string;
     questionData: any;
     correctAnswer: any;
     points: number;

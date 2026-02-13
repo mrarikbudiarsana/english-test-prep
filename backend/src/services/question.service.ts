@@ -81,8 +81,10 @@ export async function getQuestionById(id: string) {
 export async function createQuestion(
   sectionId: string,
   data: {
+    questionNumber?: number;
     questionType: string;
     questionText: string;
+    audioUrl?: string;
     questionData: any;
     correctAnswer: any;
     points?: number;
@@ -97,15 +99,19 @@ export async function createQuestion(
     throw new NotFoundError('Section not found');
   }
 
-  // Auto-assign the next question_number
-  const maxNumber = await questionModel.getMaxQuestionNumber(sectionId);
-  const questionNumber = maxNumber + 1;
+  // Preserve explicit question number from admin payload when provided,
+  // otherwise auto-assign the next available number.
+  const questionNumber =
+    data.questionNumber && data.questionNumber > 0
+      ? data.questionNumber
+      : (await questionModel.getMaxQuestionNumber(sectionId)) + 1;
 
   return questionModel.create({
     sectionId,
     questionNumber,
     questionType: data.questionType,
     questionText: data.questionText,
+    audioUrl: data.audioUrl,
     questionData: data.questionData,
     correctAnswer: data.correctAnswer,
     points: data.points,
@@ -124,6 +130,7 @@ export async function updateQuestion(
     questionNumber: number;
     questionType: string;
     questionText: string;
+    audioUrl: string;
     questionData: any;
     correctAnswer: any;
     points: number;
