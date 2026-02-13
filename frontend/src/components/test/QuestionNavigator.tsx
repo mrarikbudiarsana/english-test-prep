@@ -81,10 +81,7 @@ export default function QuestionNavigator({
             const activeBtn = scrollContainerRef.current.querySelector(`[data-question-index="${currentIndex}"]`) as HTMLElement | null;
             if (activeBtn) {
                 const container = scrollContainerRef.current;
-                if (variant === 'grid') {
-                    const scrollTop = activeBtn.offsetTop - container.offsetHeight / 2 + activeBtn.offsetHeight / 2;
-                    container.scrollTo({ top: scrollTop, behavior: 'smooth' });
-                } else if (orientation === 'vertical') {
+                if (orientation === 'vertical') {
                     const scrollTop = activeBtn.offsetTop - container.offsetHeight / 2 + activeBtn.offsetHeight / 2;
                     container.scrollTo({ top: scrollTop, behavior: 'smooth' });
                 } else {
