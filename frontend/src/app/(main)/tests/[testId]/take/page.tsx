@@ -733,8 +733,8 @@ function TestTakingContent() {
               {state.currentSectionType === 'reading' && (
                 <div className="flex flex-col h-full">
 
-                  {/* Passage Navigation Tabs (Visible for TOEFL/IELTS, hidden for PTE which is linear) */}
-                  {currentSectionParts.length > 1 && ['toefl_itp', 'toefl_ibt', 'academic', 'general_training'].includes(testType) && (
+                  {/* Passage Navigation Tabs (Visible for TOEFL only, hidden for IELTS/PTE) */}
+                  {currentSectionParts.length > 1 && ['toefl_itp', 'toefl_ibt'].includes(testType) && (
                     <div className="flex items-center space-x-1 px-4 py-2 border-b border-gray-200 bg-white shrink-0 overflow-x-auto">
                       {currentSectionParts.map((part, idx) => (
                         <button
