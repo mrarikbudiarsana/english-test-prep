@@ -28,14 +28,31 @@ app.use(express.urlencoded({ extended: true }));
 // API routes
 app.use('/api/v1', routes);
 
+import { query } from './config/database';
+
 // Welcome route
 app.get('/', (_req, res) => {
   res.json({ message: 'Welcome to English Test Prep API' });
 });
 
 // Health check
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', async (_req, res) => {
+  try {
+    await query('SELECT 1');
+    res.json({
+      status: 'ok',
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Health check database error:', error);
+    res.status(500).json({
+      status: 'error',
+      database: 'disconnected',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Error handler
