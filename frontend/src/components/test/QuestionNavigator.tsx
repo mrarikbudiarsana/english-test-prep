@@ -35,6 +35,23 @@ export default function QuestionNavigator({
     nextLabel = 'Next',
 }: QuestionNavigatorProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const getNumberTileClass = (
+        displayNumber: number,
+        isCurrent: boolean,
+        isAnswered: boolean,
+        isClickable: boolean
+    ) =>
+        cn(
+            "flex items-center justify-center rounded-[4px] border text-sm font-bold transition-colors duration-200",
+            String(displayNumber).length > 2 ? "h-7 min-w-[2.5rem] px-2" : "h-7 w-7",
+            isCurrent
+                ? "bg-blue-600 border-blue-600 text-white shadow-sm ring-2 ring-blue-100 ring-offset-1"
+                : isAnswered
+                    ? "bg-blue-50 border-blue-200 text-blue-700"
+                    : "bg-white border-gray-300 text-gray-700 hover:border-gray-400",
+            !isClickable && !isCurrent && "cursor-default opacity-80",
+            !isClickable && isCurrent && "cursor-default"
+        );
 
     // Auto-scroll to active question
     useEffect(() => {
@@ -58,13 +75,13 @@ export default function QuestionNavigator({
 
     if (variant === 'grid') {
         return (
-            <div className="h-full w-full bg-[#e3e3e3] rounded-md border border-[#c8c8c8] p-4 flex flex-col">
+            <div className="w-full rounded-2xl border border-blue-100 bg-gradient-to-b from-white to-blue-50/60 p-3 shadow-sm">
                 <div
                     ref={scrollContainerRef}
-                    className="flex-1 min-h-0 overflow-y-auto scrollbar-hide"
+                    className="max-h-[24rem] overflow-y-auto scrollbar-hide pr-1"
                     style={{ scrollBehavior: 'smooth' }}
                 >
-                    <div className="grid grid-cols-5 gap-2.5">
+                    <div className="grid grid-cols-5 justify-items-center gap-x-1.5 gap-y-2">
                         {Array.from({ length: totalQuestions }).map((_, idx) => {
                             const isCurrent = idx === currentIndex;
                             const isAnswered = answeredIndices.has(idx);
@@ -77,16 +94,7 @@ export default function QuestionNavigator({
                                     data-question-index={idx}
                                     onClick={() => isClickable && onSelect(idx)}
                                     disabled={!isClickable}
-                                    className={cn(
-                                        "h-12 rounded-lg border text-xl leading-none font-medium transition-all",
-                                        isCurrent
-                                            ? "bg-[#f7f7f7] text-black border-[#4f4f4f] ring-2 ring-[#bdd4ff]"
-                                        : isAnswered
-                                                ? "bg-[#e8ecf4] text-gray-900 border-[#8f8f8f]"
-                                                : "bg-[#e6e6e6] text-gray-900 border-[#8f8f8f] hover:bg-[#dddddd]",
-                                        !isClickable && !isCurrent && "cursor-default opacity-80",
-                                        !isClickable && isCurrent && "cursor-default"
-                                    )}
+                                    className={getNumberTileClass(displayNumber, isCurrent, isAnswered, isClickable)}
                                 >
                                     {displayNumber}
                                 </button>
@@ -101,10 +109,10 @@ export default function QuestionNavigator({
                             onClick={onPrevious}
                             disabled={!onPrevious || isFirst}
                             className={cn(
-                                "h-14 rounded-xl border text-xl font-medium transition-colors",
+                                "h-12 rounded-xl border text-base font-semibold transition-colors",
                                 (!onPrevious || isFirst)
-                                    ? "text-gray-400 border-[#b8b8b8] bg-[#e2e2e2] cursor-not-allowed"
-                                    : "text-gray-900 border-[#8f8f8f] bg-[#e9e9e9] hover:bg-[#dedede]"
+                                    ? "text-slate-400 border-slate-200 bg-slate-100 cursor-not-allowed"
+                                    : "text-slate-700 border-slate-200 bg-white hover:bg-slate-50"
                             )}
                         >
                             {previousLabel}
@@ -113,10 +121,10 @@ export default function QuestionNavigator({
                             onClick={onNext}
                             disabled={!onNext || isLast}
                             className={cn(
-                                "h-14 rounded-xl border px-2 text-base font-semibold transition-colors leading-tight",
+                                "h-12 rounded-xl border px-2 text-base font-semibold transition-colors leading-tight",
                                 (!onNext || isLast)
-                                    ? "text-gray-400 border-[#b8b8b8] bg-[#e2e2e2] cursor-not-allowed"
-                                    : "text-gray-900 border-[#8f8f8f] bg-[#e9e9e9] hover:bg-[#dedede]"
+                                    ? "text-slate-400 border-slate-200 bg-slate-100 cursor-not-allowed"
+                                    : "text-white border-blue-600 bg-blue-600 hover:bg-blue-700"
                             )}
                         >
                             {nextLabel}
@@ -150,13 +158,6 @@ export default function QuestionNavigator({
                     const isCurrent = idx === currentIndex;
                     const isAnswered = answeredIndices.has(idx);
                     const displayNumber = startIndex + idx;
-
-                    // Logic for clickability:
-                    // If navigation is allowed (Structure/Reading), all are clickable.
-                    // If not allowed (Listening), NONE are clickable (view only status), OR maybe only previous are disabled? 
-                    // Requirement: "ss cannot go back". 
-                    // So for Listening: cannot Click previous. Future? Usually blocked until reached.
-                    // Simplest interpretation: Listening = View Only tracking.
                     const isClickable = allowNavigation;
 
                     return (
@@ -165,16 +166,7 @@ export default function QuestionNavigator({
                             data-question-index={idx}
                             onClick={() => isClickable && onSelect(idx)}
                             disabled={!isClickable}
-                            className={cn(
-                                "flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-sm font-medium transition-all snap-center",
-                                isCurrent
-                                    ? "bg-blue-600 text-white shadow-md scale-105 ring-2 ring-blue-200"
-                                    : isAnswered
-                                        ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                        : "bg-white text-gray-700 border border-gray-200 hover:border-gray-300",
-                                !isClickable && !isCurrent && "cursor-default hover:border-gray-200 opacity-80", // Visual style for non-clickable
-                                !isClickable && isCurrent && "cursor-default"
-                            )}
+                            className={cn("flex-shrink-0 snap-center", getNumberTileClass(displayNumber, isCurrent, isAnswered, isClickable))}
                         >
                             {displayNumber}
                         </button>

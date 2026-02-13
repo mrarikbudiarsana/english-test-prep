@@ -69,6 +69,7 @@ function TestTakingContent() {
   const [activePartIndex, setActivePartIndex] = useState(0);
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [viewingDirections, setViewingDirections] = useState(false); // Controls interstitial directions pages
+  const [toeflReviewUnlocked, setToeflReviewUnlocked] = useState(false);
 
   const [testTitle, setTestTitle] = useState<string>('');
   const [testType, setTestType] = useState<TestType>('academic'); // Default, updated on load
@@ -269,9 +270,19 @@ function TestTakingContent() {
     focusQuestionAtIndex(index);
   }, [focusQuestionAtIndex]);
 
+  const startToeflReview = useCallback(() => {
+    setToeflReviewUnlocked(true);
+    setViewingDirections(false);
+    const firstUnansweredIndex = questions.findIndex(q => !state.answeredQuestions.has(q.id));
+    const reviewIndex = firstUnansweredIndex !== -1 ? firstUnansweredIndex : 0;
+    if (reviewIndex >= 0) {
+      setCurrentQuestionIndex(reviewIndex);
+    }
+  }, [questions, state.answeredQuestions]);
+
   const handleNextQuestion = () => {
     // TOEFL ITP Navigation Logic
-    if (testType === 'toefl_itp' && state.currentSectionType !== 'reading') {
+    if (testType === 'toefl_itp' && state.currentSectionType === 'listening' && !toeflReviewUnlocked) {
       handleToeflNavigation('next');
       return;
     }
@@ -280,6 +291,15 @@ function TestTakingContent() {
 
     if (currentQuestionIndex < questions.length - 1) {
       selectQuestionIndex(currentQuestionIndex + 1);
+    } else if (
+      testType === 'toefl_itp' &&
+      state.currentSectionType === 'listening' &&
+      unansweredCount > 0
+    ) {
+      const firstUnansweredIndex = questions.findIndex(q => !state.answeredQuestions.has(q.id));
+      if (firstUnansweredIndex !== -1) {
+        selectQuestionIndex(firstUnansweredIndex);
+      }
     } else if (mode === 'full' && currentSectionOrder.indexOf(state.currentSectionType!) < currentSectionOrder.length - 1) {
       openSubmitModal('section');
     } else {
@@ -300,7 +320,7 @@ function TestTakingContent() {
 
 
   const handlePreviousQuestion = () => {
-    if (testType === 'toefl_itp' && state.currentSectionType !== 'reading') {
+    if (testType === 'toefl_itp' && state.currentSectionType === 'listening' && !toeflReviewUnlocked) {
       handleToeflNavigation('prev');
       return;
     }
@@ -335,7 +355,8 @@ function TestTakingContent() {
             setViewingDirections(shouldShowDirectionsBetweenParts(activePartIndex, nextPartIdx));
           }
         } else {
-          openSubmitModal('section');
+          // End of first-pass flow: unlock review instead of immediate submit.
+          startToeflReview();
         }
         return;
       }
@@ -356,8 +377,8 @@ function TestTakingContent() {
             setViewingDirections(shouldShowDirectionsBetweenParts(activePartIndex, nextPartIdx));
           }
         } else {
-          // End of section
-          openSubmitModal('section');
+          // End of first-pass flow: unlock review instead of immediate submit.
+          startToeflReview();
         }
       } else {
         // Normal next question
@@ -398,6 +419,16 @@ function TestTakingContent() {
 
   const handleSubmitSection = async () => {
     if (state.currentSectionType) {
+      if (
+        testType === 'toefl_itp' &&
+        state.currentSectionType === 'listening' &&
+        unansweredCount > 0
+      ) {
+        setShowSubmitModal(false);
+        startToeflReview();
+        return;
+      }
+
       timer.stop();
       await submitSection(state.currentSectionType);
       setShowSubmitModal(false);
@@ -423,6 +454,7 @@ function TestTakingContent() {
 
   const currentQuestion = questions[currentQuestionIndex];
   const currentSectionParts = sections.filter(s => s.sectionType === state.currentSectionType);
+  const isToeflLockedSection = testType === 'toefl_itp' && state.currentSectionType === 'listening';
   const currentSectionOrder = testType === 'toefl_itp' ? SECTION_ORDER_TOEFL : SECTION_ORDER;
   const currentSectionIndex = state.currentSectionType
     ? currentSectionOrder.indexOf(state.currentSectionType)
@@ -431,12 +463,19 @@ function TestTakingContent() {
     currentSectionIndex >= 0 && currentSectionIndex < currentSectionOrder.length - 1
       ? currentSectionOrder[currentSectionIndex + 1]
       : null;
+  const toeflHasUnanswered = questions.some(q => !state.answeredQuestions.has(q.id));
   const topActionLabel =
-    mode === 'full' && upcomingSectionType
+    isToeflLockedSection && !toeflReviewUnlocked
+      ? 'Review Answers'
+      : isToeflLockedSection && toeflHasUnanswered
+        ? 'Complete All Answers'
+        : mode === 'full' && upcomingSectionType
       ? `Go to ${sectionTypeLabel(upcomingSectionType)}`
       : 'Submit Test';
   const navigatorActionLabel =
-    currentQuestionIndex < questions.length - 1
+    isToeflLockedSection && !toeflReviewUnlocked
+      ? (currentQuestionIndex < questions.length - 1 ? 'Continue' : 'Review Answers')
+      : currentQuestionIndex < questions.length - 1
       ? 'Continue'
       : mode === 'full' && upcomingSectionType
         ? `Go to ${sectionTypeLabel(upcomingSectionType)}`
@@ -446,6 +485,7 @@ function TestTakingContent() {
   useEffect(() => {
     setActivePartIndex(0);
     setCurrentPromptIndex(0);
+    setToeflReviewUnlocked(false);
   }, [state.currentSectionType]);
 
   // Reset currentPromptIndex when changing active part
@@ -626,6 +666,20 @@ function TestTakingContent() {
 
             <button
               onClick={() => {
+                if (isToeflLockedSection) {
+                  if (!toeflReviewUnlocked) {
+                    startToeflReview();
+                    return;
+                  }
+                  if (toeflHasUnanswered) {
+                    const firstUnansweredIndex = questions.findIndex(q => !state.answeredQuestions.has(q.id));
+                    if (firstUnansweredIndex !== -1) {
+                      selectQuestionIndex(firstUnansweredIndex);
+                    }
+                    return;
+                  }
+                }
+
                 openSubmitModal(
                   mode === 'full' && currentSectionIndex < currentSectionOrder.length - 1
                     ? 'section'
@@ -736,12 +790,16 @@ function TestTakingContent() {
                     </div>
 
                     {/* Right-side Question Navigator */}
-                    <div className="w-full xl:w-[23rem] shrink-0 min-h-0 h-[22rem] xl:h-auto">
+                    <div className="w-full xl:w-[21rem] shrink-0 xl:self-start">
                       <QuestionNavigator
                         totalQuestions={questions.length}
                         currentIndex={currentQuestionIndex}
                         onSelect={(index) => {
-                          if (state.currentSectionType !== 'listening') {
+                          const canJumpToQuestion =
+                            isToeflLockedSection
+                              ? toeflReviewUnlocked
+                              : state.currentSectionType !== 'listening';
+                          if (canJumpToQuestion) {
                             setCurrentQuestionIndex(index);
                           }
                         }}
@@ -752,12 +810,20 @@ function TestTakingContent() {
                               .filter(idx => idx !== -1)
                           )
                         }
-                        allowNavigation={state.currentSectionType !== 'listening'}
+                        allowNavigation={
+                          isToeflLockedSection
+                            ? toeflReviewUnlocked
+                            : state.currentSectionType !== 'listening'
+                        }
                         startIndex={1}
                         variant="grid"
                         onPrevious={handlePreviousQuestion}
                         onNext={handleNextQuestion}
-                        isFirst={isPartBCMode ? true : currentQuestionIndex === 0}
+                        isFirst={
+                          (isToeflLockedSection && !toeflReviewUnlocked)
+                            ? true
+                            : (isPartBCMode ? true : currentQuestionIndex === 0)
+                        }
                         isLast={isPartBCMode ? false : (currentQuestionIndex === questions.length - 1 && mode !== 'full')}
                         previousLabel="Previous"
                         nextLabel={navigatorActionLabel}
@@ -1218,7 +1284,7 @@ function TestTakingContent() {
 
                       {/* Right-side Question Navigator for Reading */}
                       {testType === 'toefl_itp' && (
-                        <div className="w-[23rem] shrink-0 min-h-0 pl-4">
+                        <div className="w-[21rem] shrink-0 pl-4 self-start">
                           <QuestionNavigator
                             totalQuestions={questions.length}
                             currentIndex={currentQuestionIndex}
@@ -1237,7 +1303,11 @@ function TestTakingContent() {
                             variant="grid"
                             onPrevious={handlePreviousQuestion}
                             onNext={handleNextQuestion}
-                            isFirst={isPartBCMode ? true : currentQuestionIndex === 0}
+                            isFirst={
+                              (isToeflLockedSection && !toeflReviewUnlocked)
+                                ? true
+                                : (isPartBCMode ? true : currentQuestionIndex === 0)
+                            }
                             isLast={isPartBCMode ? false : (currentQuestionIndex === questions.length - 1 && mode !== 'full')}
                             previousLabel="Previous"
                             nextLabel={navigatorActionLabel}
