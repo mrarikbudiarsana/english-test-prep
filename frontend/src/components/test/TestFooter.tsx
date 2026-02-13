@@ -129,7 +129,7 @@ export default function TestFooter({
                                                     if (isActive) {
                                                         buttonClass += 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-200';
                                                     } else if (isAnswered) {
-                                                        buttonClass += 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100';
+                                                        buttonClass += 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100';
                                                     } else {
                                                         buttonClass += 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50';
                                                     }

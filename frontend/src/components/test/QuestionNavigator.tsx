@@ -42,13 +42,13 @@ export default function QuestionNavigator({
         isClickable: boolean
     ) =>
         cn(
-            "flex items-center justify-center rounded-[4px] border text-sm font-bold transition-colors duration-200",
-            String(displayNumber).length > 2 ? "h-7 min-w-[2.5rem] px-2" : "h-7 w-7",
+            "flex items-center justify-center rounded-md border text-sm font-bold transition-all duration-200",
+            String(displayNumber).length > 2 ? "h-8 min-w-[2rem] px-1" : "h-8 w-8",
             isCurrent
-                ? "bg-blue-600 border-blue-600 text-white shadow-sm ring-2 ring-blue-100 ring-offset-1"
+                ? "bg-blue-600 border-blue-600 text-white shadow-md ring-2 ring-blue-100 ring-offset-1"
                 : isAnswered
-                    ? "bg-blue-50 border-blue-200 text-blue-700"
-                    : "bg-white border-gray-300 text-gray-700 hover:border-gray-400",
+                    ? "bg-emerald-100 border-emerald-200 text-emerald-700"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50",
             !isClickable && !isCurrent && "cursor-default opacity-80",
             !isClickable && isCurrent && "cursor-default"
         );
@@ -75,13 +75,13 @@ export default function QuestionNavigator({
 
     if (variant === 'grid') {
         return (
-            <div className="w-full rounded-2xl border border-blue-100 bg-gradient-to-b from-white to-blue-50/60 p-3 shadow-sm">
+            <div className="w-full rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
                 <div
                     ref={scrollContainerRef}
                     className="max-h-[24rem] overflow-y-auto scrollbar-hide pr-1"
                     style={{ scrollBehavior: 'smooth' }}
                 >
-                    <div className="grid grid-cols-5 justify-items-center gap-x-1.5 gap-y-2">
+                    <div className="grid grid-cols-5 justify-items-center gap-2">
                         {Array.from({ length: totalQuestions }).map((_, idx) => {
                             const isCurrent = idx === currentIndex;
                             const isAnswered = answeredIndices.has(idx);
@@ -104,15 +104,15 @@ export default function QuestionNavigator({
                 </div>
 
                 {(onPrevious || onNext) && (
-                    <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="mt-3 grid grid-cols-2 gap-2">
                         <button
                             onClick={onPrevious}
                             disabled={!onPrevious || isFirst}
                             className={cn(
-                                "h-12 rounded-xl border text-base font-semibold transition-colors",
+                                "h-10 rounded-lg border text-sm font-medium transition-colors",
                                 (!onPrevious || isFirst)
-                                    ? "text-slate-400 border-slate-200 bg-slate-100 cursor-not-allowed"
-                                    : "text-slate-700 border-slate-200 bg-white hover:bg-slate-50"
+                                    ? "text-gray-300 border-gray-100 bg-gray-50 cursor-not-allowed"
+                                    : "text-gray-700 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300"
                             )}
                         >
                             {previousLabel}
@@ -121,9 +121,9 @@ export default function QuestionNavigator({
                             onClick={onNext}
                             disabled={!onNext || isLast}
                             className={cn(
-                                "h-12 rounded-xl border px-2 text-base font-semibold transition-colors leading-tight",
+                                "h-10 rounded-lg border px-2 text-sm font-medium transition-colors leading-tight shadow-sm",
                                 (!onNext || isLast)
-                                    ? "text-slate-400 border-slate-200 bg-slate-100 cursor-not-allowed"
+                                    ? "text-gray-300 border-gray-100 bg-gray-50 cursor-not-allowed shadow-none"
                                     : "text-white border-blue-600 bg-blue-600 hover:bg-blue-700"
                             )}
                         >
