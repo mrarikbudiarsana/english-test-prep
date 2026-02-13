@@ -87,15 +87,16 @@ export default function MultipleChoice({
         </p>
       )}
       {options.map((option) => {
-        const status = getOptionStatus(option.key);
+        const optionKey = option.key || (option as any).id;
+        const status = getOptionStatus(optionKey);
 
         return (
           <label
-            key={option.key}
+            key={optionKey}
             className={`
               flex cursor-pointer items-start gap-3 transition-colors
               ${readOnly ? 'cursor-default' : ''}
-              ${getOptionStyle(option.key)}
+              ${getOptionStyle(optionKey)}
               ${status ? 'p-2 -ml-2' : ''} 
             `}
           >
@@ -104,16 +105,16 @@ export default function MultipleChoice({
               {multiSelect ? (
                 <input
                   type="checkbox"
-                  checked={isSelected(option.key)}
-                  onChange={() => handleMultiSelect(option.key)}
+                  checked={isSelected(optionKey)}
+                  onChange={() => handleMultiSelect(optionKey)}
                   disabled={readOnly}
                   className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-default"
                 />
               ) : (
                 <input
                   type="radio"
-                  checked={isSelected(option.key)}
-                  onChange={() => handleSingleSelect(option.key)}
+                  checked={isSelected(optionKey)}
+                  onChange={() => handleSingleSelect(optionKey)}
                   disabled={readOnly}
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-default"
                 />
@@ -124,9 +125,22 @@ export default function MultipleChoice({
             <div className="flex flex-1 items-start justify-between gap-2">
               <span className="text-base text-black leading-relaxed not-italic font-normal">
                 <span className="mr-2 font-normal text-black">
-                  {option.key}.
+                  {optionKey}.
                 </span>
-                {option.text}
+                {/* Simple rich text rendering for options (supports <u>) */}
+                {(() => {
+                  const parts = option.text.split(/(<u>.*?<\/u>)/g);
+                  return (
+                    <span>
+                      {parts.map((part, i) => {
+                        if (part.startsWith('<u>') && part.endsWith('</u>')) {
+                          return <u key={i}>{part.slice(3, -4)}</u>;
+                        }
+                        return <span key={i}>{part}</span>;
+                      })}
+                    </span>
+                  );
+                })()}
               </span>
 
               {/* Status Icon */}

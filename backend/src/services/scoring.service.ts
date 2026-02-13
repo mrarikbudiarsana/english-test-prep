@@ -1,44 +1,29 @@
-import * as questionModel from '../models/question.model';
-import * as responseModel from '../models/response.model';
-import * as attemptModel from '../models/attempt.model';
-import * as sectionModel from '../models/section.model';
-import { NotFoundError } from '../middleware/errorHandler';
-import { SectionType } from '../types/test.types';
+import { query } from '../config/database';
+import { SectionType } from '../models/section.model';
+import { Question, QuestionType } from '../models/question.model';
+import { TestType } from '../models/test.model';
 
-// ---------------------------------------------------------------------------
-// IELTS Band Score Conversion Tables
-// Based on official IELTS scoring: 40 questions per section
-// ---------------------------------------------------------------------------
-
-/**
- * IELTS Listening band score conversion table.
- * Maps raw score (number of correct answers out of 40) to band score.
- */
-const LISTENING_BAND_TABLE: Array<{ min: number; max: number; band: number }> = [
+// IELTS Band conversion tables (approximate)
+const LISTENING_BAND_TABLE = [
   { min: 39, max: 40, band: 9.0 },
   { min: 37, max: 38, band: 8.5 },
   { min: 35, max: 36, band: 8.0 },
-  { min: 33, max: 34, band: 7.5 },
-  { min: 30, max: 32, band: 7.0 },
-  { min: 27, max: 29, band: 6.5 },
-  { min: 23, max: 26, band: 6.0 },
-  { min: 20, max: 22, band: 5.5 },
-  { min: 16, max: 19, band: 5.0 },
+  { min: 32, max: 34, band: 7.5 },
+  { min: 30, max: 31, band: 7.0 },
+  { min: 26, max: 29, band: 6.5 },
+  { min: 23, max: 25, band: 6.0 },
+  { min: 18, max: 22, band: 5.5 },
+  { min: 16, max: 17, band: 5.0 },
   { min: 13, max: 15, band: 4.5 },
   { min: 10, max: 12, band: 4.0 },
   { min: 8, max: 9, band: 3.5 },
   { min: 6, max: 7, band: 3.0 },
   { min: 4, max: 5, band: 2.5 },
-  { min: 2, max: 3, band: 2.0 },
-  { min: 1, max: 1, band: 1.0 },
-  { min: 0, max: 0, band: 0.0 },
+  { min: 0, max: 3, band: 0.0 }, // fallback
 ];
 
-/**
- * IELTS Academic Reading band score conversion table.
- * Maps raw score (number of correct answers out of 40) to band score.
- */
-const READING_ACADEMIC_BAND_TABLE: Array<{ min: number; max: number; band: number }> = [
+// Academic Reading
+const READING_ACADEMIC_BAND_TABLE = [
   { min: 39, max: 40, band: 9.0 },
   { min: 37, max: 38, band: 8.5 },
   { min: 35, max: 36, band: 8.0 },
@@ -53,16 +38,11 @@ const READING_ACADEMIC_BAND_TABLE: Array<{ min: number; max: number; band: numbe
   { min: 8, max: 9, band: 3.5 },
   { min: 6, max: 7, band: 3.0 },
   { min: 4, max: 5, band: 2.5 },
-  { min: 2, max: 3, band: 2.0 },
-  { min: 1, max: 1, band: 1.0 },
-  { min: 0, max: 0, band: 0.0 },
+  { min: 0, max: 3, band: 0.0 },
 ];
 
-/**
- * IELTS General Training Reading band score conversion table.
- * Maps raw score (number of correct answers out of 40) to band score.
- */
-const READING_GENERAL_BAND_TABLE: Array<{ min: number; max: number; band: number }> = [
+// General Training Reading
+const READING_GENERAL_BAND_TABLE = [
   { min: 40, max: 40, band: 9.0 },
   { min: 39, max: 39, band: 8.5 },
   { min: 37, max: 38, band: 8.0 },
@@ -77,264 +57,214 @@ const READING_GENERAL_BAND_TABLE: Array<{ min: number; max: number; band: number
   { min: 12, max: 14, band: 3.5 },
   { min: 9, max: 11, band: 3.0 },
   { min: 6, max: 8, band: 2.5 },
-  { min: 3, max: 5, band: 2.0 },
-  { min: 1, max: 2, band: 1.0 },
-  { min: 0, max: 0, band: 0.0 },
+  { min: 0, max: 5, band: 0.0 },
 ];
 
-// ---------------------------------------------------------------------------
-// Answer comparison helpers
-// ---------------------------------------------------------------------------
+// TOEFL iTP Level 1 Tables (Based on 50/40/50 questions)
+// Listening (50 questions, Scale 31-68)
+const TOEFL_ITP_LISTENING_TABLE = [
+  { min: 50, max: 50, band: 68 },
+  { min: 49, max: 49, band: 67 },
+  { min: 48, max: 48, band: 66 },
+  { min: 47, max: 47, band: 65 },
+  { min: 45, max: 46, band: 63 }, // Approx
+  { min: 43, max: 44, band: 61 },
+  { min: 41, max: 42, band: 59 },
+  { min: 39, max: 40, band: 57 },
+  { min: 37, max: 38, band: 55 },
+  { min: 35, max: 36, band: 54 },
+  { min: 33, max: 34, band: 52 },
+  { min: 31, max: 32, band: 51 },
+  { min: 29, max: 30, band: 50 },
+  { min: 27, max: 28, band: 49 },
+  { min: 25, max: 26, band: 48 },
+  { min: 23, max: 24, band: 47 },
+  { min: 21, max: 22, band: 46 },
+  { min: 19, max: 20, band: 45 },
+  { min: 17, max: 18, band: 44 },
+  { min: 15, max: 16, band: 43 },
+  { min: 13, max: 14, band: 42 },
+  { min: 11, max: 12, band: 41 },
+  { min: 9, max: 10, band: 39 },
+  { min: 7, max: 8, band: 37 },
+  { min: 5, max: 6, band: 35 },
+  { min: 3, max: 4, band: 33 },
+  { min: 0, max: 2, band: 31 },
+];
 
-/**
- * Normalize a string answer for comparison: trim whitespace and lowercase.
- */
-function normalize(value: any): string {
-  if (value === null || value === undefined) return '';
-  return String(value).trim().toLowerCase();
+// Structure (40 questions, Scale 31-68)
+const TOEFL_ITP_STRUCTURE_TABLE = [
+  { min: 40, max: 40, band: 68 },
+  { min: 39, max: 39, band: 67 },
+  { min: 38, max: 38, band: 65 },
+  { min: 37, max: 37, band: 63 },
+  { min: 36, max: 36, band: 61 },
+  { min: 35, max: 35, band: 60 },
+  { min: 34, max: 34, band: 58 },
+  { min: 33, max: 33, band: 57 },
+  { min: 32, max: 32, band: 56 },
+  { min: 31, max: 31, band: 55 },
+  { min: 30, max: 30, band: 54 },
+  { min: 29, max: 29, band: 53 },
+  { min: 28, max: 28, band: 52 },
+  { min: 27, max: 27, band: 51 },
+  { min: 26, max: 26, band: 50 },
+  { min: 25, max: 25, band: 49 },
+  { min: 24, max: 24, band: 48 },
+  { min: 23, max: 23, band: 47 },
+  { min: 21, max: 22, band: 46 },
+  { min: 19, max: 20, band: 45 },
+  { min: 17, max: 18, band: 44 },
+  { min: 15, max: 16, band: 43 },
+  { min: 13, max: 14, band: 41 },
+  { min: 11, max: 12, band: 40 },
+  { min: 9, max: 10, band: 38 },
+  { min: 7, max: 8, band: 37 },
+  { min: 5, max: 6, band: 35 },
+  { min: 4, max: 4, band: 33 },
+  { min: 0, max: 3, band: 31 },
+];
+
+// Reading (50 questions, Scale 31-67)
+const TOEFL_ITP_READING_TABLE = [
+  { min: 50, max: 50, band: 67 },
+  { min: 49, max: 49, band: 66 },
+  { min: 48, max: 48, band: 65 },
+  { min: 47, max: 47, band: 63 },
+  { min: 46, max: 46, band: 61 },
+  { min: 45, max: 45, band: 60 },
+  { min: 44, max: 44, band: 59 },
+  { min: 43, max: 43, band: 58 },
+  { min: 42, max: 42, band: 57 },
+  { min: 41, max: 41, band: 56 }, // Approx
+  { min: 40, max: 40, band: 55 },
+  { min: 39, max: 39, band: 54 },
+  { min: 38, max: 38, band: 54 },
+  { min: 37, max: 37, band: 53 },
+  { min: 36, max: 36, band: 52 },
+  { min: 35, max: 35, band: 52 },
+  { min: 34, max: 34, band: 51 },
+  { min: 33, max: 33, band: 50 },
+  { min: 32, max: 32, band: 49 },
+  { min: 31, max: 31, band: 48 }, // and so on... simplifying the curve
+  { min: 29, max: 30, band: 48 },
+  { min: 26, max: 28, band: 47 },
+  { min: 23, max: 25, band: 46 },
+  { min: 20, max: 22, band: 44 },
+  { min: 16, max: 19, band: 41 },
+  { min: 12, max: 15, band: 37 },
+  { min: 8, max: 11, band: 34 },
+  { min: 0, max: 7, band: 31 },
+];
+
+// Helper to normalize strings for comparison (remove punctuation, lower case)
+export function normalizeAnswer(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '') // remove punctuation
+    .replace(/\s+/g, ' ')    // collapse whitespace
+    .trim();
 }
 
 /**
- * Compare answers for multiple_choice question type.
- * Supports both single answer (string) and multiple answer (array) formats.
+ * Compare user answer vs correct answer for a single question.
+ * Returns points earned (usually 1 or 0).
  */
-function compareMultipleChoice(userAnswer: any, correctAnswer: any): boolean {
-  // If both are arrays, compare sorted arrays
-  if (Array.isArray(userAnswer) && Array.isArray(correctAnswer)) {
-    if (userAnswer.length !== correctAnswer.length) return false;
-    const sortedUser = userAnswer.map(normalize).sort();
-    const sortedCorrect = correctAnswer.map(normalize).sort();
+export function checkAnswer(
+  question: Question,
+  userAnswer: any,
+): { points: number; isCorrect: boolean } {
+  const { questionType, correctAnswer, questionData } = question;
+  let isCorrect = false;
+
+  if (userAnswer === null || userAnswer === undefined || userAnswer === '') {
+    return { points: 0, isCorrect: false };
+  }
+
+  try {
+    switch (questionType) {
+      case 'multiple_choice':
+        isCorrect = compareMultipleChoice(userAnswer, correctAnswer);
+        break;
+
+      case 'true_false_not_given':
+      case 'yes_no_not_given':
+        isCorrect = String(userAnswer).toUpperCase() === String(correctAnswer).toUpperCase();
+        break;
+
+      case 'completion':
+        isCorrect = compareCompletion(userAnswer, correctAnswer, questionData);
+        break;
+
+      case 'matching':
+        isCorrect = compareMatching(userAnswer, correctAnswer);
+        break;
+
+      case 'dropdown':
+        isCorrect = compareDropdown(userAnswer, correctAnswer);
+        break;
+
+      default:
+        console.warn(`Unknown question type for auto-scoring: ${questionType}`);
+        isCorrect = false;
+    }
+  } catch (err) {
+    console.error(`Error checking answer for question ${question.id}:`, err);
+    isCorrect = false;
+  }
+
+  const points = isCorrect ? (question.points || 1) : 0;
+  return { points, isCorrect };
+}
+
+function compareMultipleChoice(user: any, correct: any): boolean {
+  if (Array.isArray(correct)) {
+    // Multi-select (e.g. "Choose TWO")
+    // user should also be an array
+    if (!Array.isArray(user)) return false;
+    if (user.length !== correct.length) return false;
+    const sortedUser = [...user].sort();
+    const sortedCorrect = [...correct].sort();
     return sortedUser.every((val, idx) => val === sortedCorrect[idx]);
   }
+  // Single select
+  return String(user) === String(correct);
+}
 
-  // Single value comparison
-  return normalize(userAnswer) === normalize(correctAnswer);
+function compareCompletion(user: any, correct: any, qData: any): boolean {
+  // correct answer can be a string or array of accepted strings
+  // e.g. "bus station" or ["bus station", "station"]
+
+  const userNorm = normalizeAnswer(String(user));
+  const acceptedAnswers = Array.isArray(correct) ? correct : [correct];
+
+  return acceptedAnswers.some((ans: string) => {
+    return normalizeAnswer(ans) === userNorm;
+  });
+}
+
+function compareMatching(user: any, correct: any): boolean {
+  // user and correct are objects: { "A": "B", "C": "D" }
+  if (typeof user !== 'object' || typeof correct !== 'object') return false;
+  const keys = Object.keys(correct);
+  for (const key of keys) {
+    if (user[key] !== correct[key]) return false;
+  }
+  return true;
+}
+
+function compareDropdown(user: any, correct: any): boolean {
+  // similar to matching: { "blank1": "optionA", "blank2": "optionB" }
+  if (typeof user !== 'object' || typeof correct !== 'object') return false;
+  const keys = Object.keys(correct);
+  for (const key of keys) {
+    if (user[key] !== correct[key]) return false;
+  }
+  return true;
 }
 
 /**
- * Compare answers for true_false_not_given or yes_no_not_given question types.
- */
-function compareTrueFalse(userAnswer: any, correctAnswer: any): boolean {
-  return normalize(userAnswer) === normalize(correctAnswer);
-}
-
-/**
- * Compare answers for completion question types.
- * The correctAnswer may contain an `alternatives` array for acceptable variations.
- * correctAnswer format: { answer: "main answer", alternatives: ["alt1", "alt2"] }
- * or simply a string.
- */
-function compareCompletion(userAnswer: any, correctAnswer: any): boolean {
-  const userNorm = normalize(userAnswer);
-
-  if (typeof correctAnswer === 'string') {
-    return userNorm === normalize(correctAnswer);
-  }
-
-  // correctAnswer is an object with answer + alternatives
-  if (correctAnswer && typeof correctAnswer === 'object') {
-    const mainAnswer = normalize(correctAnswer.answer);
-    if (userNorm === mainAnswer) return true;
-
-    if (Array.isArray(correctAnswer.alternatives)) {
-      return correctAnswer.alternatives.some(
-        (alt: string) => normalize(alt) === userNorm,
-      );
-    }
-  }
-
-  return false;
-}
-
-/**
- * Compare answers for matching question types.
- * Both userAnswer and correctAnswer are objects mapping items to their matches.
- * e.g. { "1": "C", "2": "A", "3": "B" }
- */
-function compareMatching(userAnswer: any, correctAnswer: any): { correct: number; total: number } {
-  if (!userAnswer || typeof userAnswer !== 'object') {
-    return { correct: 0, total: Object.keys(correctAnswer || {}).length };
-  }
-
-  const correctKeys = Object.keys(correctAnswer);
-  let correctCount = 0;
-
-  for (const key of correctKeys) {
-    if (normalize(userAnswer[key]) === normalize(correctAnswer[key])) {
-      correctCount++;
-    }
-  }
-
-  return { correct: correctCount, total: correctKeys.length };
-}
-
-/**
- * Compare answers for dropdown question types.
- * Both userAnswer and correctAnswer are objects mapping placeholder IDs to values.
- * e.g. { "gap1": "answer1", "gap2": "answer2" }
- */
-function compareDropdown(userAnswer: any, correctAnswer: any): { correct: number; total: number } {
-  if (!userAnswer || typeof userAnswer !== 'object') {
-    return { correct: 0, total: Object.keys(correctAnswer || {}).length };
-  }
-
-  const correctKeys = Object.keys(correctAnswer);
-  let correctCount = 0;
-
-  for (const key of correctKeys) {
-    if (normalize(userAnswer[key]) === normalize(correctAnswer[key])) {
-      correctCount++;
-    }
-  }
-
-  return { correct: correctCount, total: correctKeys.length };
-}
-
-// ---------------------------------------------------------------------------
-// Main scoring functions
-// ---------------------------------------------------------------------------
-
-/**
- * Auto-score an objective section (listening or reading).
- * Fetches all questions with correct answers and all user responses,
- * compares each using type-specific logic, and returns the raw score.
- */
-export async function scoreObjectiveSection(
-  attemptId: string,
-  sectionType: SectionType,
-): Promise<{ rawScore: number; totalQuestions: number }> {
-  // Get the attempt to find the test
-  const attempt = await attemptModel.findById(attemptId);
-  if (!attempt) {
-    throw new NotFoundError('Attempt not found');
-  }
-
-  // Get all sections of the given type for this test
-  const sections = await sectionModel.findByTestIdAndType(attempt.testId, sectionType);
-  if (sections.length === 0) {
-    return { rawScore: 0, totalQuestions: 0 };
-  }
-
-  let totalCorrect = 0;
-  let totalQuestions = 0;
-
-  for (const section of sections) {
-    // Fetch all questions with correct answers for this section
-    const questions = await questionModel.findBySectionId(section.id);
-    // Fetch all user responses for this section and attempt
-    const responses = await responseModel.findByAttemptAndSection(attemptId, section.id);
-
-    // Build a map of questionId -> user response
-    const responseMap = new Map<string, any>();
-    for (const resp of responses) {
-      responseMap.set(resp.questionId, resp);
-    }
-
-    for (const question of questions) {
-      totalQuestions++;
-
-      const userResponse = responseMap.get(question.id);
-      if (!userResponse) {
-        // No response submitted for this question
-        await responseModel.upsert({
-          attemptId,
-          questionId: question.id,
-          sectionId: section.id,
-          answerData: null,
-        }).catch(() => {
-          // Response may not exist; skip scoring for unanswered
-        });
-        continue;
-      }
-
-      const userAnswer = userResponse.answerData;
-      const correctAnswer = question.correctAnswer;
-      let isCorrect = false;
-      let questionScore = 0;
-
-      switch (question.questionType) {
-        case 'multiple_choice': {
-          isCorrect = compareMultipleChoice(userAnswer, correctAnswer);
-          questionScore = isCorrect ? question.points : 0;
-          break;
-        }
-
-        case 'true_false_not_given':
-        case 'yes_no_not_given': {
-          isCorrect = compareTrueFalse(userAnswer, correctAnswer);
-          questionScore = isCorrect ? question.points : 0;
-          break;
-        }
-
-        case 'completion': {
-          isCorrect = compareCompletion(userAnswer, correctAnswer);
-          questionScore = isCorrect ? question.points : 0;
-          break;
-        }
-
-        case 'matching': {
-          const result = compareMatching(userAnswer, correctAnswer);
-          // For matching, each correct pair counts as a correct answer
-          totalCorrect += result.correct;
-          // Adjust totalQuestions: replace the single question with the number of pairs
-          totalQuestions += result.total - 1; // -1 because we already counted +1 above
-          // Update response score
-          await responseModel.updateScore(userResponse.id, {
-            isCorrect: result.correct === result.total,
-            score: result.correct,
-          });
-          continue; // Skip the common updateScore below
-        }
-
-        case 'dropdown': {
-          const result = compareDropdown(userAnswer, correctAnswer);
-          totalCorrect += result.correct;
-          totalQuestions += result.total - 1;
-          await responseModel.updateScore(userResponse.id, {
-            isCorrect: result.correct === result.total,
-            score: result.correct,
-          });
-          continue;
-        }
-
-        default: {
-          // Unknown question type, skip
-          continue;
-        }
-      }
-
-      if (isCorrect) {
-        totalCorrect += questionScore;
-      }
-
-      // Update the individual response score
-      await responseModel.updateScore(userResponse.id, {
-        isCorrect,
-        score: questionScore,
-      });
-    }
-  }
-
-  // Update the attempt with raw score and band
-  const band = convertToBand(totalCorrect, sectionType);
-
-  if (sectionType === 'listening') {
-    await attemptModel.updateScores(attemptId, {
-      listeningRaw: totalCorrect,
-      listeningBand: band,
-    });
-  } else if (sectionType === 'reading') {
-    await attemptModel.updateScores(attemptId, {
-      readingRaw: totalCorrect,
-      readingBand: band,
-    });
-  }
-
-  return { rawScore: totalCorrect, totalQuestions };
-}
-
-/**
- * Convert a raw score to an IELTS band score using the appropriate conversion table.
+ * Convert raw score to band score based on section type and test type.
  */
 export function convertToBand(
   rawScore: number,
@@ -343,42 +273,184 @@ export function convertToBand(
 ): number {
   let table: Array<{ min: number; max: number; band: number }>;
 
-  if (sectionType === 'listening') {
-    table = LISTENING_BAND_TABLE;
-  } else if (sectionType === 'reading') {
-    table = testType === 'general_training'
-      ? READING_GENERAL_BAND_TABLE
-      : READING_ACADEMIC_BAND_TABLE;
+  if (testType === 'toefl_itp') {
+    if (sectionType === 'listening') {
+      table = TOEFL_ITP_LISTENING_TABLE;
+    } else if (sectionType === 'structure') {
+      table = TOEFL_ITP_STRUCTURE_TABLE;
+    } else if (sectionType === 'reading') {
+      table = TOEFL_ITP_READING_TABLE;
+    } else {
+      return 0;
+    }
   } else {
-    // Writing and speaking are not auto-scored with band tables
-    return 0;
-  }
-
-  for (const entry of table) {
-    if (rawScore >= entry.min && rawScore <= entry.max) {
-      return entry.band;
+    // Default to IELTS
+    if (sectionType === 'listening') {
+      table = LISTENING_BAND_TABLE;
+    } else if (sectionType === 'reading') {
+      table = testType === 'general_training'
+        ? READING_GENERAL_BAND_TABLE
+        : READING_ACADEMIC_BAND_TABLE;
+    } else {
+      // Writing and speaking are not auto-scored with simple tables in IELTS
+      return 0;
     }
   }
 
-  // If raw score exceeds the table (shouldn't happen), return max band
-  if (rawScore > 40) return 9.0;
+  if (!table) return 0;
 
-  return 0;
+  const match = table.find(r => rawScore >= r.min && rawScore <= r.max);
+  return match ? match.band : 0;
 }
 
 /**
- * Calculate the overall IELTS band score from individual section bands.
- * The overall band is the average of all four sections, rounded to the nearest 0.5.
+ * Calculate overall band score from section bands.
+ * Handles IELTS (average + rounding) and TOEFL iTP (sum * 10 / 3).
  */
 export function calculateOverallBand(
-  listening: number,
-  reading: number,
-  writing: number,
-  speaking: number,
+  listening: number | null,
+  reading: number | null,
+  writing: number | null,
+  speaking: number | null,
+  structure: number | null = null, // New arg for structure
+  testType: string = 'academic'
 ): number {
-  const average = (listening + reading + writing + speaking) / 4;
+  if (testType === 'toefl_itp') {
+    // Formula: (Listening + Structure + Reading) * 10 / 3
+    const l = listening || 31;
+    const s = structure || 31;
+    const r = reading || 31;
+    const total = (l + s + r) * 10 / 3;
+    return Math.round(total); // Usually rounded to nearest whole number
+  }
 
-  // Round to nearest 0.5
-  // e.g. 6.1 -> 6.0, 6.25 -> 6.5, 6.75 -> 7.0, 6.625 -> 6.5
-  return Math.round(average * 2) / 2;
+  // IELTS Logic
+  const l = listening || 0;
+  const r = reading || 0;
+  const w = writing || 0;
+  const s = speaking || 0;
+
+  // If any section is missing (0), we usually can't calculate a valid total,
+  // but for "practice" mode we might return partial.
+  // Assuming full test completion for overall score:
+  const count = 4;
+  const sum = l + r + w + s;
+  const avg = sum / count;
+
+  // IELTS Rounding: nearest 0.5
+  // .0 -> .0, .125 -> .0, .25 -> .5, .75 -> 1.0
+  const remainder = avg % 1;
+  let finalBand = Math.floor(avg);
+
+  if (remainder < 0.25) {
+    // keep integer
+  } else if (remainder < 0.75) {
+    finalBand += 0.5;
+  } else {
+    finalBand += 1.0;
+  }
+
+  return finalBand;
+}
+
+export async function scoreObjectiveSection(attemptId: string, sectionType: SectionType, testType: string): Promise<number> {
+  // 1. Fetch questions for this section
+  // 2. Fetch user responses for this attempt & section
+  // 3. Compare and sum points
+  // 4. Update attempt with raw score & band
+
+  // This is a "service method" so we might need to query DB.
+  // Ideally this logic should be in a service class, but functionally:
+
+  const questionsResult = await query(
+    `SELECT q.*
+     FROM questions q
+     JOIN sections s ON s.id = q.section_id
+     JOIN attempts a ON a.test_id = s.test_id
+     WHERE a.id = $1 AND s.section_type = $2
+     ORDER BY q.question_number ASC`,
+    [attemptId, sectionType]
+  );
+  const questions = questionsResult.rows;
+
+  const responsesResult = await query(
+    `SELECT * FROM user_responses WHERE attempt_id = $1 AND section_id IN (
+       SELECT id FROM sections WHERE section_type = $2
+    )`,
+    [attemptId, sectionType]
+  );
+  const responses = responsesResult.rows;
+
+  let rawScore = 0;
+
+  for (const q of questions) {
+    const response = responses.find(r => r.question_id === q.id);
+    if (response) {
+      // Parse answerData if stringified
+      let ans = response.answer_data;
+      if (typeof ans === 'string') {
+        try { ans = JSON.parse(ans); } catch { }
+      } else if (ans && typeof ans === 'object' && ans.answerData) {
+        // handle case where DB driver returns structured object or our own model
+      }
+
+      const { points, isCorrect } = checkAnswer(q, ans);
+      if (isCorrect) {
+        rawScore += points;
+      }
+
+      // Optional: Update response with is_correct field for feedback
+      await query(
+        `UPDATE user_responses SET is_correct = $1, score = $2 WHERE id = $3`,
+        [isCorrect, points, response.id]
+      );
+    }
+  }
+
+  const band = convertToBand(rawScore, sectionType, testType);
+
+  // Update attempt
+  let column = '';
+  let bandColumn = '';
+
+  if (testType === 'toefl_itp') {
+    // TOEFL iTP uses _score columns (31-68 scale)
+    if (sectionType === 'listening') {
+      column = 'listening_raw';
+      bandColumn = 'listening_score';
+    } else if (sectionType === 'reading') {
+      column = 'reading_raw';
+      bandColumn = 'reading_score';
+    } else if (sectionType === 'structure') {
+      column = 'structure_raw';
+      bandColumn = 'structure_score';
+    }
+  } else {
+    // IELTS / Default uses _band columns (0-9 scale)
+    if (sectionType === 'listening') {
+      column = 'listening_raw';
+      bandColumn = 'listening_band';
+    } else if (sectionType === 'reading') {
+      column = 'reading_raw';
+      bandColumn = 'reading_band';
+    }
+  }
+  // Determine the numeric values to save
+  // For TOEFL, 'band' variable actually holds the scaled score (31-68).
+  // For IELTS, it holds the band (0-9).
+
+  if (column && bandColumn) {
+    const updateQuery = `
+      UPDATE attempts
+      SET ${column} = $1, ${bandColumn} = $2
+      WHERE id = $3
+    `;
+    try {
+      await query(updateQuery, [rawScore, band, attemptId]);
+    } catch (e) {
+      console.error(`Failed to update score columns (${column}, ${bandColumn})`, e);
+    }
+  }
+
+  return band;
 }

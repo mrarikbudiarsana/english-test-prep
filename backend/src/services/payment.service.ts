@@ -2,6 +2,7 @@ import { snap, coreApi, isMidtransConfigured } from '../config/midtrans';
 import * as paymentModel from '../models/payment.model';
 import * as userModel from '../models/user.model';
 import * as subscriptionService from './subscription.service';
+import * as emailService from './email.service';
 import { NotFoundError, ValidationError, ForbiddenError } from '../middleware/errorHandler';
 import { PLAN_CONFIGS, PlanType } from '../types/payment.types';
 
@@ -167,7 +168,18 @@ export async function handleNotification(notification: {
   // If payment is settled (or captured and accepted), activate the subscription
   if (paymentStatus === 'settlement' || paymentStatus === 'capture') {
     try {
-      await subscriptionService.activateSubscription(orderId);
+      const subscription = await subscriptionService.activateSubscription(orderId);
+      if (subscription && existingPayment.userId) {
+        const user = await userModel.findById(existingPayment.userId);
+        if (user?.email) {
+          emailService.sendPaymentConfirmation({
+            to: user.email,
+            displayName: user.displayName || 'there',
+            planType: subscription.planType,
+            expiresAt: new Date(subscription.expiresAt),
+          }).catch((err) => console.error('Failed to send payment confirmation email:', err));
+        }
+      }
     } catch (error) {
       console.error('Error activating subscription after payment:', error);
       // Don't throw here; the payment is already recorded.

@@ -149,6 +149,7 @@ export default function AdminEditTestPage() {
       reading: 'bg-green-100 text-green-800 border-green-200',
       writing: 'bg-amber-100 text-amber-800 border-amber-200',
       speaking: 'bg-blue-100 text-blue-800 border-blue-200',
+      structure: 'bg-indigo-100 text-indigo-800 border-indigo-200',
     };
     return colors[type] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
@@ -277,9 +278,9 @@ export default function AdminEditTestPage() {
                     <p className="text-xs text-gray-500 mt-0.5">
                       {section.durationMinutes} min
                       {section.sectionType === 'listening' && section.audioUrl && ' | Audio attached'}
+                      {['listening', 'speaking', 'structure'].includes(section.sectionType) && section.partNumber && ` | Part ${section.partNumber}`}
                       {section.sectionType === 'reading' && section.passageTitle && ` | ${section.passageTitle}`}
                       {section.sectionType === 'writing' && section.taskNumber && ` | Task ${section.taskNumber}`}
-                      {section.sectionType === 'speaking' && section.partNumber && ` | Part ${section.partNumber}`}
                     </p>
                   </div>
                 </div>
@@ -320,6 +321,7 @@ export default function AdminEditTestPage() {
       >
         <SectionEditor
           testId={testId}
+          testType={test.testType}
           existingSections={sections}
           initialData={editingSection || undefined}
           onSubmit={handleSectionSubmit}

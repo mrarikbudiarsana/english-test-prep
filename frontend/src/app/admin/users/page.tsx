@@ -34,7 +34,7 @@ export default function AdminUsersPage() {
   const handleRoleChange = async (userId: string, newRole: 'user' | 'admin') => {
     setUpdatingUserId(userId);
     try {
-      const response = await api.patch(`/admin/users/${userId}/role`, { role: newRole });
+      const response = await api.put(`/admin/users/${userId}/role`, { role: newRole });
       const updatedUser = response.data.data || response.data;
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, ...updatedUser } : u))

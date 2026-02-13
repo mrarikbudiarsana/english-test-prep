@@ -43,6 +43,14 @@ export function formatCurrency(amount: number, currency = 'IDR'): string {
 }
 
 export function getBandColor(band: number): string {
+  // Handle TOEFL / High scores (assumed if > 9)
+  if (band > 9) {
+    if (band >= 600) return 'text-green-600';
+    if (band >= 500) return 'text-blue-600';
+    if (band >= 460) return 'text-yellow-600';
+    return 'text-red-600';
+  }
+
   if (band >= 7.5) return 'text-green-600';
   if (band >= 6.0) return 'text-blue-600';
   if (band >= 5.0) return 'text-yellow-600';
@@ -50,6 +58,14 @@ export function getBandColor(band: number): string {
 }
 
 export function getBandBgColor(band: number): string {
+  // Handle TOEFL / High scores (assumed if > 9)
+  if (band > 9) {
+    if (band >= 600) return 'bg-green-100 border-green-300';
+    if (band >= 500) return 'bg-blue-100 border-blue-300';
+    if (band >= 460) return 'bg-yellow-100 border-yellow-300';
+    return 'bg-red-100 border-red-300';
+  }
+
   if (band >= 7.5) return 'bg-green-100 border-green-300';
   if (band >= 6.0) return 'bg-blue-100 border-blue-300';
   if (band >= 5.0) return 'bg-yellow-100 border-yellow-300';
@@ -62,6 +78,7 @@ export function sectionTypeLabel(type: string): string {
     reading: 'Reading',
     writing: 'Writing',
     speaking: 'Speaking',
+    structure: 'Structure and Written Expression',
   };
   return labels[type] || type;
 }

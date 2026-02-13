@@ -25,6 +25,7 @@ const sectionIcons: Record<string, React.ElementType> = {
   reading: HiBookOpen,
   writing: HiPencil,
   speaking: HiMicrophone,
+  structure: HiPencil, // Structure logic/grammar
 };
 
 const sectionColors = {
@@ -55,6 +56,13 @@ const sectionColors = {
     border: 'border-amber-200',
     text: 'text-amber-600',
     iconBg: 'bg-amber-100',
+  },
+  structure: {
+    bg: 'from-indigo-500 to-purple-500',
+    light: 'bg-indigo-50',
+    border: 'border-indigo-200',
+    text: 'text-indigo-600',
+    iconBg: 'bg-indigo-100',
   },
 };
 
@@ -96,7 +104,13 @@ export default function TestOverviewPage() {
         mode,
         practiceSectionType: sectionType,
       });
-      const attemptId = response.data.id;
+      const attemptId = response.data.id || (response.data as any).data?.id;
+
+      if (!attemptId) {
+        console.error('Failed to get attempt ID from response:', response.data);
+        throw new Error('Invalid server response');
+      }
+
       router.push(`/tests/${testId}/take?attemptId=${attemptId}&mode=${mode}${sectionType ? `&section=${sectionType}` : ''}`);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to start test');
@@ -158,11 +172,10 @@ export default function TestOverviewPage() {
         <div className="relative z-10">
           {/* Badges */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold shadow-sm ${
-              test.testType === 'academic'
-                ? 'bg-[#e4002b] text-white'
-                : 'bg-[#3b82f6] text-white'
-            }`}>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold shadow-sm ${test.testType === 'academic'
+              ? 'bg-[#e4002b] text-white'
+              : 'bg-[#3b82f6] text-white'
+              }`}>
               <HiAcademicCap className="w-4 h-4" />
               {test.testType === 'general_training' ? 'General Training' : 'Academic'}
             </span>
@@ -232,57 +245,61 @@ export default function TestOverviewPage() {
           Focus on specific skills by practicing individual sections. Perfect for targeted improvement.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(['listening', 'reading', 'writing', 'speaking'] as const).map((type) => {
-            const Icon = sectionIcons[type];
-            const colors = sectionColors[type];
-            const typeSections = sectionGroups[type] || [];
-            const totalDuration = typeSections.reduce((sum, s) => sum + s.durationMinutes, 0);
-            const questionCount = type === 'listening' || type === 'reading' ? 40 : undefined;
-            const isAvailable = typeSections.length > 0;
+          {(() => {
+            const sectionOrder = test.testType === 'toefl_itp'
+              ? ['listening', 'structure', 'reading'] as const
+              : ['listening', 'reading', 'writing', 'speaking'] as const;
 
-            return (
-              <div
-                key={type}
-                className={`group bg-white rounded-2xl border-2 p-6 transition-all ${
-                  isAvailable
+            return sectionOrder.map((type) => {
+              const Icon = sectionIcons[type];
+              const colors = sectionColors[type];
+              const typeSections = sectionGroups[type] || [];
+              const totalDuration = typeSections.reduce((sum, s) => sum + s.durationMinutes, 0);
+              const questionCount = type === 'listening' || type === 'reading' || type === 'structure' ? 40 : undefined; // Approximate for structure
+              const isAvailable = typeSections.length > 0;
+
+              return (
+                <div
+                  key={type}
+                  className={`group bg-white rounded-2xl border-2 p-6 transition-all ${isAvailable
                     ? `${colors.border} hover:shadow-lg hover:border-opacity-100 border-opacity-30`
                     : 'border-slate-200 opacity-60'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 ${colors.iconBg} rounded-xl flex items-center justify-center ${isAvailable ? 'group-hover:scale-110' : ''} transition-transform`}>
-                    <Icon className={`w-6 h-6 ${colors.text}`} />
+                    }`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`w-12 h-12 ${colors.iconBg} rounded-xl flex items-center justify-center ${isAvailable ? 'group-hover:scale-110' : ''} transition-transform`}>
+                      <Icon className={`w-6 h-6 ${colors.text}`} />
+                    </div>
+                    {isAvailable && (
+                      <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">
+                        {typeSections.length} {typeSections.length === 1 ? 'part' : 'parts'}
+                      </span>
+                    )}
                   </div>
-                  {isAvailable && (
-                    <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">
-                      {typeSections.length} {typeSections.length === 1 ? 'part' : 'parts'}
-                    </span>
-                  )}
-                </div>
 
-                <h3 className="text-lg font-bold text-slate-800 mb-2">
-                  {sectionTypeLabel(type)}
-                </h3>
-                <p className="text-sm text-slate-600 mb-4 flex items-center gap-2">
-                  <HiClock className="w-4 h-4" />
-                  {totalDuration} minutes
-                  {questionCount && ` • ${questionCount} questions`}
-                </p>
+                  <h3 className="text-lg font-bold text-slate-800 mb-2">
+                    {sectionTypeLabel(type)}
+                  </h3>
+                  <p className="text-sm text-slate-600 mb-4 flex items-center gap-2">
+                    <HiClock className="w-4 h-4" />
+                    {totalDuration} minutes
+                    {questionCount && ` • ${questionCount} questions`}
+                  </p>
 
-                <button
-                  onClick={() => handleStartTest('section_practice', type)}
-                  disabled={starting || !isAvailable}
-                  className={`w-full px-5 py-2.5 rounded-xl font-semibold transition-all ${
-                    isAvailable
+                  <button
+                    onClick={() => handleStartTest('section_practice', type)}
+                    disabled={starting || !isAvailable}
+                    className={`w-full px-5 py-2.5 rounded-xl font-semibold transition-all ${isAvailable
                       ? `${colors.text} ${colors.light} hover:bg-gradient-to-r hover:${colors.bg} hover:text-white border-2 ${colors.border}`
                       : 'bg-slate-100 text-slate-400 border-2 border-slate-200 cursor-not-allowed'
-                  }`}
-                >
-                  {isAvailable ? 'Practice' : 'Not Available'}
-                </button>
-              </div>
-            );
-          })}
+                      }`}
+                  >
+                    {isAvailable ? 'Practice' : 'Not Available'}
+                  </button>
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
 

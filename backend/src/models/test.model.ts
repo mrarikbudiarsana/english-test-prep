@@ -2,6 +2,8 @@ import { query } from '../config/database';
 
 // ---------- helpers ----------
 
+export type TestType = 'academic' | 'general_training' | 'toefl_ibt' | 'toefl_itp' | 'pte_academic';
+
 const fieldMap: Record<string, string> = {
   title: 'title',
   description: 'description',

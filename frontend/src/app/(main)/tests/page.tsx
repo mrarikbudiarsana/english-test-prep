@@ -24,7 +24,7 @@ export default function TestCatalogPage() {
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'academic' | 'general_training'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'academic' | 'general_training' | 'toefl_ibt' | 'toefl_itp' | 'pte_academic'>('all');
 
   useEffect(() => {
     async function fetchTests() {
@@ -135,8 +135,17 @@ export default function TestCatalogPage() {
             className="appearance-none w-full md:w-56 pl-12 pr-10 py-3.5 rounded-xl border border-[#e8ecef] bg-white focus:border-[#e4002b]/50 focus:ring-2 focus:ring-[#ffe5ea] focus:outline-none transition-all cursor-pointer text-[#2c3e50] font-medium"
           >
             <option value="all">All Types</option>
-            <option value="academic">Academic</option>
-            <option value="general_training">General Training</option>
+            <optgroup label="IELTS">
+              <option value="academic">IELTS Academic</option>
+              <option value="general_training">IELTS General Training</option>
+            </optgroup>
+            <optgroup label="TOEFL">
+              <option value="toefl_ibt">TOEFL iBT</option>
+              <option value="toefl_itp">TOEFL ITP</option>
+            </optgroup>
+            <optgroup label="PTE">
+              <option value="pte_academic">PTE Academic</option>
+            </optgroup>
           </select>
           <HiChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none rotate-90" />
         </div>
@@ -208,24 +217,50 @@ export default function TestCatalogPage() {
 
 function TestCard({ test }: { test: Test }) {
   // Determine gradient based on test type
-  const gradients = {
+  const gradients: Record<string, { bg: string; light: string; border: string; text: string; label: string; abbr: string }> = {
     academic: {
       bg: 'from-[#e4002b] to-[#c40025]',
       light: 'from-[#ffe5ea] to-[#fff0f2]',
       border: 'border-[#e4002b]/20',
       text: 'text-[#e4002b]',
-      badge: 'bg-[#ffe5ea] text-[#e4002b]',
+      label: 'IELTS Academic',
+      abbr: 'A',
     },
     general_training: {
       bg: 'from-[#3b82f6] to-[#2563eb]',
       light: 'from-[#e8f4f8] to-[#f0f9ff]',
       border: 'border-[#3b82f6]/20',
       text: 'text-[#2563eb]',
-      badge: 'bg-[#e8f4f8] text-[#2563eb]',
+      label: 'IELTS General',
+      abbr: 'G',
+    },
+    toefl_ibt: {
+      bg: 'from-indigo-600 to-indigo-800',
+      light: 'from-indigo-50 to-indigo-100/50',
+      border: 'border-indigo-200',
+      text: 'text-indigo-700',
+      label: 'TOEFL iBT',
+      abbr: 'T',
+    },
+    toefl_itp: {
+      bg: 'from-rose-500 to-rose-700',
+      light: 'from-rose-50 to-rose-100/50',
+      border: 'border-rose-200',
+      text: 'text-rose-700',
+      label: 'TOEFL ITP',
+      abbr: 'T',
+    },
+    pte_academic: {
+      bg: 'from-orange-500 to-orange-700',
+      light: 'from-orange-50 to-orange-100/50',
+      border: 'border-orange-200',
+      text: 'text-orange-700',
+      label: 'PTE Academic',
+      abbr: 'P',
     },
   };
 
-  const theme = test.testType === 'academic' ? gradients.academic : gradients.general_training;
+  const theme = gradients[test.testType] ?? gradients.academic;
 
   return (
     <Link
@@ -239,7 +274,7 @@ function TestCard({ test }: { test: Test }) {
         {/* Top Section */}
         <div className="flex items-start justify-between mb-4">
           <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${theme.bg} flex items-center justify-center text-white text-xl font-bold shadow-lg group-hover:scale-110 transition-transform`}>
-            {test.testType === 'academic' ? 'A' : 'G'}
+            {theme.abbr}
           </div>
           {test.isFree ? (
             <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm">
@@ -272,7 +307,7 @@ function TestCard({ test }: { test: Test }) {
             <span className="text-sm font-semibold">{test.durationMinutes} min</span>
           </div>
           <span className={`text-xs font-bold uppercase tracking-wider ${theme.text}`}>
-            {test.testType === 'general_training' ? 'General' : 'Academic'}
+            {theme.label}
           </span>
         </div>
       </div>

@@ -1,5 +1,5 @@
-export type TestType = 'academic' | 'general_training';
-export type SectionType = 'listening' | 'reading' | 'writing' | 'speaking';
+export type TestType = 'academic' | 'general_training' | 'toefl_ibt' | 'toefl_itp' | 'pte_academic';
+export type SectionType = 'listening' | 'reading' | 'writing' | 'speaking' | 'structure';
 export type QuestionType =
   | 'multiple_choice'
   | 'true_false_not_given'
@@ -64,6 +64,7 @@ export interface Question {
   correctAnswer?: AnswerData; // Only available in results view
   groupLabel?: string | null; // e.g., "Questions 1-7"
   groupInstructions?: string | null; // Shared instructions for the group
+  audioUrl?: string | null; // Question-level audio (TOEFL Part A)
 }
 
 // Question data types for each question type
@@ -121,41 +122,60 @@ export interface Attempt {
   currentSection: SectionType | null;
   listeningRaw: number | null;
   listeningBand: number | null;
+  listeningScore: number | null; // TOEFL
   readingRaw: number | null;
   readingBand: number | null;
+  readingScore: number | null; // TOEFL
+  structureScore: number | null; // TOEFL
   writingBand: number | null;
   speakingBand: number | null;
   overallBand: number | null;
+  overallScore: number | null; // TOEFL
   writingFeedback: WritingFeedback | null;
   speakingFeedback: SpeakingFeedback | null;
   test?: Test;
 }
 
-export interface WritingFeedback {
-  task1?: TaskFeedback;
-  task2?: TaskFeedback;
+export interface BandFeedback {
+  band: number;
+  feedback: string;
 }
 
-export interface TaskFeedback {
-  taskAchievement: { band: number; feedback: string };
-  coherenceCohesion: { band: number; feedback: string };
-  lexicalResource: { band: number; feedback: string };
-  grammaticalRange: { band: number; feedback: string };
+export interface WritingTaskFeedback {
+  taskNumber: number;
+  wordCount: number;
+  taskAchievement?: BandFeedback; // Task 1
+  taskResponse?: BandFeedback;    // Task 2
+  coherenceCohesion: BandFeedback;
+  lexicalResource: BandFeedback;
+  grammaticalRangeAccuracy: BandFeedback;
   overallBand: number;
   generalFeedback: string;
-  strengths: string[];
-  improvements: string[];
+}
+
+export interface WritingFeedback {
+  tasks: WritingTaskFeedback[];
+  overallWritingBand: number;
+  summary: string;
+}
+
+export interface SpeakingPartFeedback {
+  partNumber: number;
+  fluencyCoherence: BandFeedback;
+  lexicalResource: BandFeedback;
+  grammaticalRangeAccuracy: BandFeedback;
+  pronunciation: BandFeedback;
+  partFeedback: string;
 }
 
 export interface SpeakingFeedback {
-  fluencyCoherence: { band: number; feedback: string };
-  lexicalResource: { band: number; feedback: string };
-  grammaticalRange: { band: number; feedback: string };
-  pronunciation: { band: number; feedback: string };
-  overallBand: number;
-  generalFeedback: string;
-  strengths: string[];
-  improvements: string[];
+  parts: SpeakingPartFeedback[];
+  overallSpeakingBand: number;
+  fluencyCoherence: BandFeedback;
+  lexicalResource: BandFeedback;
+  grammaticalRangeAccuracy: BandFeedback;
+  pronunciation: BandFeedback;
+  summary: string;
 }
 
 export interface UserResponse {

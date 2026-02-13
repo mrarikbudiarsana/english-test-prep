@@ -115,6 +115,22 @@ function getDefaultCorrectAnswer(type: QuestionType): any {
   }
 }
 
+
+function normalizeCorrectAnswer(type: QuestionType, answer: any): any {
+  if (answer === null || answer === undefined) return getDefaultCorrectAnswer(type);
+
+  // For types that expect primitives (string/number/boolean) or arrays of strings,
+  // but might receive an object wrapper like { answer: '...' }
+  const primitiveTypes: QuestionType[] = ['multiple_choice', 'true_false_not_given', 'yes_no_not_given', 'completion'];
+
+  if (primitiveTypes.includes(type)) {
+    if (typeof answer === 'object' && !Array.isArray(answer) && 'answer' in answer) {
+      return answer.answer;
+    }
+  }
+  return answer;
+}
+
 export default function QuestionEditor({
   sectionId,
   initialData,
@@ -122,6 +138,9 @@ export default function QuestionEditor({
   onCancel,
   nextQuestionNumber = 1,
 }: QuestionEditorProps) {
+  // Add key to force re-render when switching between add/edit or different questions
+  // This is handled by the parent typically, but we should make sure our state inits correctly
+
   const [questionNumber, setQuestionNumber] = useState(initialData?.questionNumber || nextQuestionNumber);
   const [questionType, setQuestionType] = useState<QuestionType>(
     initialData?.questionType || 'multiple_choice'
@@ -131,7 +150,10 @@ export default function QuestionEditor({
     initialData?.questionData || getDefaultQuestionData('multiple_choice')
   );
   const [correctAnswer, setCorrectAnswer] = useState<any>(
-    initialData?.correctAnswer ?? getDefaultCorrectAnswer('multiple_choice')
+    normalizeCorrectAnswer(
+      initialData?.questionType || 'multiple_choice',
+      initialData?.correctAnswer
+    )
   );
   const [points, setPoints] = useState(initialData?.points || 1);
   const [explanation, setExplanation] = useState(initialData?.explanation || '');
@@ -271,15 +293,20 @@ export default function QuestionEditor({
         />
       </div>
 
-      <Textarea
-        label="Question Text"
-        value={questionText}
-        onChange={(e) => setQuestionText(e.target.value)}
-        placeholder="Enter the question text..."
-        rows={3}
-        error={errors.questionText}
-        required
-      />
+      <div className="space-y-1.5">
+        <Textarea
+          label="Question Text"
+          value={questionText}
+          onChange={(e) => setQuestionText(e.target.value)}
+          placeholder="Enter the question text..."
+          rows={3}
+          error={errors.questionText}
+          required
+        />
+        <p className="text-xs text-gray-500">
+          Tip: You can use &lt;u&gt;text&lt;/u&gt; to underline specific words (e.g., for Written Expression).
+        </p>
+      </div>
 
       <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-4">
         <h4 className="text-sm font-semibold text-blue-800">Question Grouping (Optional - for IELTS format)</h4>

@@ -2,6 +2,31 @@ import { query } from '../config/database';
 
 // ---------- helpers ----------
 
+export type QuestionType =
+  | 'multiple_choice'
+  | 'true_false_not_given'
+  | 'yes_no_not_given'
+  | 'completion'
+  | 'matching'
+  | 'dropdown';
+
+export interface Question {
+  id: string;
+  sectionId: string;
+  questionNumber: number;
+  questionType: QuestionType;
+  questionText: string;
+  questionData: any;
+  correctAnswer: any;
+  points: number;
+  explanation?: string;
+  groupLabel?: string;
+  groupInstructions?: string;
+  audioUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const fieldMap: Record<string, string> = {
   sectionId: 'section_id',
   questionNumber: 'question_number',
@@ -13,6 +38,7 @@ const fieldMap: Record<string, string> = {
   explanation: 'explanation',
   groupLabel: 'group_label',
   groupInstructions: 'group_instructions',
+  audioUrl: 'audio_url',
 };
 
 const SELECT_COLUMNS = `
@@ -27,6 +53,7 @@ const SELECT_COLUMNS = `
   explanation,
   group_label      AS "groupLabel",
   group_instructions AS "groupInstructions",
+  audio_url        AS "audioUrl",
   created_at       AS "createdAt",
   updated_at       AS "updatedAt"
 `;
@@ -65,6 +92,7 @@ export async function findByTestId(testId: string) {
             q.explanation,
             q.group_label      AS "groupLabel",
             q.group_instructions AS "groupInstructions",
+            q.audio_url        AS "audioUrl",
             q.created_at       AS "createdAt",
             q.updated_at       AS "updatedAt",
             s.section_type     AS "sectionType",
@@ -89,14 +117,15 @@ export async function create(data: {
   explanation?: string;
   groupLabel?: string;
   groupInstructions?: string;
+  audioUrl?: string;
 }) {
   const result = await query(
     `INSERT INTO questions (
        section_id, question_number, question_type,
        question_text, question_data, correct_answer,
-       points, explanation, group_label, group_instructions
+       points, explanation, group_label, group_instructions, audio_url
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.sectionId,
@@ -109,6 +138,7 @@ export async function create(data: {
       data.explanation ?? null,
       data.groupLabel ?? null,
       data.groupInstructions ?? null,
+      data.audioUrl ?? null,
     ],
   );
   return result.rows[0];
@@ -126,6 +156,7 @@ export async function update(
     explanation: string;
     groupLabel: string;
     groupInstructions: string;
+    audioUrl: string;
   }>,
 ) {
   const entries = Object.entries(data).filter(([, v]) => v !== undefined);

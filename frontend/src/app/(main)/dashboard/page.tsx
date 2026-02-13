@@ -15,6 +15,7 @@ import {
   HiChartBar,
   HiCheckCircle,
   HiArrowRight,
+  HiBadgeCheck,
 } from 'react-icons/hi';
 import { DashboardCharts } from './DashboardCharts';
 
@@ -22,6 +23,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [subscription, setSubscription] = useState<{ planType: string; expiresAt: string } | null>(null);
 
   useEffect(() => {
     async function fetchStats() {
@@ -34,7 +36,16 @@ export default function DashboardPage() {
         setLoading(false);
       }
     }
+    async function fetchSubscription() {
+      try {
+        const res = await api.get('/subscriptions/current');
+        setSubscription(res.data.data);
+      } catch {
+        // no active subscription — that's fine
+      }
+    }
     fetchStats();
+    fetchSubscription();
   }, []);
 
   if (loading) {
@@ -92,6 +103,26 @@ export default function DashboardPage() {
               View Results
             </Link>
           </div>
+          {subscription ? (
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl w-fit">
+              <HiBadgeCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-emerald-800 capitalize">{subscription.planType} Plan</p>
+                <p className="text-xs text-emerald-600">Expires {formatDate(subscription.expiresAt)}</p>
+              </div>
+            </div>
+          ) : (
+            <Link
+              href="/pricing"
+              className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl w-fit hover:bg-amber-100 transition-colors"
+            >
+              <HiBadgeCheck className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800">Free Plan</p>
+                <p className="text-xs text-amber-600">Upgrade for full access →</p>
+              </div>
+            </Link>
+          )}
         </div>
       </div>
 

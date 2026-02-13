@@ -119,7 +119,10 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
       </div>
 
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700">Options</label>
+        <div className="flex justify-between items-center">
+          <label className="block text-sm font-medium text-gray-700">Options</label>
+          <span className="text-xs text-gray-500">Supports &lt;u&gt;text&lt;/u&gt; for underlining</span>
+        </div>
         {options.map((option, index) => (
           <div key={index} className="flex items-center gap-2">
             <div className="flex-shrink-0">

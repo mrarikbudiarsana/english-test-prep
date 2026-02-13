@@ -36,17 +36,3 @@ export async function uploadImage(
     next(error);
   }
 }
-
-export async function getPresignedUrl(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const { key, contentType } = req.body;
-    const url = await uploadService.getSignedUploadUrl(key, contentType);
-    res.json({ url });
-  } catch (error) {
-    next(error);
-  }
-}

@@ -21,8 +21,11 @@ interface TestFormProps {
 }
 
 const testTypeOptions = [
-  { value: 'academic', label: 'Academic' },
-  { value: 'general_training', label: 'General Training' },
+  { value: 'academic', label: 'IELTS Academic' },
+  { value: 'general_training', label: 'IELTS General Training' },
+  { value: 'toefl_ibt', label: 'TOEFL iBT' },
+  { value: 'toefl_itp', label: 'TOEFL ITP' },
+  { value: 'pte_academic', label: 'PTE Academic' },
 ];
 
 export default function TestForm({ initialData, onSubmit, loading }: TestFormProps) {

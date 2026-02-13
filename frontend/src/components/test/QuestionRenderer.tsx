@@ -132,6 +132,25 @@ export default function QuestionRenderer({
   const expectedAnswers = isMultiSelectMCQ
     ? (question.questionData as MCQData).expectedAnswers || 2
     : 1;
+  // Helper to render text with basic HTML support (specifically for <u> tags in TOEFL)
+  const renderRichText = (text: string | null | undefined) => {
+    if (!text) return null;
+
+    // Split by <u> tags
+    const parts = text.split(/(<u>.*?<\/u>)/g);
+
+    return (
+      <span>
+        {parts.map((part, i) => {
+          if (part.startsWith('<u>') && part.endsWith('</u>')) {
+            return <u key={i}>{part.slice(3, -4)}</u>;
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </span>
+    );
+  };
+
   const questionHeaderText = (() => {
     if (question.questionType === 'true_false_not_given') {
       return (question.questionData as TFNGData).statement || question.questionText;
@@ -142,9 +161,9 @@ export default function QuestionRenderer({
     return question.questionText;
   })();
 
-  // Strip "Question X" prefix if it exists
+  // Strip "Question X" prefix if it exists, then render rich text
   const processedHeaderText = (() => {
-    if (!questionHeaderText) return '';
+    if (!questionHeaderText) return null;
     const pattern = new RegExp(`^question\\s*${resolvedNumber}[:\\s]*`, 'i');
     const patternGeneric = /^question\s*\d+[:\s]*/i;
 
@@ -152,7 +171,7 @@ export default function QuestionRenderer({
     if (stripped === questionHeaderText) {
       stripped = questionHeaderText.replace(patternGeneric, '').trim();
     }
-    return stripped;
+    return renderRichText(stripped);
   })();
 
   const isRedundantHeader = !processedHeaderText;

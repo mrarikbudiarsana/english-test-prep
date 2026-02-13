@@ -12,6 +12,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "EnglishTest - IELTS Practice Platform",
   description: "Practice for IELTS and other English proficiency exams with AI-powered feedback and scoring.",
+  icons: {
+    icon: 'https://scobvornehcncgsqngag.supabase.co/storage/v1/object/public/Public/Logo%20Round.png',
+  },
 };
 
 export default function RootLayout({

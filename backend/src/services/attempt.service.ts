@@ -140,12 +140,15 @@ export async function submitSection(attemptId: string, sectionType: SectionType)
 
   // Auto-score objective sections
   if (sectionType === 'listening' || sectionType === 'reading') {
-    const result = await scoringService.scoreObjectiveSection(attemptId, sectionType);
+    const test = await testModel.findById(attempt.testId);
+    if (!test) {
+      throw new NotFoundError('Test not found');
+    }
+    const score = await scoringService.scoreObjectiveSection(attemptId, sectionType, test.testType);
     return {
       attemptId,
       sectionType,
-      rawScore: result.rawScore,
-      totalQuestions: result.totalQuestions,
+      score,
     };
   }
 
@@ -175,10 +178,16 @@ export async function submitTest(attemptId: string) {
   // Mark as scoring
   await attemptModel.updateStatus(attemptId, 'scoring');
 
+  // Get test info for testType
+  const test = await testModel.findById(attempt.testId);
+  if (!test) {
+    throw new NotFoundError('Test not found');
+  }
+
   // Auto-score listening and reading if not already scored
   if (attempt.listeningBand === null) {
     try {
-      await scoringService.scoreObjectiveSection(attemptId, 'listening');
+      await scoringService.scoreObjectiveSection(attemptId, 'listening', test.testType);
     } catch (err) {
       console.error('Error auto-scoring listening:', err);
     }
@@ -186,7 +195,7 @@ export async function submitTest(attemptId: string) {
 
   if (attempt.readingBand === null) {
     try {
-      await scoringService.scoreObjectiveSection(attemptId, 'reading');
+      await scoringService.scoreObjectiveSection(attemptId, 'reading', test.testType);
     } catch (err) {
       console.error('Error auto-scoring reading:', err);
     }

@@ -164,8 +164,39 @@ export function TestSessionProvider({ children }: { children: React.ReactNode })
 
     dispatch({ type: 'AUTO_SAVE_START' });
     try {
-      const responses = Object.entries(state.answers).map(([questionId, answerData]) => {
-        // Find sectionId for this question
+      const responses = Object.entries(state.answers).flatMap(([questionId, answerData]) => {
+        // Writing: key is "writing_<sectionId>", answerData = { text, wordCount }
+        if (questionId.startsWith('writing_')) {
+          const sectionId = questionId.replace('writing_', '');
+          const questions = state.questions[sectionId] || [];
+          // Save one response per question in this section (usually 1)
+          return questions.map(q => ({
+            questionId: q.id,
+            sectionId,
+            answerData,
+            writingText: answerData?.text ?? null,
+            wordCount: answerData?.wordCount ?? null,
+          }));
+        }
+
+        // Speaking: key is "speaking_<sectionId>", answerData = { recordings: { 0: { url, duration }, ... } }
+        // One placeholder question per section; store all recordings in answerData,
+        // and use the first recording's URL as the primary audioUrl for the AI scorer.
+        if (questionId.startsWith('speaking_')) {
+          const sectionId = questionId.replace('speaking_', '');
+          const questions = state.questions[sectionId] || [];
+          const recordings: Record<string, { url: string; duration: number }> = answerData?.recordings || {};
+          const firstRecording = recordings[0];
+          return questions.slice(0, 1).map(q => ({
+            questionId: q.id,
+            sectionId,
+            answerData, // full recordings object preserved here
+            audioUrl: firstRecording?.url ?? null,
+            audioDuration: firstRecording?.duration ?? null,
+          }));
+        }
+
+        // Listening / Reading: standard question-keyed answers
         let sectionId = '';
         for (const [sId, questions] of Object.entries(state.questions)) {
           if (questions.some(q => q.id === questionId)) {
@@ -173,12 +204,9 @@ export function TestSessionProvider({ children }: { children: React.ReactNode })
             break;
           }
         }
-        return {
-          questionId,
-          sectionId,
-          answerData,
-        };
-      }).filter(r => r.sectionId); // Only send responses where we found the sectionId
+        if (!sectionId) return [];
+        return [{ questionId, sectionId, answerData }];
+      }).filter(r => r.sectionId);
 
       if (responses.length === 0) return;
 
@@ -188,7 +216,7 @@ export function TestSessionProvider({ children }: { children: React.ReactNode })
       console.error('Auto-save failed:', error);
       dispatch({ type: 'AUTO_SAVE_COMPLETE' });
     }
-  }, [state.attemptId, state.answers, state.hasUnsavedChanges]);
+  }, [state.attemptId, state.answers, state.hasUnsavedChanges, state.questions]);
 
   const submitSection = useCallback(async (sectionType: SectionType) => {
     if (!state.attemptId) return;

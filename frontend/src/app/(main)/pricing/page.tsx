@@ -5,6 +5,7 @@ import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import api from '@/lib/api';
 
 interface PricingPlan {
     id: number;
@@ -21,6 +22,7 @@ export default function PricingPage() {
     const [plans, setPlans] = useState<PricingPlan[]>([]);
     const [loading, setLoading] = useState(true);
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const [checkingOut, setCheckingOut] = useState<number | null>(null);
 
     useEffect(() => {
         fetchPlans();
@@ -35,6 +37,60 @@ export default function PricingPage() {
             toast.error('Failed to load pricing plans');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSubscribe = async (plan: PricingPlan) => {
+        if (plan.priceMonthly === 0) return; // free plan — no payment needed
+
+        // Derive planType from plan name (e.g. "Monthly Plan" → "monthly")
+        const nameLower = plan.name.toLowerCase();
+        let planType: 'monthly' | 'quarterly' | 'yearly';
+        if (nameLower.includes('yearly') || nameLower.includes('annual') || billingCycle === 'yearly') {
+            planType = 'yearly';
+        } else if (nameLower.includes('quarterly')) {
+            planType = 'quarterly';
+        } else {
+            planType = 'monthly';
+        }
+
+        setCheckingOut(plan.id);
+        try {
+            const { data } = await api.post('/payments/create', { planType });
+            const snapToken: string = data.snapToken;
+
+            // Load Midtrans Snap if not already loaded
+            if (!(window as any).snap) {
+                await new Promise<void>((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL!;
+                    script.setAttribute('data-client-key', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!);
+                    script.onload = () => resolve();
+                    script.onerror = () => reject(new Error('Failed to load Midtrans Snap'));
+                    document.head.appendChild(script);
+                });
+            }
+
+            (window as any).snap.pay(snapToken, {
+                onSuccess: () => {
+                    toast.success('Payment successful!');
+                    window.location.href = '/payment/finish?transaction_status=settlement';
+                },
+                onPending: () => {
+                    toast('Payment pending. We will notify you once confirmed.');
+                    window.location.href = '/payment/finish?transaction_status=pending';
+                },
+                onError: () => {
+                    toast.error('Payment failed. Please try again.');
+                },
+                onClose: () => {
+                    toast('Checkout closed.');
+                },
+            });
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to start checkout');
+        } finally {
+            setCheckingOut(null);
         }
     };
 
@@ -135,12 +191,14 @@ export default function PricingPage() {
                             <Button
                                 variant={plan.isPopular ? 'primary' : 'outline'}
                                 className="w-full"
-                                onClick={() => {
-                                    // TODO: Implement checkout/subscription logic
-                                    toast.success(`Selected ${plan.name} plan`);
-                                }}
+                                onClick={() => handleSubscribe(plan)}
+                                disabled={checkingOut === plan.id}
                             >
-                                {plan.priceMonthly === 0 ? 'Get Started' : 'Subscribe Now'}
+                                {checkingOut === plan.id
+                                    ? 'Loading...'
+                                    : plan.priceMonthly === 0
+                                    ? 'Get Started'
+                                    : 'Subscribe Now'}
                             </Button>
                         </div>
                     ))}

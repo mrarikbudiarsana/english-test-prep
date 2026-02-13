@@ -13,7 +13,25 @@ export async function getQuestionsBySectionId(sectionId: string) {
     throw new NotFoundError('Section not found');
   }
 
-  const questions = await questionModel.findBySectionId(sectionId);
+  let questions = await questionModel.findBySectionId(sectionId);
+
+  // Writing and speaking sections store their content on the section itself (no
+  // question rows needed for content). However the responses table requires a
+  // question_id FK, so we auto-create a single placeholder question the first
+  // time the section is fetched during a test. This is idempotent – subsequent
+  // fetches just return the existing row.
+  if (questions.length === 0 && (section.sectionType === 'writing' || section.sectionType === 'speaking')) {
+    const placeholder = await questionModel.create({
+      sectionId,
+      questionNumber: 1,
+      questionType: section.sectionType === 'writing' ? 'writing_task' : 'speaking_response',
+      questionText: '',
+      questionData: {},
+      correctAnswer: {},
+      points: 0,
+    });
+    questions = [placeholder];
+  }
 
   // Strip out correct_answer and explanation for student-facing view
   return questions.map((q: any) => ({

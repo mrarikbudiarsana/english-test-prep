@@ -1,5 +1,7 @@
 import { query } from '../config/database';
 
+export type SectionType = 'listening' | 'reading' | 'writing' | 'speaking' | 'structure';
+
 // ---------- helpers ----------
 
 const fieldMap: Record<string, string> = {
