@@ -46,6 +46,7 @@ export function errorHandler(
 
   res.status(500).json({
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 }
