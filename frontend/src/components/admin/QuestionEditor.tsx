@@ -369,7 +369,7 @@ export default function QuestionEditor({
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!questionText.trim()) {
+    if (!questionText.trim() && sectionType !== 'listening') {
       newErrors.questionText = 'Question text is required';
     }
     if (points < 0) {
@@ -513,7 +513,7 @@ export default function QuestionEditor({
           placeholder="Enter the question text..."
           rows={3}
           error={errors.questionText}
-          required
+          required={sectionType !== 'listening'}
         />
         {(isToeflItp && sectionType === 'structure') && (
           <p className="text-xs text-gray-500">
