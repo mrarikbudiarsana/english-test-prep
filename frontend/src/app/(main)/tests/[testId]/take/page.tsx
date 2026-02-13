@@ -8,7 +8,6 @@ import { TestSessionProvider, useTestSession } from '@/contexts/TestSessionConte
 import { HiArrowLeft, HiBookOpen } from 'react-icons/hi';
 import TestTimer from '@/components/test/TestTimer';
 import QuestionRenderer from '@/components/test/QuestionRenderer';
-import QuestionNavigation from '@/components/test/QuestionNavigation';
 import AudioPlayer from '@/components/test/AudioPlayer';
 import AudioRecorder from '@/components/test/AudioRecorder';
 import ReadingPassage from '@/components/test/ReadingPassage';
@@ -634,7 +633,7 @@ function TestTakingContent() {
         <div className="h-full">
           {/* TOEFL iTP Specific Rendering (Pagination) */}
           {testType === 'toefl_itp' && state.currentSectionType !== 'reading' ? (
-            <div className="max-w-4xl mx-auto px-4 py-8 h-full flex flex-col">
+            <div className="max-w-7xl mx-auto px-4 py-8 h-full flex flex-col">
               {viewingDirections ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-white rounded-xl border border-gray-200 shadow-sm animate-in fade-in duration-300">
                   <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-6">
@@ -675,74 +674,83 @@ function TestTakingContent() {
                   )}
                   */}
 
-                  {/* Question Navigator */}
-                  <div className="mb-4">
-                    <QuestionNavigator
-                      totalQuestions={questions.length}
-                      currentIndex={currentQuestionIndex}
-                      onSelect={(index) => {
-                        if (state.currentSectionType !== 'listening') {
-                          setCurrentQuestionIndex(index);
-                        }
-                      }}
-                      answeredIndices={
-                        new Set(
-                          questions
-                            .map((q, idx) => state.answers[q.id] ? idx : -1)
-                            .filter(idx => idx !== -1)
-                        )
-                      }
-                      allowNavigation={state.currentSectionType !== 'listening'}
-                      startIndex={1}
-                    />
-                  </div>
+                  <div className="flex-1 min-h-0 flex flex-col xl:flex-row gap-4">
+                    {/* Question Content */}
+                    <div className="flex-1 overflow-y-auto min-h-0 bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+                      {isPartBCMode ? (
+                        // Part B/C: all questions for this recording, scrollable
+                        <div className="space-y-2">
+                          {questions
+                            .filter(q => q.sectionId === currentSectionPart.id)
+                            .map((question) => {
+                              const partQs = questions.filter(q => q.sectionId === currentSectionPart.id);
+                              const prevQs = partQs.slice(0, partQs.indexOf(question));
+                              const startNum = partNumberOffset + prevQs.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
+                              return (
+                                <QuestionRenderer
+                                  key={question.id}
+                                  question={question}
+                                  answer={state.answers[question.id]}
+                                  onAnswerChange={handleAnswerChange}
+                                  displayNumber={startNum}
+                                  isActive={false}
+                                />
+                              );
+                            })}
+                        </div>
+                      ) : currentQuestion && (
+                        <div className="space-y-6">
+                          {/* Group Instructions if present */}
+                          {currentQuestion.groupLabel && (
+                            <GroupInstruction
+                              groupLabel={currentQuestion.groupLabel}
+                              groupInstructions={currentQuestion.groupInstructions}
+                              variant="compact"
+                            />
+                          )}
 
-                  {/* Question Content */}
-                  <div className="flex-1 overflow-y-auto min-h-0 bg-white rounded-xl border border-gray-200 shadow-sm p-8">
-                    {isPartBCMode ? (
-                      // Part B/C: all questions for this recording, scrollable
-                      <div className="space-y-2">
-                        {questions
-                          .filter(q => q.sectionId === currentSectionPart.id)
-                          .map((question) => {
-                            const partQs = questions.filter(q => q.sectionId === currentSectionPart.id);
-                            const prevQs = partQs.slice(0, partQs.indexOf(question));
-                            const startNum = partNumberOffset + prevQs.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
-                            return (
-                              <QuestionRenderer
-                                key={question.id}
-                                question={question}
-                                answer={state.answers[question.id]}
-                                onAnswerChange={handleAnswerChange}
-                                displayNumber={startNum}
-                                isActive={false}
-                              />
-                            );
-                          })}
-                      </div>
-                    ) : currentQuestion && (
-                      <div className="space-y-6">
-                        {/* Group Instructions if present */}
-                        {currentQuestion.groupLabel && (
-                          <GroupInstruction
-                            groupLabel={currentQuestion.groupLabel}
-                            groupInstructions={currentQuestion.groupInstructions}
-                            variant="compact"
+                          {/* Question Itself */}
+                          <QuestionRenderer
+                            question={currentQuestion}
+                            answer={state.answers[currentQuestion.id]}
+                            onAnswerChange={handleAnswerChange}
+                            displayNumber={currentQuestionIndex + 1}
+                            isActive={true}
+                            onAudioEnd={handleAudioEnd}
+                            playOnce={testType === 'toefl_itp'}
                           />
-                        )}
+                        </div>
+                      )}
+                    </div>
 
-                        {/* Question Itself */}
-                        <QuestionRenderer
-                          question={currentQuestion}
-                          answer={state.answers[currentQuestion.id]}
-                          onAnswerChange={handleAnswerChange}
-                          displayNumber={currentQuestionIndex + 1}
-                          isActive={true}
-                          onAudioEnd={handleAudioEnd}
-                          playOnce={testType === 'toefl_itp'}
-                        />
-                      </div>
-                    )}
+                    {/* Right-side Question Navigator */}
+                    <div className="w-full xl:w-[26rem] shrink-0 min-h-0 h-[24rem] xl:h-auto">
+                      <QuestionNavigator
+                        totalQuestions={questions.length}
+                        currentIndex={currentQuestionIndex}
+                        onSelect={(index) => {
+                          if (state.currentSectionType !== 'listening') {
+                            setCurrentQuestionIndex(index);
+                          }
+                        }}
+                        answeredIndices={
+                          new Set(
+                            questions
+                              .map((q, idx) => state.answers[q.id] ? idx : -1)
+                              .filter(idx => idx !== -1)
+                          )
+                        }
+                        allowNavigation={state.currentSectionType !== 'listening'}
+                        startIndex={1}
+                        variant="grid"
+                        onPrevious={handlePreviousQuestion}
+                        onNext={handleNextQuestion}
+                        isFirst={isPartBCMode ? true : currentQuestionIndex === 0}
+                        isLast={isPartBCMode ? false : (currentQuestionIndex === questions.length - 1 && mode !== 'full')}
+                        previousLabel="Previous"
+                        nextLabel="Next / Next Section"
+                      />
+                    </div>
                   </div>
 
                   {/* Footer provides the only navigation controls to avoid duplicate Previous/Next UI */}
@@ -915,34 +923,8 @@ function TestTakingContent() {
 
                     {/* Right Pane: Questions */}
                     <div
-                      className="h-full bg-white grow min-w-0 flex flex-col" // min-w-0 used to allow flex child to shrink below content size
+                      className="h-full bg-white grow min-w-0 flex" // min-w-0 used to allow flex child to shrink below content size
                     >
-                      {/* Question Navigator for Reading */}
-                      {testType === 'toefl_itp' && (
-                        <div className="shrink-0">
-                          <QuestionNavigator
-                            totalQuestions={questions.length}
-                            currentIndex={currentQuestionIndex}
-                            onSelect={(index) => {
-                              setCurrentQuestionIndex(index);
-                              // Ensure right pane scrolls to top or specific question if possible?
-                              // The navigator already syncs index, which renders proper active state.
-                              // Ideally we scroll to the question in the list.
-                              // For now, index sync is enough as reading usually scrolls the user or we'd needrefs.
-                            }}
-                            answeredIndices={
-                              new Set(
-                                questions
-                                  .map((q, idx) => state.answers[q.id] ? idx : -1)
-                                  .filter(idx => idx !== -1)
-                              )
-                            }
-                            allowNavigation={true}
-                            startIndex={1}
-                          />
-                        </div>
-                      )}
-
                       <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
 
 
@@ -1221,6 +1203,35 @@ function TestTakingContent() {
                         {/* Bottom spacer for footer */}
                         <div className="h-20" />
                       </div>
+
+                      {/* Right-side Question Navigator for Reading */}
+                      {testType === 'toefl_itp' && (
+                        <div className="w-[26rem] shrink-0 min-h-0 pl-4">
+                          <QuestionNavigator
+                            totalQuestions={questions.length}
+                            currentIndex={currentQuestionIndex}
+                            onSelect={(index) => {
+                              setCurrentQuestionIndex(index);
+                            }}
+                            answeredIndices={
+                              new Set(
+                                questions
+                                  .map((q, idx) => state.answers[q.id] ? idx : -1)
+                                  .filter(idx => idx !== -1)
+                              )
+                            }
+                            allowNavigation={true}
+                            startIndex={1}
+                            variant="grid"
+                            onPrevious={handlePreviousQuestion}
+                            onNext={handleNextQuestion}
+                            isFirst={isPartBCMode ? true : currentQuestionIndex === 0}
+                            isLast={isPartBCMode ? false : (currentQuestionIndex === questions.length - 1 && mode !== 'full')}
+                            previousLabel="Previous"
+                            nextLabel="Next / Next Section"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1412,32 +1423,34 @@ function TestTakingContent() {
       </div>
 
       {/* Footer */}
-      <TestFooter
-        questions={questions}
-        sections={currentSectionParts}
-        sectionPartLabels={footerPartLabels}
-        currentQuestionIndex={currentQuestionIndex}
-        answeredQuestions={state.answeredQuestions}
-        flaggedQuestions={state.flaggedQuestions}
-        onQuestionSelect={(index) => {
-          selectQuestionIndex(index);
+      {testType !== 'toefl_itp' && (
+        <TestFooter
+          questions={questions}
+          sections={currentSectionParts}
+          sectionPartLabels={footerPartLabels}
+          currentQuestionIndex={currentQuestionIndex}
+          answeredQuestions={state.answeredQuestions}
+          flaggedQuestions={state.flaggedQuestions}
+          onQuestionSelect={(index) => {
+            selectQuestionIndex(index);
 
-          // If this is a Reading/Listening section with multiple parts,
-          // ensure we switch the activePartIndex if the question belongs to a different part
-          const selectedQuestion = questions[index];
-          if (selectedQuestion && currentSectionParts.length > 1) {
-            const partIdx = currentSectionParts.findIndex(p => p.id === selectedQuestion.sectionId);
-            if (partIdx !== -1 && partIdx !== activePartIndex) {
-              setActivePartIndex(partIdx);
+            // If this is a Reading/Listening section with multiple parts,
+            // ensure we switch the activePartIndex if the question belongs to a different part
+            const selectedQuestion = questions[index];
+            if (selectedQuestion && currentSectionParts.length > 1) {
+              const partIdx = currentSectionParts.findIndex(p => p.id === selectedQuestion.sectionId);
+              if (partIdx !== -1 && partIdx !== activePartIndex) {
+                setActivePartIndex(partIdx);
+              }
             }
-          }
-        }}
-        onNext={handleNextQuestion}
-        onPrevious={handlePreviousQuestion}
-        isFirst={isPartBCMode ? true : currentQuestionIndex === 0}
-        isLast={isPartBCMode ? false : (currentQuestionIndex === questions.length - 1 && mode !== 'full')}
-        onToggleFlag={handleToggleFlag}
-      />
+          }}
+          onNext={handleNextQuestion}
+          onPrevious={handlePreviousQuestion}
+          isFirst={isPartBCMode ? true : currentQuestionIndex === 0}
+          isLast={isPartBCMode ? false : (currentQuestionIndex === questions.length - 1 && mode !== 'full')}
+          onToggleFlag={handleToggleFlag}
+        />
+      )}
 
       {/* Submit Confirmation Modal */}
       <SubmitConfirmation

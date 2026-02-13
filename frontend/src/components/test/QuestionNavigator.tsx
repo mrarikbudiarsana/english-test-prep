@@ -8,6 +8,14 @@ interface QuestionNavigatorProps {
     answeredIndices?: Set<number>;
     allowNavigation: boolean; // If false, bubbles are display-only (or only future disabled? usually disabled entirely for "cannot go back")
     startIndex?: number; // For display number offset
+    orientation?: 'horizontal' | 'vertical';
+    variant?: 'strip' | 'grid';
+    onPrevious?: () => void;
+    onNext?: () => void;
+    isFirst?: boolean;
+    isLast?: boolean;
+    previousLabel?: string;
+    nextLabel?: string;
 }
 
 export default function QuestionNavigator({
@@ -17,26 +25,125 @@ export default function QuestionNavigator({
     answeredIndices = new Set(),
     allowNavigation,
     startIndex = 1,
+    orientation = 'horizontal',
+    variant = 'strip',
+    onPrevious,
+    onNext,
+    isFirst = false,
+    isLast = false,
+    previousLabel = 'Previous',
+    nextLabel = 'Next',
 }: QuestionNavigatorProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll to active question
     useEffect(() => {
         if (scrollContainerRef.current) {
-            const activeBtn = scrollContainerRef.current.children[currentIndex] as HTMLElement;
+            const activeBtn = scrollContainerRef.current.querySelector(`[data-question-index="${currentIndex}"]`) as HTMLElement | null;
             if (activeBtn) {
                 const container = scrollContainerRef.current;
-                const scrollLeft = activeBtn.offsetLeft - container.offsetWidth / 2 + activeBtn.offsetWidth / 2;
-                container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                if (variant === 'grid') {
+                    const scrollTop = activeBtn.offsetTop - container.offsetHeight / 2 + activeBtn.offsetHeight / 2;
+                    container.scrollTo({ top: scrollTop, behavior: 'smooth' });
+                } else if (orientation === 'vertical') {
+                    const scrollTop = activeBtn.offsetTop - container.offsetHeight / 2 + activeBtn.offsetHeight / 2;
+                    container.scrollTo({ top: scrollTop, behavior: 'smooth' });
+                } else {
+                    const scrollLeft = activeBtn.offsetLeft - container.offsetWidth / 2 + activeBtn.offsetWidth / 2;
+                    container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                }
             }
         }
-    }, [currentIndex]);
+    }, [currentIndex, orientation, variant]);
+
+    if (variant === 'grid') {
+        return (
+            <div className="h-full w-full bg-[#e3e3e3] rounded-md border border-[#c8c8c8] p-4 flex flex-col">
+                <div
+                    ref={scrollContainerRef}
+                    className="flex-1 min-h-0 overflow-y-auto scrollbar-hide"
+                    style={{ scrollBehavior: 'smooth' }}
+                >
+                    <div className="grid grid-cols-5 gap-2.5">
+                        {Array.from({ length: totalQuestions }).map((_, idx) => {
+                            const isCurrent = idx === currentIndex;
+                            const isAnswered = answeredIndices.has(idx);
+                            const displayNumber = startIndex + idx;
+                            const isClickable = allowNavigation;
+
+                            return (
+                                <button
+                                    key={idx}
+                                    data-question-index={idx}
+                                    onClick={() => isClickable && onSelect(idx)}
+                                    disabled={!isClickable}
+                                    className={cn(
+                                        "h-[3.65rem] rounded-xl border text-[1.9rem] leading-none font-normal transition-all",
+                                        isCurrent
+                                            ? "bg-[#f7f7f7] text-black border-[#4f4f4f] ring-2 ring-[#bdd4ff]"
+                                        : isAnswered
+                                                ? "bg-[#e8ecf4] text-gray-900 border-[#8f8f8f]"
+                                                : "bg-[#e6e6e6] text-gray-900 border-[#8f8f8f] hover:bg-[#dddddd]",
+                                        !isClickable && !isCurrent && "cursor-default opacity-80",
+                                        !isClickable && isCurrent && "cursor-default"
+                                    )}
+                                >
+                                    {displayNumber}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {(onPrevious || onNext) && (
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                        <button
+                            onClick={onPrevious}
+                            disabled={!onPrevious || isFirst}
+                            className={cn(
+                                "h-[4.25rem] rounded-2xl border text-[2rem] font-normal transition-colors",
+                                (!onPrevious || isFirst)
+                                    ? "text-gray-400 border-[#b8b8b8] bg-[#e2e2e2] cursor-not-allowed"
+                                    : "text-gray-900 border-[#8f8f8f] bg-[#e9e9e9] hover:bg-[#dedede]"
+                            )}
+                        >
+                            {previousLabel}
+                        </button>
+                        <button
+                            onClick={onNext}
+                            disabled={!onNext || isLast}
+                            className={cn(
+                                "h-[4.25rem] rounded-2xl border text-[2rem] font-normal transition-colors leading-tight",
+                                (!onNext || isLast)
+                                    ? "text-gray-400 border-[#b8b8b8] bg-[#e2e2e2] cursor-not-allowed"
+                                    : "text-gray-900 border-[#8f8f8f] bg-[#e9e9e9] hover:bg-[#dedede]"
+                            )}
+                        >
+                            {nextLabel}
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     return (
-        <div className="w-full flex justify-center py-4 bg-white border-b border-gray-100">
+        <div
+            className={cn(
+                "bg-white",
+                orientation === 'vertical'
+                    ? "h-full w-full border-l border-gray-100"
+                    : "w-full flex justify-center py-4 border-b border-gray-100"
+            )}
+        >
             <div
                 ref={scrollContainerRef}
-                className="flex gap-2 overflow-x-auto max-w-full px-4 scrollbar-hide snap-x"
+                className={cn(
+                    "flex gap-2 scrollbar-hide",
+                    orientation === 'vertical'
+                        ? "h-full flex-col overflow-y-auto overflow-x-hidden py-3 px-2 snap-y items-center"
+                        : "overflow-x-auto max-w-full px-4 snap-x"
+                )}
                 style={{ scrollBehavior: 'smooth' }}
             >
                 {Array.from({ length: totalQuestions }).map((_, idx) => {
@@ -55,6 +162,7 @@ export default function QuestionNavigator({
                     return (
                         <button
                             key={idx}
+                            data-question-index={idx}
                             onClick={() => isClickable && onSelect(idx)}
                             disabled={!isClickable}
                             className={cn(
