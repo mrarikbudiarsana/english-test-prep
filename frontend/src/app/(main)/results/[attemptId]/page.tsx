@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Fetch attempt data for metadata
   let attempt: Attempt | null = null;
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/attempts/${attemptId}/results`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/attempts/${attemptId}/results`, {
       cache: 'no-store'
     });
     if (res.ok) {
