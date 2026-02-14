@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import type { Test } from '@/types/test';
+import { testTypeShortLabel } from '@/lib/utils';
 
 export default function AdminTestsPage() {
   const router = useRouter();
@@ -146,7 +147,7 @@ export default function AdminTestsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-gray-600 capitalize">
-                        {test.testType === 'general_training' ? 'General Training' : 'Academic'}
+                        {testTypeShortLabel(test.testType)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">

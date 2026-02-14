@@ -24,6 +24,8 @@ export default function TestCatalogPage() {
   // Get user's preferred exam type to set default filter
   const examType = user?.preferredExamType;
   const examConfig = examType ? getExamConfig(examType) : null;
+  const activeExamName = examConfig?.name || 'English';
+  const activeScoreLabel = examConfig?.scoreLabel || 'score';
 
   // Filter states - default to user's exam preference if available
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,7 +39,7 @@ export default function TestCatalogPage() {
     } else {
       setTypeFilter(examConfig.testTypes[0] as any);
     }
-  }, [examType]);
+  }, [examType, examConfig]);
 
   useEffect(() => {
     async function fetchTests() {
@@ -100,7 +102,7 @@ export default function TestCatalogPage() {
             Choose Your Test
           </h1>
           <p className="text-[#5a6c7d] text-lg max-w-2xl">
-            Select from our collection of practice tests designed to help you achieve your target band score.
+            Select from our collection of {activeExamName} practice tests designed to help you achieve your target {activeScoreLabel.toLowerCase()}.
           </p>
         </div>
       </div>
@@ -133,7 +135,7 @@ export default function TestCatalogPage() {
         <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <input
           type="text"
-          placeholder="Search for tests..."
+          placeholder={`Search ${activeExamName} tests...`}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-[#e8ecef] focus:border-[#e4002b]/50 focus:ring-2 focus:ring-[#ffe5ea] focus:outline-none transition-all bg-white text-[#2c3e50] placeholder:text-[#5a6c7d]/50"

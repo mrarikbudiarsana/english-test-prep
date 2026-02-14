@@ -213,19 +213,34 @@ export async function getShareInfo(id: string) {
     throw new NotFoundError('Attempt not found');
   }
 
+  const testType = attempt.test?.testType || 'academic';
+  const isToeflItp = testType === 'toefl_itp';
+
   // Determine which sections were taken (score > 0)
   const sections: { type: string; label: string; score: number }[] = [];
-  if (attempt.listeningBand && attempt.listeningBand > 0) {
-    sections.push({ type: 'listening', label: 'Listening', score: attempt.listeningBand });
-  }
-  if (attempt.readingBand && attempt.readingBand > 0) {
-    sections.push({ type: 'reading', label: 'Reading', score: attempt.readingBand });
-  }
-  if (attempt.writingBand && attempt.writingBand > 0) {
-    sections.push({ type: 'writing', label: 'Writing', score: attempt.writingBand });
-  }
-  if (attempt.speakingBand && attempt.speakingBand > 0) {
-    sections.push({ type: 'speaking', label: 'Speaking', score: attempt.speakingBand });
+  if (isToeflItp) {
+    if (attempt.listeningScore && attempt.listeningScore > 0) {
+      sections.push({ type: 'listening', label: 'Listening', score: attempt.listeningScore });
+    }
+    if (attempt.structureScore && attempt.structureScore > 0) {
+      sections.push({ type: 'structure', label: 'Structure', score: attempt.structureScore });
+    }
+    if (attempt.readingScore && attempt.readingScore > 0) {
+      sections.push({ type: 'reading', label: 'Reading', score: attempt.readingScore });
+    }
+  } else {
+    if (attempt.listeningBand && attempt.listeningBand > 0) {
+      sections.push({ type: 'listening', label: 'Listening', score: attempt.listeningBand });
+    }
+    if (attempt.readingBand && attempt.readingBand > 0) {
+      sections.push({ type: 'reading', label: 'Reading', score: attempt.readingBand });
+    }
+    if (attempt.writingBand && attempt.writingBand > 0) {
+      sections.push({ type: 'writing', label: 'Writing', score: attempt.writingBand });
+    }
+    if (attempt.speakingBand && attempt.speakingBand > 0) {
+      sections.push({ type: 'speaking', label: 'Speaking', score: attempt.speakingBand });
+    }
   }
 
   const isPartialTest = sections.length === 1;
@@ -234,7 +249,7 @@ export async function getShareInfo(id: string) {
   // Only return public info needed for sharing
   return {
     testTitle: attempt.test?.title || 'English Practice Test',
-    testType: attempt.test?.testType || 'academic',
+    testType,
     overallBand: attempt.overallBand,
     overallScore: attempt.overallScore,
     completedAt: attempt.completedAt,

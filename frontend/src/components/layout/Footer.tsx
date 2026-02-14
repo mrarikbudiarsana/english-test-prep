@@ -17,7 +17,7 @@ export default function Footer() {
               />
             </div>
             <p className="text-gray-500 text-sm">
-              Practice for IELTS and other English proficiency exams with AI-powered feedback.
+              Practice for IELTS, TOEFL, and PTE with AI-powered feedback.
             </p>
           </div>
 

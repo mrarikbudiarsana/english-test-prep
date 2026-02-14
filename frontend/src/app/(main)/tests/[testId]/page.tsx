@@ -4,8 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Test, Section } from '@/types/test';
-import { useAuth } from '@/contexts/AuthContext';
-import { sectionTypeLabel } from '@/lib/utils';
+import { sectionTypeLabel, testTypeShortLabel, examNameFromTestType, sectionCountForTestType } from '@/lib/utils';
 import {
   HiClock,
   HiVolumeUp,
@@ -69,7 +68,6 @@ const sectionColors = {
 export default function TestOverviewPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
   const testId = params.testId as string;
 
   const [test, setTest] = useState<Test | null>(null);
@@ -77,6 +75,15 @@ export default function TestOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
+
+  const examName = test ? examNameFromTestType(test.testType) : 'English';
+  const fullSectionCount = test ? sectionCountForTestType(test.testType) : 4;
+  const badgeLabel = test ? testTypeShortLabel(test.testType) : '';
+  const brandColor =
+    test?.testType === 'toefl_ibt' ? '#7B6FD4'
+      : test?.testType === 'toefl_itp' ? '#5848B8'
+        : test?.testType === 'pte_academic' ? '#0097A7'
+          : '#e4002b';
 
   useEffect(() => {
     async function fetchTest() {
@@ -162,7 +169,10 @@ export default function TestOverviewPage() {
       {/* Back Button */}
       <Link
         href="/tests"
-        className="inline-flex items-center gap-2 text-[#5a6c7d] hover:text-[#e4002b] font-semibold transition-colors group"
+        className="inline-flex items-center gap-2 text-[#5a6c7d] font-semibold transition-colors group"
+        style={{ color: '#5a6c7d' }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = brandColor; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = '#5a6c7d'; }}
       >
         <HiChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
         Back to Tests
@@ -176,12 +186,12 @@ export default function TestOverviewPage() {
         <div className="relative z-10">
           {/* Badges */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold shadow-sm ${test.testType === 'academic'
-              ? 'bg-[#e4002b] text-white'
-              : 'bg-[#3b82f6] text-white'
-              }`}>
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold shadow-sm text-white"
+              style={{ backgroundColor: brandColor }}
+            >
               <HiAcademicCap className="w-4 h-4" />
-              {test.testType === 'general_training' ? 'General Training' : 'Academic'}
+              {badgeLabel}
             </span>
             {test.isFree && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-xl text-sm font-bold shadow-sm">
@@ -217,22 +227,26 @@ export default function TestOverviewPage() {
       )}
 
       {/* Start Full Test Card */}
-      <div className="bg-white rounded-2xl border-2 border-[#e8ecef] p-8 shadow-sm hover:shadow-lg hover:border-[#e4002b]/30 transition-all">
+      <div className="bg-white rounded-2xl border-2 border-[#e8ecef] p-8 shadow-sm hover:shadow-lg transition-all">
         <div className="flex items-start gap-4 mb-6">
-          <div className="w-14 h-14 bg-[#e4002b] rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#ffe5ea]">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg"
+            style={{ backgroundColor: brandColor, boxShadow: `0 10px 25px ${brandColor}33` }}
+          >
             <HiPlay className="w-7 h-7 text-white" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-[#2c3e50] mb-2">Full Test</h2>
             <p className="text-[#5a6c7d] leading-relaxed">
-              Take the complete IELTS test with all 4 sections in order. Timer will run for each section to simulate real exam conditions.
+              Take the complete {examName} test with all {fullSectionCount} sections in order. Timer will run for each section to simulate real exam conditions.
             </p>
           </div>
         </div>
         <button
           onClick={() => handleStartTest('full')}
           disabled={starting}
-          className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#e4002b] text-white rounded-xl hover:bg-[#e4002b]/90 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all shadow-lg shadow-[#ffe5ea] hover:shadow-xl"
+          className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all shadow-lg hover:shadow-xl"
+          style={{ backgroundColor: brandColor, boxShadow: `0 10px 25px ${brandColor}33` }}
         >
           <HiPlay className="w-6 h-6 group-hover:scale-110 transition-transform" />
           {starting ? 'Starting...' : 'Start Full Test'}
@@ -242,7 +256,7 @@ export default function TestOverviewPage() {
       {/* Section Practice */}
       <div>
         <div className="flex items-center gap-3 mb-5">
-          <HiSparkles className="w-6 h-6 text-[#e4002b]" />
+          <HiSparkles className="w-6 h-6" style={{ color: brandColor }} />
           <h2 className="text-2xl font-bold text-[#2c3e50]">Practice by Section</h2>
         </div>
         <p className="text-[#5a6c7d] mb-6 leading-relaxed">

@@ -133,7 +133,7 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled =
       {/* Play Once Notice */}
       {playOnce && !canPlay && (
         <p className="mt-2 text-xs text-amber-600">
-          This audio can only be played once, as in the real IELTS exam.
+          This audio can only be played once, as in the real exam.
         </p>
       )}
       {disabled && (

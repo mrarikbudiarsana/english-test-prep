@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PlanConfig, Subscription } from '@/types/user';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { HiCheck, HiStar, HiClock } from 'react-icons/hi';
+import { getExamConfig } from '@/config/examConfig';
 
 declare global {
   interface Window {
@@ -22,6 +23,9 @@ declare global {
 
 export default function SubscriptionPage() {
   const { user } = useAuth();
+  const examConfig = user?.preferredExamType ? getExamConfig(user.preferredExamType) : null;
+  const examName = examConfig?.name || 'English';
+  const scoreLabel = examConfig?.scoreLabel || 'score';
   const [plans, setPlans] = useState<PlanConfig[]>([]);
   const [currentSub, setCurrentSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,10 +101,10 @@ export default function SubscriptionPage() {
   };
 
   const features = [
-    'Unlimited IELTS practice tests',
+    `Unlimited ${examName} practice tests`,
     'AI-powered Writing feedback',
     'AI-powered Speaking evaluation',
-    'Detailed score breakdowns',
+    `Detailed ${scoreLabel.toLowerCase()} breakdowns`,
     'Progress tracking & analytics',
     'Section-by-section practice',
   ];
@@ -230,7 +234,7 @@ export default function SubscriptionPage() {
           Free tier: {user?.freeTestsRemaining || 0} practice tests remaining.
           {paymentAvailable
             ? ' Subscribe to unlock unlimited access.'
-            : ' Payment integration coming soon — stay tuned!'}
+            : ' Payment integration coming soon - stay tuned!'}
         </p>
       </div>
     </div>

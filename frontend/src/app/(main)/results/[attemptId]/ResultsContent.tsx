@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { Attempt } from '@/types/test';
-import { formatBand, formatDate, getBandColor, getBandBgColor } from '@/lib/utils';
+import { formatBand, formatDate, getBandColor, getBandBgColor, examNameFromTestType, usesBandScale } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTestTypesForExam } from '@/config/examConfig';
 import { HiArrowLeft } from 'react-icons/hi';
@@ -267,12 +267,14 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     }
 
     const testType = attempt.test?.testType || 'academic';
-    const isToefl = testType === 'toefl_itp';
+    const isToeflItp = testType === 'toefl_itp';
+    const isBandScale = usesBandScale(testType);
+    const examName = examNameFromTestType(testType);
 
     // Only show sections that have meaningful data
     // For objective sections (listening/reading): show if score > 0 or raw > 0
     // For subjective sections (writing/speaking): show if score exists and > 0
-    const allSections = isToefl ? [
+    const allSections = isToeflItp ? [
         { type: 'listening', label: 'Listening', score: attempt.listeningScore, raw: attempt.listeningRaw, total: 50 },
         { type: 'structure', label: 'Structure', score: attempt.structureScore, raw: attempt.structureScore, total: 40 },
         { type: 'reading', label: 'Reading', score: attempt.readingScore, raw: attempt.readingRaw, total: 50 },
@@ -298,10 +300,11 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     // For partial tests, use the single section's score; for full tests, use overall
     const displayScore = isPartialTest && singleSection
         ? singleSection.score
-        : (isToefl ? attempt.overallScore : attempt.overallBand);
+        : (isToeflItp ? attempt.overallScore : attempt.overallBand);
+    const sectionScoreLabel = isBandScale ? 'Band Score' : 'Score';
     const displayLabel = isPartialTest && singleSection
-        ? `Your IELTS ${singleSection.label} Band Score`
-        : (isToefl ? 'Your TOEFL Total Score' : 'Your IELTS Overall Band Score');
+        ? `Your ${examName} ${singleSection.label} ${sectionScoreLabel}`
+        : (isBandScale ? `Your ${examName} Overall Band Score` : `Your ${examName} Overall Score`);
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
@@ -315,7 +318,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
             <div className={`rounded-2xl p-8 text-center border-2 ${displayScore ? getBandBgColor(displayScore) : 'bg-gray-100 border-gray-200'}`}>
                 <p className="text-sm font-medium text-gray-600 mb-2">{displayLabel}</p>
                 <div className={`text-6xl font-bold ${displayScore ? getBandColor(displayScore) : 'text-gray-400'}`}>
-                    {isToefl && !isPartialTest ? displayScore : formatBand(displayScore)}
+                    {isToeflItp && !isPartialTest ? displayScore : formatBand(displayScore)}
                 </div>
                 {attempt.completedAt && (
                     <p className="mt-3 text-sm text-gray-500">Completed on {formatDate(attempt.completedAt)}</p>
@@ -335,9 +338,9 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                         <div key={section.type} className="bg-white rounded-xl border border-gray-200 p-5 text-center">
                             <p className="text-sm font-medium text-gray-500 mb-1">{section.label}</p>
                             <p className={`text-3xl font-bold ${section.score ? getBandColor(section.score) : 'text-gray-400'}`}>
-                                {isToefl ? section.score : formatBand(section.score)}
+                                {isToeflItp ? section.score : formatBand(section.score)}
                             </p>
-                            {section.raw !== null && !isToefl && (
+                            {section.raw !== null && !isToeflItp && (
                                 <p className="text-xs text-gray-400 mt-1">{section.raw}/{section.total} correct</p>
                             )}
                         </div>

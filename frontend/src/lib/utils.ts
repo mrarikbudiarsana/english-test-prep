@@ -94,3 +94,42 @@ export function questionTypeLabel(type: string): string {
   };
   return labels[type] || type;
 }
+
+export function testTypeLabel(testType: string): string {
+  const labels: Record<string, string> = {
+    academic: 'IELTS Academic',
+    general_training: 'IELTS General Training',
+    toefl_ibt: 'TOEFL iBT',
+    toefl_itp: 'TOEFL ITP',
+    pte_academic: 'PTE Academic',
+  };
+  return labels[testType] || testType;
+}
+
+export function testTypeShortLabel(testType: string): string {
+  const labels: Record<string, string> = {
+    academic: 'Academic',
+    general_training: 'General Training',
+    toefl_ibt: 'TOEFL iBT',
+    toefl_itp: 'TOEFL ITP',
+    pte_academic: 'PTE Academic',
+  };
+  return labels[testType] || testType;
+}
+
+export function examNameFromTestType(testType: string): string {
+  if (testType === 'academic' || testType === 'general_training') return 'IELTS';
+  if (testType === 'toefl_ibt' || testType === 'toefl_itp') return 'TOEFL';
+  if (testType === 'pte_academic') return 'PTE';
+  return 'English';
+}
+
+export function sectionCountForTestType(testType: string): number {
+  if (testType === 'toefl_itp') return 3;
+  if (testType === 'pte_academic') return 3;
+  return 4;
+}
+
+export function usesBandScale(testType: string): boolean {
+  return testType === 'academic' || testType === 'general_training';
+}

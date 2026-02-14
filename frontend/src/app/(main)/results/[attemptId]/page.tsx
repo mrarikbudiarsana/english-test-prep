@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Metadata } from 'next';
-import { Attempt } from '@/types/test';
 import ResultsContent from './ResultsContent';
+import { examNameFromTestType, usesBandScale } from '@/lib/utils';
 
 type Props = {
   params: { attemptId: string } | Promise<{ attemptId: string }>;
@@ -41,7 +41,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const testTitle = shareInfo.testTitle || 'English Practice Test';
-  const isToefl = shareInfo.testType === 'toefl_itp';
+  const isToeflItp = shareInfo.testType === 'toefl_itp';
+  const isBandScale = usesBandScale(shareInfo.testType || 'academic');
+  const examName = examNameFromTestType(shareInfo.testType || 'academic');
   const isPartialTest = shareInfo.isPartialTest && shareInfo.singleSection;
 
   // For partial tests, use skill-specific score and messaging
@@ -53,21 +55,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (isPartialTest && shareInfo.singleSection) {
     skillLabel = shareInfo.singleSection.label;
     score = shareInfo.singleSection.score.toString();
-    ogTitle = `My ${skillLabel} Score: Band ${score}`;
-    description = `I scored Band ${score} on IELTS ${skillLabel} practice! Check it out!`;
+    const partialScorePrefix = isBandScale ? 'Band ' : '';
+    ogTitle = `My ${skillLabel} Score: ${partialScorePrefix}${score}`;
+    description = `I scored ${partialScorePrefix}${score} on ${examName} ${skillLabel} practice! Check it out!`;
   } else {
     skillLabel = 'Overall';
-    score = isToefl
+    score = isToeflItp
       ? (shareInfo.overallScore ? shareInfo.overallScore.toString() : '-')
       : (shareInfo.overallBand ? shareInfo.overallBand.toString() : '-');
     ogTitle = `My Result: ${testTitle}`;
-    description = `I scored Band ${score} on my English practice test! Check it out!`;
+    const fullScorePrefix = isBandScale ? 'Band ' : '';
+    description = `I scored ${fullScorePrefix}${score} on my ${examName} practice test! Check it out!`;
   }
 
   const date = shareInfo.completedAt ? new Date(shareInfo.completedAt).toLocaleDateString() : new Date().toLocaleDateString();
 
   // For partial tests, show skill name in OG image title
-  const ogImageTitle = isPartialTest ? `IELTS ${skillLabel} Practice` : testTitle;
+  const ogImageTitle = isPartialTest ? `${examName} ${skillLabel} Practice` : testTitle;
   const ogImageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.englishwitharik.com'}/api/og?title=${encodeURIComponent(ogImageTitle)}&score=${encodeURIComponent(score)}&date=${encodeURIComponent(date)}`;
 
   return {
