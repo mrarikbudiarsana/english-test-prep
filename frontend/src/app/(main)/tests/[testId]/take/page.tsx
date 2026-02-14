@@ -553,6 +553,20 @@ function TestTakingContent() {
     return resolvedPartNumbers[index] ?? index + 1;
   }, [resolvedPartNumbers]);
 
+  const getToeflPartLabel = useCallback((sectionType: SectionType | null | undefined, partIndex: number): string => {
+    const resolved = getResolvedPartNumber(partIndex);
+    if (testType === 'toefl_itp' && sectionType === 'listening') {
+      if (resolved === 1) return 'Part A — Short Conversations';
+      if (resolved === 2) return 'Part B — Longer Conversations';
+      if (resolved === 3) return 'Part C — Talks/Lectures';
+    }
+    if (testType === 'toefl_itp' && sectionType === 'structure') {
+      if (resolved === 1) return 'Part 1 — Structure';
+      if (resolved === 2) return 'Part 2 — Written Expression';
+    }
+    return `Part ${resolved}`;
+  }, [getResolvedPartNumber, testType]);
+
   // TOEFL ITP Part B/C: all questions for one recording shown scrollably, Next advances recording
   const isPartBCMode = testType === 'toefl_itp' &&
     state.currentSectionType === 'listening' &&
@@ -621,6 +635,11 @@ function TestTakingContent() {
   const answeredCount = useMemo(
     () => questions.filter((q) => Boolean(state.answers[q.id])).length,
     [questions, state.answers]
+  );
+
+  const currentPartLabel = useMemo(
+    () => getToeflPartLabel(state.currentSectionType, activePartIndex),
+    [getToeflPartLabel, state.currentSectionType, activePartIndex]
   );
 
   const shouldUseToeflFocusCard =
@@ -769,7 +788,17 @@ function TestTakingContent() {
                     )}>
                       {isPartBCMode ? (
                         // Part B/C: all questions for this recording, scrollable
-                        <div className="space-y-2">
+                        <div className="space-y-4">
+                          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                            <div className="flex items-center justify-between gap-4 text-sm">
+                              <div className="font-semibold text-slate-800">
+                                {currentPartLabel} · Question {currentQuestionIndex + 1} of {questions.length}
+                              </div>
+                              <div className="text-slate-500">
+                                Answered {answeredCount} / {questions.length}
+                              </div>
+                            </div>
+                          </div>
                           {questions
                             .filter(q => q.sectionId === currentSectionPart.id)
                             .map((question) => {
@@ -794,7 +823,7 @@ function TestTakingContent() {
                             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                               <div className="flex items-center justify-between gap-4 text-sm">
                                 <div className="font-semibold text-slate-800">
-                                  Part {getResolvedPartNumber(activePartIndex)} · Question {currentQuestionIndex + 1} of {questions.length}
+                                  {currentPartLabel} · Question {currentQuestionIndex + 1} of {questions.length}
                                 </div>
                                 <div className="text-slate-500">
                                   Answered {answeredCount} / {questions.length}
