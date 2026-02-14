@@ -1,17 +1,19 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
-import { Attempt, AttemptStatus } from '@/types/test';
+import { Attempt, AttemptStatus, TestType } from '@/types/test';
 import { PaginatedResponse } from '@/types/api';
 import { formatBand, formatDate, getBandColor, getBandBgColor } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { getTestTypesForExam } from '@/config/examConfig';
 import {
   HiArrowLeft,
   HiChartBar,
   HiClock,
   HiCheckCircle,
-  HiRefresh,
   HiFilter,
   HiTrendingUp,
   HiTrendingDown,
@@ -21,6 +23,8 @@ type FilterStatus = 'all' | AttemptStatus;
 type SortBy = 'date' | 'score';
 
 export default function ResultsPage() {
+  const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -29,19 +33,36 @@ export default function ResultsPage() {
   const [sortBy, setSortBy] = useState<SortBy>('date');
   const [deletingAttemptId, setDeletingAttemptId] = useState<string | null>(null);
   const limit = 10;
+  const examType = user?.preferredExamType;
+  const allowedTestTypes = useMemo(
+    () => (examType ? getTestTypesForExam(examType) : []),
+    [examType]
+  );
+  const queryTestType = searchParams.get('testType') as TestType | null;
+  const activeTestType =
+    queryTestType && allowedTestTypes.includes(queryTestType)
+      ? queryTestType
+      : null;
 
-  useEffect(() => {
-    fetchAttempts();
-  }, [offset, filterStatus, sortBy]);
-
-  async function fetchAttempts() {
+  const fetchAttempts = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get<PaginatedResponse<Attempt>>('/attempts', {
-        params: { offset, limit }
+        params: {
+          offset,
+          limit,
+          examType,
+          ...(activeTestType ? { testType: activeTestType } : {}),
+        }
       });
 
       let filteredAttempts = res.data.data;
+      const allowedSet = new Set(allowedTestTypes);
+      if (allowedSet.size > 0) {
+        filteredAttempts = filteredAttempts.filter((a) =>
+          a.test?.testType ? allowedSet.has(a.test.testType) : false
+        );
+      }
 
       // Filter by status
       if (filterStatus !== 'all') {
@@ -59,12 +80,16 @@ export default function ResultsPage() {
 
       setAttempts(filteredAttempts);
       setTotal(res.data.total);
-    } catch (error) {
+    } catch {
       console.error('Failed to fetch attempts');
     } finally {
       setLoading(false);
     }
-  }
+  }, [offset, filterStatus, sortBy, examType, activeTestType, allowedTestTypes]);
+
+  useEffect(() => {
+    fetchAttempts();
+  }, [fetchAttempts]);
 
   async function handleDeleteAttempt(attemptId: string) {
     if (!window.confirm('Delete this in-progress attempt? This cannot be undone.')) {
@@ -76,7 +101,7 @@ export default function ResultsPage() {
       await api.delete(`/attempts/${attemptId}`);
       setAttempts((prev) => prev.filter((a) => a.id !== attemptId));
       setTotal((prev) => Math.max(0, prev - 1));
-    } catch (error) {
+    } catch {
       console.error('Failed to delete attempt');
       alert('Failed to delete attempt. Please try again.');
     } finally {

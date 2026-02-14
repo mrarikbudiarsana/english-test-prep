@@ -24,6 +24,9 @@ export async function getAttempt(
   try {
     const attemptId = req.params.attemptId as string;
     const attempt = await attemptService.getAttempt(attemptId, req.user!.id);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.json({ data: attempt });
   } catch (error) {
     next(error);
@@ -38,7 +41,12 @@ export async function getUserAttempts(
   try {
     const offset = parseInt(req.query.offset as string) || 0;
     const limit = parseInt(req.query.limit as string) || 20;
-    const result = await attemptService.getUserAttempts(req.user!.id, offset, limit);
+    const examType = req.query.examType as string | undefined;
+    const testType = req.query.testType as string | undefined;
+    const result = await attemptService.getUserAttempts(req.user!.id, offset, limit, examType, testType);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.json({ data: result.rows, total: result.total, offset, limit });
   } catch (error) {
     next(error);
@@ -129,6 +137,9 @@ export async function getResults(
   try {
     const attemptId = req.params.attemptId as string;
     const results = await attemptService.getAttempt(attemptId, req.user!.id);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.json({ data: results });
   } catch (error) {
     next(error);

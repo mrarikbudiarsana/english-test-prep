@@ -15,11 +15,15 @@ const SELECT_COLUMNS = `
   section_started_at   AS "sectionStartedAt",
   listening_raw        AS "listeningRaw",
   listening_band       AS "listeningBand",
+  listening_score      AS "listeningScore",
   reading_raw          AS "readingRaw",
   reading_band         AS "readingBand",
+  reading_score        AS "readingScore",
+  structure_score      AS "structureScore",
   writing_band         AS "writingBand",
   speaking_band        AS "speakingBand",
   overall_band         AS "overallBand",
+  overall_score        AS "overallScore",
   writing_feedback     AS "writingFeedback",
   speaking_feedback    AS "speakingFeedback",
   created_at           AS "createdAt",
@@ -40,15 +44,68 @@ const scoreFieldMap: Record<string, string> = {
 
 // ---------- queries ----------
 
-export async function findById(id: string) {
-  const result = await query(
-    `SELECT ${SELECT_COLUMNS} FROM attempts WHERE id = $1`,
-    [id],
-  );
-  return result.rows[0] || null;
+function transformAttemptRow(row: any) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    testId: row.test_id,
+    mode: row.mode,
+    practiceSectionType: row.practice_section_type,
+    status: row.status,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    currentSection: row.current_section,
+    sectionStartedAt: row.section_started_at,
+    listeningRaw: row.listening_raw,
+    listeningBand: row.listening_band,
+    listeningScore: row.listening_score,
+    readingRaw: row.reading_raw,
+    readingBand: row.reading_band,
+    readingScore: row.reading_score,
+    structureScore: row.structure_score,
+    writingBand: row.writing_band,
+    speakingBand: row.speaking_band,
+    overallBand: row.overall_band,
+    overallScore: row.overall_score,
+    writingFeedback: row.writing_feedback,
+    speakingFeedback: row.speaking_feedback,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    test: row.test || null,
+  };
 }
 
-export async function findByUserId(userId: string, offset: number = 0, limit: number = 20) {
+export async function findById(id: string) {
+  const result = await query(
+    `SELECT a.*,
+            json_build_object(
+              'id', t.id,
+              'title', t.title,
+              'testType', t.test_type,
+              'isPublished', t.is_published,
+              'isFree', t.is_free
+            ) as test
+     FROM attempts a
+     JOIN tests t ON a.test_id = t.id
+     WHERE a.id = $1`,
+    [id],
+  );
+  if (result.rows.length === 0) return null;
+  return transformAttemptRow(result.rows[0]);
+}
+
+export async function findByUserId(
+  userId: string,
+  offset: number = 0,
+  limit: number = 20,
+  testTypes?: string[],
+) {
+  const hasTestTypeFilter = !!(testTypes && testTypes.length > 0);
+  const testTypeFilter = hasTestTypeFilter ? 'AND t.test_type = ANY($4::text[])' : '';
+  const attemptsParams = hasTestTypeFilter
+    ? [userId, offset, limit, testTypes]
+    : [userId, offset, limit];
+
   const result = await query(
     `SELECT a.*,
             json_build_object(
@@ -67,52 +124,32 @@ export async function findByUserId(userId: string, offset: number = 0, limit: nu
      ) r ON a.id = r.attempt_id
      WHERE a.user_id = $1
        AND (a.status != 'in_progress' OR COALESCE(r.response_count, 0) > 0)
+       ${testTypeFilter}
      ORDER BY a.created_at DESC
      OFFSET $2 LIMIT $3`,
-    [userId, offset, limit],
+    attemptsParams,
   );
+
+  const countTestTypeFilter = hasTestTypeFilter ? 'AND t.test_type = ANY($2::text[])' : '';
+  const countParams = hasTestTypeFilter ? [userId, testTypes] : [userId];
 
   const countResult = await query(
     `SELECT COUNT(*)
      FROM attempts a
+     JOIN tests t ON a.test_id = t.id
      LEFT JOIN (
        SELECT attempt_id, COUNT(*) as response_count
        FROM responses
        GROUP BY attempt_id
      ) r ON a.id = r.attempt_id
      WHERE a.user_id = $1
-       AND (a.status != 'in_progress' OR COALESCE(r.response_count, 0) > 0)`,
-    [userId],
+       AND (a.status != 'in_progress' OR COALESCE(r.response_count, 0) > 0)
+       ${countTestTypeFilter}`,
+    countParams,
   );
 
-  // Transform rows to camelCase
-  const transformedRows = result.rows.map((row: any) => ({
-    id: row.id,
-    userId: row.user_id,
-    testId: row.test_id,
-    mode: row.mode,
-    practiceSectionType: row.practice_section_type,
-    status: row.status,
-    startedAt: row.started_at,
-    completedAt: row.completed_at,
-    currentSection: row.current_section,
-    sectionStartedAt: row.section_started_at,
-    listeningRaw: row.listening_raw,
-    listeningBand: row.listening_band,
-    readingRaw: row.reading_raw,
-    readingBand: row.reading_band,
-    writingBand: row.writing_band,
-    speakingBand: row.speaking_band,
-    overallBand: row.overall_band,
-    writingFeedback: row.writing_feedback,
-    speakingFeedback: row.speaking_feedback,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    test: row.test,
-  }));
-
   return {
-    rows: transformedRows,
+    rows: result.rows.map(transformAttemptRow),
     total: parseInt(countResult.rows[0].count, 10),
   };
 }

@@ -7,6 +7,8 @@ import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { Attempt } from '@/types/test';
 import { formatBand, formatDate, getBandColor, getBandBgColor } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { getTestTypesForExam } from '@/config/examConfig';
 import { HiArrowLeft } from 'react-icons/hi';
 import CongratulationsModal from '@/components/test/CongratulationsModal';
 
@@ -71,14 +73,18 @@ function CriterionCard({ label, data }: { label: string; data: BandFeedback }) {
 }
 
 export default function ResultsContent({ attemptId }: ResultsContentProps) {
+    const { user } = useAuth();
     const params = useParams<{ attemptId?: string | string[] }>();
     const [attempt, setAttempt] = useState<Attempt | null>(null);
     const [loading, setLoading] = useState(true);
     const [showShareModal, setShowShareModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pollingDelayRef = useRef(5000);
+    const MAX_POLLING_DELAY_MS = 20000;
     const routeAttemptId = Array.isArray(params?.attemptId) ? params.attemptId[0] : params?.attemptId;
     const resolvedAttemptId = (attemptId && attemptId !== 'undefined' ? attemptId : routeAttemptId)?.trim();
+    const allowedTestTypes = user?.preferredExamType ? getTestTypesForExam(user.preferredExamType) : [];
 
     const clearPollTimeout = useCallback(() => {
         if (pollTimeoutRef.current) {
@@ -99,13 +105,18 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
             clearPollTimeout();
             if (res.data.status === 'scoring') {
+                const delay = pollingDelayRef.current;
                 pollTimeoutRef.current = setTimeout(() => {
                     void fetchResults();
-                }, 5000);
+                }, delay);
+                pollingDelayRef.current = Math.min(Math.floor(delay * 1.5), MAX_POLLING_DELAY_MS);
+            } else {
+                pollingDelayRef.current = 5000;
             }
         } catch (error) {
             clearPollTimeout();
             setAttempt(null);
+            pollingDelayRef.current = 5000;
             if (isAxiosError(error)) {
                 const status = error.response?.status;
                 if (status === 401) {
@@ -137,6 +148,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
             setLoading(false);
             return;
         }
+        pollingDelayRef.current = 5000;
         void fetchResults();
         return clearPollTimeout;
     }, [clearPollTimeout, fetchResults, resolvedAttemptId]);
@@ -158,7 +170,10 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
             <div className="text-center py-12 space-y-4">
                 <p className="text-gray-500">{errorMessage || 'Results not found'}</p>
                 <button
-                    onClick={fetchResults}
+                    onClick={() => {
+                        pollingDelayRef.current = 5000;
+                        void fetchResults();
+                    }}
                     className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium"
                 >
                     Retry
@@ -176,6 +191,21 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                     Our AI is evaluating your Writing and Speaking responses. This usually takes 30–60 seconds.
                 </p>
                 <p className="mt-4 text-sm text-gray-400">Auto-refreshing every 5 seconds</p>
+            </div>
+        );
+    }
+
+    if (attempt.test?.testType && allowedTestTypes.length > 0 && !allowedTestTypes.includes(attempt.test.testType)) {
+        return (
+            <div className="max-w-2xl mx-auto text-center py-16 space-y-4">
+                <h2 className="text-2xl font-bold text-gray-900">Result not available for current program</h2>
+                <p className="text-gray-500">Switch your program or open a result that matches your selected test type.</p>
+                <Link
+                    href="/results"
+                    className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium"
+                >
+                    Back to Results
+                </Link>
             </div>
         );
     }

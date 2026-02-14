@@ -11,6 +11,13 @@ const WRITING_TIMEOUT_MS = Number(process.env.AI_WRITING_TIMEOUT_MS || 120000);
 const SPEAKING_TIMEOUT_MS = Number(process.env.AI_SPEAKING_TIMEOUT_MS || 180000);
 const FINALIZE_TIMEOUT_MS = Number(process.env.AI_FINALIZE_TIMEOUT_MS || 45000);
 
+const EXAM_TYPE_TO_TEST_TYPES: Record<string, string[]> = {
+  ielts: ['academic', 'general_training'],
+  toefl_ibt: ['toefl_ibt'],
+  toefl_itp: ['toefl_itp'],
+  pte: ['pte_academic'],
+};
+
 async function withTimeout<T>(operation: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -144,8 +151,16 @@ export async function getAttempt(id: string, userId: string) {
 /**
  * Get all attempts for a user with pagination.
  */
-export async function getUserAttempts(userId: string, offset: number = 0, limit: number = 20) {
-  return attemptModel.findByUserId(userId, offset, limit);
+export async function getUserAttempts(
+  userId: string,
+  offset: number = 0,
+  limit: number = 20,
+  examType?: string,
+  testType?: string,
+) {
+  const mappedTestTypes = examType ? EXAM_TYPE_TO_TEST_TYPES[examType] : undefined;
+  const testTypes = testType ? [testType] : mappedTestTypes;
+  return attemptModel.findByUserId(userId, offset, limit, testTypes);
 }
 
 /**
