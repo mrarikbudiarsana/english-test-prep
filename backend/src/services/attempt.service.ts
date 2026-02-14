@@ -213,6 +213,24 @@ export async function getShareInfo(id: string) {
     throw new NotFoundError('Attempt not found');
   }
 
+  // Determine which sections were taken (score > 0)
+  const sections: { type: string; label: string; score: number }[] = [];
+  if (attempt.listeningBand && attempt.listeningBand > 0) {
+    sections.push({ type: 'listening', label: 'Listening', score: attempt.listeningBand });
+  }
+  if (attempt.readingBand && attempt.readingBand > 0) {
+    sections.push({ type: 'reading', label: 'Reading', score: attempt.readingBand });
+  }
+  if (attempt.writingBand && attempt.writingBand > 0) {
+    sections.push({ type: 'writing', label: 'Writing', score: attempt.writingBand });
+  }
+  if (attempt.speakingBand && attempt.speakingBand > 0) {
+    sections.push({ type: 'speaking', label: 'Speaking', score: attempt.speakingBand });
+  }
+
+  const isPartialTest = sections.length === 1;
+  const singleSection = isPartialTest ? sections[0] : null;
+
   // Only return public info needed for sharing
   return {
     testTitle: attempt.test?.title || 'English Practice Test',
@@ -220,6 +238,9 @@ export async function getShareInfo(id: string) {
     overallBand: attempt.overallBand,
     overallScore: attempt.overallScore,
     completedAt: attempt.completedAt,
+    isPartialTest,
+    singleSection,
+    sections,
   };
 }
 
