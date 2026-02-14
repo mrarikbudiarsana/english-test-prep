@@ -249,6 +249,11 @@ export default function TestOverviewPage() {
             const sectionOrder = test.testType === 'toefl_itp'
               ? ['listening', 'structure', 'reading'] as const
               : ['listening', 'reading', 'writing', 'speaking'] as const;
+            const toeflCanonicalParts: Partial<Record<(typeof sectionOrder)[number], number>> = {
+              listening: 3,
+              structure: 2,
+              reading: 1,
+            };
 
             return sectionOrder.map((type) => {
               const Icon = sectionIcons[type];
@@ -257,6 +262,10 @@ export default function TestOverviewPage() {
               const totalDuration = typeSections.reduce((sum, s) => sum + s.durationMinutes, 0);
               const questionCount = type === 'listening' || type === 'reading' || type === 'structure' ? 40 : undefined; // Approximate for structure
               const isAvailable = typeSections.length > 0;
+              const displayedPartCount =
+                test.testType === 'toefl_itp'
+                  ? (toeflCanonicalParts[type] ?? typeSections.length)
+                  : typeSections.length;
 
               return (
                 <div
@@ -272,7 +281,7 @@ export default function TestOverviewPage() {
                     </div>
                     {isAvailable && (
                       <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">
-                        {typeSections.length} {typeSections.length === 1 ? 'part' : 'parts'}
+                        {displayedPartCount} {displayedPartCount === 1 ? 'part' : 'parts'}
                       </span>
                     )}
                   </div>
