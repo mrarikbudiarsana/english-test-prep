@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { isAxiosError } from 'axios';
@@ -76,19 +76,18 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     const [loading, setLoading] = useState(true);
     const [showShareModal, setShowShareModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const routeAttemptId = Array.isArray(params?.attemptId) ? params.attemptId[0] : params?.attemptId;
     const resolvedAttemptId = (attemptId && attemptId !== 'undefined' ? attemptId : routeAttemptId)?.trim();
 
-    useEffect(() => {
-        if (!resolvedAttemptId) {
-            setErrorMessage('Invalid result link.');
-            setLoading(false);
-            return;
+    const clearPollTimeout = useCallback(() => {
+        if (pollTimeoutRef.current) {
+            clearTimeout(pollTimeoutRef.current);
+            pollTimeoutRef.current = null;
         }
-        fetchResults();
-    }, [resolvedAttemptId]);
+    }, []);
 
-    async function fetchResults() {
+    const fetchResults = useCallback(async () => {
         try {
             setErrorMessage(null);
             if (!resolvedAttemptId) {
@@ -98,10 +97,15 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
             const res = await api.get(`/attempts/${resolvedAttemptId}/results`);
             setAttempt(res.data);
 
+            clearPollTimeout();
             if (res.data.status === 'scoring') {
-                setTimeout(fetchResults, 5000);
+                pollTimeoutRef.current = setTimeout(() => {
+                    void fetchResults();
+                }, 5000);
             }
         } catch (error) {
+            clearPollTimeout();
+            setAttempt(null);
             if (isAxiosError(error)) {
                 const status = error.response?.status;
                 if (status === 401) {
@@ -110,6 +114,8 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                     setErrorMessage('You do not have access to this result.');
                 } else if (status === 404) {
                     setErrorMessage('Result not found.');
+                } else if (status === 429) {
+                    setErrorMessage('Too many requests while checking score. Please wait a few seconds and retry.');
                 } else {
                     const apiMessage = (error.response?.data as { error?: string; message?: string } | undefined)?.error
                         || (error.response?.data as { error?: string; message?: string } | undefined)?.message;
@@ -123,7 +129,17 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
         } finally {
             setLoading(false);
         }
-    }
+    }, [clearPollTimeout, resolvedAttemptId]);
+
+    useEffect(() => {
+        if (!resolvedAttemptId) {
+            setErrorMessage('Invalid result link.');
+            setLoading(false);
+            return;
+        }
+        void fetchResults();
+        return clearPollTimeout;
+    }, [clearPollTimeout, fetchResults, resolvedAttemptId]);
 
     if (loading) {
         return (

@@ -7,6 +7,36 @@ import * as aiScoringService from './ai-scoring.service';
 import { NotFoundError, ForbiddenError, ValidationError } from '../middleware/errorHandler';
 import { AttemptMode, SectionType } from '../types/test.types';
 
+const WRITING_TIMEOUT_MS = Number(process.env.AI_WRITING_TIMEOUT_MS || 120000);
+const SPEAKING_TIMEOUT_MS = Number(process.env.AI_SPEAKING_TIMEOUT_MS || 180000);
+const FINALIZE_TIMEOUT_MS = Number(process.env.AI_FINALIZE_TIMEOUT_MS || 45000);
+
+async function withTimeout<T>(operation: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const observed = operation.then(
+    (value) => ({ type: 'result' as const, value }),
+    (error) => ({ type: 'error' as const, error }),
+  );
+
+  const timeout = new Promise<{ type: 'timeout' }>((resolve) => {
+    timeoutId = setTimeout(() => resolve({ type: 'timeout' }), timeoutMs);
+  });
+
+  const winner = await Promise.race([observed, timeout]);
+  if (timeoutId) clearTimeout(timeoutId);
+
+  if (winner.type === 'timeout') {
+    throw new Error(`${label} timed out after ${timeoutMs}ms`);
+  }
+
+  if (winner.type === 'error') {
+    throw winner.error;
+  }
+
+  return winner.value;
+}
+
 /** Map a DB test_type to its exam type for subscription checks. */
 function testTypeToExamType(testType: string): string {
   if (testType === 'academic' || testType === 'general_training') return 'ielts';
@@ -246,22 +276,45 @@ export async function deleteAttempt(attemptId: string, userId: string) {
 async function triggerAIScoring(attemptId: string): Promise<void> {
   try {
     // Score writing section
-    await aiScoringService.scoreWriting(attemptId);
+    await withTimeout(
+      aiScoringService.scoreWriting(attemptId),
+      WRITING_TIMEOUT_MS,
+      'Writing scoring',
+    );
   } catch (err) {
     console.error('Error scoring writing:', err);
   }
 
   try {
     // Score speaking section
-    await aiScoringService.scoreSpeaking(attemptId);
+    await withTimeout(
+      aiScoringService.scoreSpeaking(attemptId),
+      SPEAKING_TIMEOUT_MS,
+      'Speaking scoring',
+    );
   } catch (err) {
     console.error('Error scoring speaking:', err);
   }
 
+  let finalized = false;
   // Finalize: calculate overall band and mark as completed
   try {
-    await aiScoringService.finalizeScoring(attemptId);
+    await withTimeout(
+      aiScoringService.finalizeScoring(attemptId),
+      FINALIZE_TIMEOUT_MS,
+      'Scoring finalization',
+    );
+    finalized = true;
   } catch (err) {
     console.error('Error finalizing scoring:', err);
+  }
+
+  // Never leave attempts in "scoring" forever, even if finalization fails.
+  if (!finalized) {
+    try {
+      await attemptModel.complete(attemptId);
+    } catch (err) {
+      console.error('Error forcing attempt completion:', err);
+    }
   }
 }
