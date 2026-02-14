@@ -274,7 +274,7 @@ export async function scoreWriting(attemptId: string): Promise<void> {
     ],
     response_format: { type: 'json_object' },
     temperature: 0.2,
-    max_tokens: 3500,
+    max_completion_tokens: 3500,
   });
 
   const raw = ai.choices[0]?.message?.content;
@@ -469,7 +469,7 @@ export async function scoreSpeaking(attemptId: string): Promise<void> {
     ],
     response_format: { type: 'json_object' },
     temperature: 0.2,
-    max_tokens: 3500,
+    max_completion_tokens: 3500,
   });
 
   const raw = ai.choices[0]?.message?.content;
