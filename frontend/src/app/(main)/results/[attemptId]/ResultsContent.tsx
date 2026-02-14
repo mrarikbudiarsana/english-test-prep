@@ -281,8 +281,8 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                 ))}
             </div>
 
-            {/* Writing Feedback */}
-            {writingFeedback?.tasks && writingFeedback.tasks.length > 0 && (
+            {/* Writing Feedback - only show if writing was actually taken (score > 0) */}
+            {attempt.writingBand && attempt.writingBand > 0 && writingFeedback?.tasks && writingFeedback.tasks.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
                     <div>
                         <h3 className="text-lg font-semibold text-gray-900">Writing Feedback</h3>
@@ -327,8 +327,8 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                 </div>
             )}
 
-            {/* Speaking Feedback */}
-            {speakingFeedback && (
+            {/* Speaking Feedback - only show if speaking was actually taken (score > 0) */}
+            {attempt.speakingBand && attempt.speakingBand > 0 && speakingFeedback && (
                 <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
                     <div>
                         <h3 className="text-lg font-semibold text-gray-900">Speaking Feedback</h3>
