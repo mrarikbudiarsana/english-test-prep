@@ -273,7 +273,6 @@ export async function scoreWriting(attemptId: string): Promise<void> {
       { role: 'user', content: userPrompt },
     ],
     response_format: { type: 'json_object' },
-    temperature: 0.2,
     max_completion_tokens: 3500,
   });
 
@@ -468,7 +467,6 @@ export async function scoreSpeaking(attemptId: string): Promise<void> {
       { role: 'user', content: userPrompt },
     ],
     response_format: { type: 'json_object' },
-    temperature: 0.2,
     max_completion_tokens: 3500,
   });
 
