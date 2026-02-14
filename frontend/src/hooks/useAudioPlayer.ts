@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 interface UseAudioPlayerOptions {
   playOnce?: boolean;
+  autoPlay?: boolean;
   onEnd?: () => void;
 }
 
@@ -133,6 +134,13 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     playingRef.current = false;
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
   }, []);
+
+  // Handle autoPlay
+  useEffect(() => {
+    if (isLoaded && options?.autoPlay && !isPlaying && (!playOnce || !hasPlayed)) {
+      play();
+    }
+  }, [isLoaded, options?.autoPlay, isPlaying, playOnce, hasPlayed, play]);
 
   const seek = useCallback((time: number) => {
     if (audioRef.current) {

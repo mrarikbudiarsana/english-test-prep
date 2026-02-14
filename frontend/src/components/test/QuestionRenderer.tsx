@@ -30,6 +30,7 @@ interface QuestionRendererProps {
   isActive?: boolean;
   onAudioEnd?: () => void;
   playOnce?: boolean;
+  autoPlay?: boolean;
 }
 
 export default function QuestionRenderer({
@@ -41,6 +42,7 @@ export default function QuestionRenderer({
   isActive = false,
   onAudioEnd,
   playOnce = false,
+  autoPlay = false,
 }: QuestionRendererProps) {
   const handleChange = (newAnswer: any) => {
     onAnswerChange(question.id, newAnswer);
@@ -185,7 +187,8 @@ export default function QuestionRenderer({
   return (
     <div className={cn(
       isNoteStyle ? 'py-0.5' : 'py-3 border-b border-gray-100 last:border-0',
-      !isNoteStyle && "flex items-start gap-3"
+      !isNoteStyle && "flex items-start gap-3",
+      isActive && !isNoteStyle && "bg-blue-50/50 -mx-4 px-4 rounded-lg ring-1 ring-blue-100"
     )}>
       {isNoteStyle ? (
         <TextHighlighter>
@@ -220,6 +223,7 @@ export default function QuestionRenderer({
                 <AudioPlayer
                   src={question.audioUrl}
                   playOnce={playOnce}
+                  autoPlay={autoPlay}
                   onEnd={onAudioEnd}
                 />
               </div>

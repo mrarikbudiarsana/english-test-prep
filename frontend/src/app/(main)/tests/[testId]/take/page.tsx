@@ -477,16 +477,16 @@ function TestTakingContent() {
       : isToeflLockedSection && toeflHasUnanswered
         ? 'Complete All Answers'
         : mode === 'full' && upcomingSectionType
-      ? `Go to ${sectionTypeLabel(upcomingSectionType)}`
-      : 'Submit Test';
+          ? `Go to ${sectionTypeLabel(upcomingSectionType)}`
+          : 'Submit Test';
   const navigatorActionLabel =
     isToeflLockedSection && !toeflReviewUnlocked
       ? (currentQuestionIndex < questions.length - 1 ? 'Continue' : 'Review Answers')
       : currentQuestionIndex < questions.length - 1
-      ? 'Continue'
-      : mode === 'full' && upcomingSectionType
-        ? `Go to ${sectionTypeLabel(upcomingSectionType)}`
-        : 'Review & Submit';
+        ? 'Continue'
+        : mode === 'full' && upcomingSectionType
+          ? `Go to ${sectionTypeLabel(upcomingSectionType)}`
+          : 'Review & Submit';
 
   // Reset activePartIndex and currentPromptIndex when changing section type
   useEffect(() => {
@@ -763,6 +763,7 @@ function TestTakingContent() {
                       <AudioPlayer
                         src={currentSectionPart.audioUrl}
                         playOnce={true}
+                        autoPlay={true}
                       />
                     </div>
                   )}
@@ -812,7 +813,7 @@ function TestTakingContent() {
                                   answer={state.answers[question.id]}
                                   onAnswerChange={handleAnswerChange}
                                   displayNumber={startNum}
-                                  isActive={false}
+                                  isActive={questions.indexOf(question) === currentQuestionIndex}
                                 />
                               );
                             })}
@@ -851,6 +852,7 @@ function TestTakingContent() {
                               isActive={true}
                               onAudioEnd={handleAudioEnd}
                               playOnce={testType === 'toefl_itp'}
+                              autoPlay={true}
                             />
                           </div>
                         </div>
@@ -940,6 +942,7 @@ function TestTakingContent() {
                       <AudioPlayer
                         src={currentSectionPart.audioUrl}
                         playOnce={mode === 'full'}
+                        autoPlay={true}
                       />
                     )}
 
@@ -1113,118 +1116,247 @@ function TestTakingContent() {
                         >
 
 
-                        {/* Group questions by groupLabel */}
-                        {(() => {
-                          const grouped: { [key: string]: Question[] } = {};
-                          const ungrouped: Question[] = [];
+                          {/* Group questions by groupLabel */}
+                          {(() => {
+                            const grouped: { [key: string]: Question[] } = {};
+                            const ungrouped: Question[] = [];
 
-                          activePartQuestions.forEach(q => {
-                            if (q.groupLabel) {
-                              if (!grouped[q.groupLabel]) {
-                                grouped[q.groupLabel] = [];
+                            activePartQuestions.forEach(q => {
+                              if (q.groupLabel) {
+                                if (!grouped[q.groupLabel]) {
+                                  grouped[q.groupLabel] = [];
+                                }
+                                grouped[q.groupLabel].push(q);
+                              } else {
+                                ungrouped.push(q);
                               }
-                              grouped[q.groupLabel].push(q);
-                            } else {
-                              ungrouped.push(q);
-                            }
-                          });
+                            });
 
-                          return (
-                            <>
-                              {/* Render grouped questions */}
-                              {Object.entries(grouped).map(([groupLabel, groupQuestions]) => {
-                                const firstQuestion = groupQuestions[0];
-                                const isNoteStyle = firstQuestion.questionType === 'completion' && (firstQuestion.questionData as any).style !== 'standard';
+                            return (
+                              <>
+                                {/* Render grouped questions */}
+                                {Object.entries(grouped).map(([groupLabel, groupQuestions]) => {
+                                  const firstQuestion = groupQuestions[0];
+                                  const isNoteStyle = firstQuestion.questionType === 'completion' && (firstQuestion.questionData as any).style !== 'standard';
 
-                                // Detect "summary" mode: note-style completions WITHOUT bullet markers = flowing paragraph
-                                const isSummaryFlow = isNoteStyle && groupQuestions.every(q => {
-                                  const ctx = ((q.questionData as any).context || '').trim();
-                                  return q.questionType === 'completion' &&
-                                    !ctx.startsWith('-') &&
-                                    !ctx.startsWith('–') &&
-                                    !ctx.startsWith('—') &&
-                                    !ctx.startsWith('•') &&
-                                    !ctx.startsWith('*');
-                                });
+                                  // Detect "summary" mode: note-style completions WITHOUT bullet markers = flowing paragraph
+                                  const isSummaryFlow = isNoteStyle && groupQuestions.every(q => {
+                                    const ctx = ((q.questionData as any).context || '').trim();
+                                    return q.questionType === 'completion' &&
+                                      !ctx.startsWith('-') &&
+                                      !ctx.startsWith('–') &&
+                                      !ctx.startsWith('—') &&
+                                      !ctx.startsWith('•') &&
+                                      !ctx.startsWith('*');
+                                  });
 
-                                return (
-                                  <div key={groupLabel} className="mb-8">
-                                    {/* Group header */}
-                                    <GroupInstruction
-                                      groupLabel={groupLabel}
-                                      groupInstructions={firstQuestion.groupInstructions}
-                                      variant={isNoteStyle ? 'compact' : 'default'}
-                                    />
+                                  return (
+                                    <div key={groupLabel} className="mb-8">
+                                      {/* Group header */}
+                                      <GroupInstruction
+                                        groupLabel={groupLabel}
+                                        groupInstructions={firstQuestion.groupInstructions}
+                                        variant={isNoteStyle ? 'compact' : 'default'}
+                                      />
 
-                                    {/* Summary flow: render ALL questions as inline text in ONE paragraph */}
-                                    {isSummaryFlow ? (
-                                      <div className="pl-6">
-                                        {/* Render Title if it exists (e.g. from the first question) */}
-                                        {(groupQuestions[0].questionData as any).title && (
-                                          <h4 className="font-bold text-gray-900 mb-2 text-lg">
-                                            {(groupQuestions[0].questionData as any).title}
-                                          </h4>
-                                        )}
-                                        <div className="text-base text-gray-900 leading-relaxed whitespace-pre-wrap">
-                                          {groupQuestions.map((question) => {
-                                            const qData = question.questionData as any;
-                                            const context = qData.context || '';
-                                            const blankMarker = qData.blankPosition || '___';
-                                            let parts = context.split(blankMarker);
-                                            if (parts.length === 1) {
-                                              for (const marker of ['{blank}', '___', '_____', '______', '__________']) {
-                                                const testParts = context.split(marker);
-                                                if (testParts.length > 1) { parts = testParts; break; }
+                                      {/* Summary flow: render ALL questions as inline text in ONE paragraph */}
+                                      {isSummaryFlow ? (
+                                        <div className="pl-6">
+                                          {/* Render Title if it exists (e.g. from the first question) */}
+                                          {(groupQuestions[0].questionData as any).title && (
+                                            <h4 className="font-bold text-gray-900 mb-2 text-lg">
+                                              {(groupQuestions[0].questionData as any).title}
+                                            </h4>
+                                          )}
+                                          <div className="text-base text-gray-900 leading-relaxed whitespace-pre-wrap">
+                                            {groupQuestions.map((question) => {
+                                              const qData = question.questionData as any;
+                                              const context = qData.context || '';
+                                              const blankMarker = qData.blankPosition || '___';
+                                              let parts = context.split(blankMarker);
+                                              if (parts.length === 1) {
+                                                for (const marker of ['{blank}', '___', '_____', '______', '__________']) {
+                                                  const testParts = context.split(marker);
+                                                  if (testParts.length > 1) { parts = testParts; break; }
+                                                }
                                               }
-                                            }
-                                            // Calculate display number based on effective points of previous questions
-                                            const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
-                                            const displayNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
-                                            const qIndex = questions.indexOf(question);
-                                            return (
-                                              <span key={question.id} id={`question-${qIndex}`}>
-                                                {parts.map((part: string, i: number) => (
-                                                  <span key={i}>
-                                                    <span>{part}</span>
-                                                    {i < parts.length - 1 && (
-                                                      <span className="inline-block relative mx-1 align-middle">
-                                                        <input
-                                                          type="text"
-                                                          value={state.answers[question.id] || ''}
-                                                          onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                                          className={cn(
-                                                            "h-8 w-32 rounded-md border bg-white px-2 text-sm text-gray-900 font-medium text-center focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
-                                                            qIndex === currentQuestionIndex
-                                                              ? "border-blue-500 ring-2 ring-blue-100"
-                                                              : "border-gray-300"
+                                              // Calculate display number based on effective points of previous questions
+                                              const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
+                                              const displayNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
+                                              const qIndex = questions.indexOf(question);
+                                              return (
+                                                <span key={question.id} id={`question-${qIndex}`}>
+                                                  {parts.map((part: string, i: number) => (
+                                                    <span key={i}>
+                                                      <span>{part}</span>
+                                                      {i < parts.length - 1 && (
+                                                        <span className="inline-block relative mx-1 align-middle">
+                                                          <input
+                                                            type="text"
+                                                            value={state.answers[question.id] || ''}
+                                                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                                            className={cn(
+                                                              "h-8 w-32 rounded-md border bg-white px-2 text-sm text-gray-900 font-medium text-center focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
+                                                              qIndex === currentQuestionIndex
+                                                                ? "border-blue-500 ring-2 ring-blue-100"
+                                                                : "border-gray-300"
+                                                            )}
+                                                          />
+                                                          {!state.answers[question.id] && (
+                                                            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium">
+                                                              {displayNum}
+                                                            </span>
                                                           )}
-                                                        />
-                                                        {!state.answers[question.id] && (
-                                                          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium">
-                                                            {displayNum}
-                                                          </span>
-                                                        )}
-                                                      </span>
-                                                    )}
-                                                  </span>
-                                                ))}
-                                                {' '}
-                                              </span>
+                                                        </span>
+                                                      )}
+                                                    </span>
+                                                  ))}
+                                                  {' '}
+                                                </span>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        /* Standard or Note (bulleted) rendering: each question in its own block */
+                                        <div className={isNoteStyle ? "space-y-0 pl-6" : "space-y-4"}>
+                                          {groupQuestions.map((question) => {
+                                            const isNoteStyle = question.questionType === 'completion' && (question.questionData as any).style !== 'standard';
+
+                                            // Calculate display number based on accumulated effective points
+                                            const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
+                                            const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
+                                            // For MCQs, pass startNum and let QuestionRenderer handle multi-badges
+                                            // For other types with multiple points, show range
+                                            const effectivePoints = getEffectivePoints(question);
+                                            const isMCQ = question.questionType === 'multiple_choice';
+                                            const displayNum = (!isMCQ && effectivePoints > 1) ? `${startNum}-${startNum + effectivePoints - 1}` : startNum;
+
+                                            return (
+                                              <div
+                                                key={question.id}
+                                                className={cn(
+                                                  "transition-colors duration-300",
+                                                  isNoteStyle ? "" : "-mx-4 px-4"
+                                                )}
+                                                id={`question-${questions.indexOf(question)}`}
+                                              >
+                                                <QuestionRenderer
+                                                  question={question}
+                                                  answer={state.answers[question.id]}
+                                                  onAnswerChange={handleAnswerChange}
+                                                  displayNumber={displayNum}
+                                                  isActive={questions.indexOf(question) === currentQuestionIndex}
+                                                />
+                                              </div>
                                             );
                                           })}
                                         </div>
-                                      </div>
-                                    ) : (
-                                      /* Standard or Note (bulleted) rendering: each question in its own block */
-                                      <div className={isNoteStyle ? "space-y-0 pl-6" : "space-y-4"}>
-                                        {groupQuestions.map((question) => {
+                                      )}
+                                    </div>
+                                  );
+                                })}
+
+                                {/* Render ungrouped questions */}
+                                {ungrouped.length > 0 && (() => {
+                                  // Auto-group consecutive summary completion questions by title
+                                  type UngroupedItem = { type: 'single'; question: Question } | { type: 'summaryFlow'; title: string; questions: Question[] };
+                                  const items: UngroupedItem[] = [];
+
+                                  ungrouped.forEach((question) => {
+                                    const isCompletion = question.questionType === 'completion';
+                                    const qData = question.questionData as any;
+                                    const isNoteStyle = isCompletion && qData.style !== 'standard';
+                                    const ctx = (qData.context || '').trim();
+                                    const isSummary = isNoteStyle &&
+                                      !ctx.startsWith('-') &&
+                                      !ctx.startsWith('–') &&
+                                      !ctx.startsWith('—') &&
+                                      !ctx.startsWith('•') &&
+                                      !ctx.startsWith('*');
+
+                                    if (isSummary && qData.title) {
+                                      const last = items[items.length - 1];
+                                      if (last && last.type === 'summaryFlow' && last.title === qData.title) {
+                                        last.questions.push(question);
+                                      } else {
+                                        items.push({ type: 'summaryFlow', title: qData.title, questions: [question] });
+                                      }
+                                    } else {
+                                      items.push({ type: 'single', question });
+                                    }
+                                  });
+
+                                  return (
+                                    <div className="space-y-4">
+                                      {items.map((item, idx) => {
+                                        if (item.type === 'summaryFlow') {
+                                          return (
+                                            <div key={`summary-${idx}`} className="pl-2">
+                                              <h4 className="mb-3 text-lg font-bold text-gray-900">{item.title}</h4>
+                                              <div className="text-base text-gray-900 leading-relaxed whitespace-pre-wrap">
+                                                {item.questions.map((question) => {
+                                                  const qData = question.questionData as any;
+                                                  const context = qData.context || '';
+                                                  const blankMarker = qData.blankPosition || '___';
+                                                  let parts = context.split(blankMarker);
+                                                  if (parts.length === 1) {
+                                                    for (const marker of ['{blank}', '___', '_____', '______', '__________']) {
+                                                      const testParts = context.split(marker);
+                                                      if (testParts.length > 1) { parts = testParts; break; }
+                                                    }
+                                                  }
+
+                                                  // Calculate start number based on effective points of previous questions
+                                                  const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
+                                                  const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
+                                                  const effectivePoints = getEffectivePoints(question);
+                                                  const isMCQ = question.questionType === 'multiple_choice';
+                                                  const displayNum = (!isMCQ && effectivePoints > 1) ? `${startNum}-${startNum + effectivePoints - 1}` : startNum;
+
+                                                  const qIndex = questions.indexOf(question);
+
+                                                  return (
+                                                    <span key={question.id} id={`question-${qIndex}`}>
+                                                      {parts.map((part: string, i: number) => (
+                                                        <span key={i}>
+                                                          <span>{part}</span>
+                                                          {i < parts.length - 1 && (
+                                                            <span className="inline-block relative mx-1 align-middle">
+                                                              <input
+                                                                type="text"
+                                                                value={state.answers[question.id] || ''}
+                                                                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                                                className={cn(
+                                                                  "h-8 w-32 rounded-md border bg-white px-2 text-sm text-gray-900 font-medium text-center focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
+                                                                  qIndex === currentQuestionIndex
+                                                                    ? "border-blue-500 ring-2 ring-blue-100"
+                                                                    : "border-gray-300"
+                                                                )}
+                                                              />
+                                                              {!state.answers[question.id] && (
+                                                                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium whitespace-nowrap">
+                                                                  {displayNum}
+                                                                </span>
+                                                              )}
+                                                            </span>
+                                                          )}
+                                                        </span>
+                                                      ))}
+                                                      {' '}
+                                                    </span>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                          );
+                                        } else {
+                                          const question = item.question;
                                           const isNoteStyle = question.questionType === 'completion' && (question.questionData as any).style !== 'standard';
 
-                                          // Calculate display number based on accumulated effective points
+                                          // Calculate display number based on effective points
                                           const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
                                           const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
-                                          // For MCQs, pass startNum and let QuestionRenderer handle multi-badges
-                                          // For other types with multiple points, show range
                                           const effectivePoints = getEffectivePoints(question);
                                           const isMCQ = question.questionType === 'multiple_choice';
                                           const displayNum = (!isMCQ && effectivePoints > 1) ? `${startNum}-${startNum + effectivePoints - 1}` : startNum;
@@ -1247,143 +1379,14 @@ function TestTakingContent() {
                                               />
                                             </div>
                                           );
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-
-                              {/* Render ungrouped questions */}
-                              {ungrouped.length > 0 && (() => {
-                                // Auto-group consecutive summary completion questions by title
-                                type UngroupedItem = { type: 'single'; question: Question } | { type: 'summaryFlow'; title: string; questions: Question[] };
-                                const items: UngroupedItem[] = [];
-
-                                ungrouped.forEach((question) => {
-                                  const isCompletion = question.questionType === 'completion';
-                                  const qData = question.questionData as any;
-                                  const isNoteStyle = isCompletion && qData.style !== 'standard';
-                                  const ctx = (qData.context || '').trim();
-                                  const isSummary = isNoteStyle &&
-                                    !ctx.startsWith('-') &&
-                                    !ctx.startsWith('–') &&
-                                    !ctx.startsWith('—') &&
-                                    !ctx.startsWith('•') &&
-                                    !ctx.startsWith('*');
-
-                                  if (isSummary && qData.title) {
-                                    const last = items[items.length - 1];
-                                    if (last && last.type === 'summaryFlow' && last.title === qData.title) {
-                                      last.questions.push(question);
-                                    } else {
-                                      items.push({ type: 'summaryFlow', title: qData.title, questions: [question] });
-                                    }
-                                  } else {
-                                    items.push({ type: 'single', question });
-                                  }
-                                });
-
-                                return (
-                                  <div className="space-y-4">
-                                    {items.map((item, idx) => {
-                                      if (item.type === 'summaryFlow') {
-                                        return (
-                                          <div key={`summary-${idx}`} className="pl-2">
-                                            <h4 className="mb-3 text-lg font-bold text-gray-900">{item.title}</h4>
-                                            <div className="text-base text-gray-900 leading-relaxed whitespace-pre-wrap">
-                                              {item.questions.map((question) => {
-                                                const qData = question.questionData as any;
-                                                const context = qData.context || '';
-                                                const blankMarker = qData.blankPosition || '___';
-                                                let parts = context.split(blankMarker);
-                                                if (parts.length === 1) {
-                                                  for (const marker of ['{blank}', '___', '_____', '______', '__________']) {
-                                                    const testParts = context.split(marker);
-                                                    if (testParts.length > 1) { parts = testParts; break; }
-                                                  }
-                                                }
-
-                                                // Calculate start number based on effective points of previous questions
-                                                const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
-                                                const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
-                                                const effectivePoints = getEffectivePoints(question);
-                                                const isMCQ = question.questionType === 'multiple_choice';
-                                                const displayNum = (!isMCQ && effectivePoints > 1) ? `${startNum}-${startNum + effectivePoints - 1}` : startNum;
-
-                                                const qIndex = questions.indexOf(question);
-
-                                                return (
-                                                  <span key={question.id} id={`question-${qIndex}`}>
-                                                    {parts.map((part: string, i: number) => (
-                                                      <span key={i}>
-                                                        <span>{part}</span>
-                                                        {i < parts.length - 1 && (
-                                                          <span className="inline-block relative mx-1 align-middle">
-                                                            <input
-                                                              type="text"
-                                                              value={state.answers[question.id] || ''}
-                                                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                                              className={cn(
-                                                                "h-8 w-32 rounded-md border bg-white px-2 text-sm text-gray-900 font-medium text-center focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
-                                                                qIndex === currentQuestionIndex
-                                                                  ? "border-blue-500 ring-2 ring-blue-100"
-                                                                  : "border-gray-300"
-                                                              )}
-                                                            />
-                                                            {!state.answers[question.id] && (
-                                                              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none font-medium whitespace-nowrap">
-                                                                {displayNum}
-                                                              </span>
-                                                            )}
-                                                          </span>
-                                                        )}
-                                                      </span>
-                                                    ))}
-                                                    {' '}
-                                                  </span>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
-                                        );
-                                      } else {
-                                        const question = item.question;
-                                        const isNoteStyle = question.questionType === 'completion' && (question.questionData as any).style !== 'standard';
-
-                                        // Calculate display number based on effective points
-                                        const previousQuestions = activePartQuestions.slice(0, activePartQuestions.indexOf(question));
-                                        const startNum = partNumberOffset + previousQuestions.reduce((sum, q) => sum + getEffectivePoints(q), 0) + 1;
-                                        const effectivePoints = getEffectivePoints(question);
-                                        const isMCQ = question.questionType === 'multiple_choice';
-                                        const displayNum = (!isMCQ && effectivePoints > 1) ? `${startNum}-${startNum + effectivePoints - 1}` : startNum;
-
-                                        return (
-                                          <div
-                                            key={question.id}
-                                            className={cn(
-                                              "transition-colors duration-300",
-                                              isNoteStyle ? "" : "-mx-4 px-4"
-                                            )}
-                                            id={`question-${questions.indexOf(question)}`}
-                                          >
-                                            <QuestionRenderer
-                                              question={question}
-                                              answer={state.answers[question.id]}
-                                              onAnswerChange={handleAnswerChange}
-                                              displayNumber={displayNum}
-                                              isActive={questions.indexOf(question) === currentQuestionIndex}
-                                            />
-                                          </div>
-                                        );
-                                      }
-                                    })}
-                                  </div>
-                                );
-                              })()}
-                            </>
-                          );
-                        })()}
+                                        }
+                                      })}
+                                    </div>
+                                  );
+                                })()}
+                              </>
+                            );
+                          })()}
 
                           {/* Bottom spacer for footer */}
                           <div className="h-20" />

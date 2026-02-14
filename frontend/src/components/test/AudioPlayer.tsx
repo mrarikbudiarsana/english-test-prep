@@ -6,10 +6,11 @@ import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 interface AudioPlayerProps {
   src: string;
   playOnce?: boolean;
+  autoPlay?: boolean;
   onEnd?: () => void;
 }
 
-export default function AudioPlayer({ src, playOnce, onEnd }: AudioPlayerProps) {
+export default function AudioPlayer({ src, playOnce, autoPlay, onEnd }: AudioPlayerProps) {
   const {
     isPlaying,
     currentTime,
@@ -20,7 +21,7 @@ export default function AudioPlayer({ src, playOnce, onEnd }: AudioPlayerProps) 
     play,
     pause,
     seek,
-  } = useAudioPlayer({ playOnce, onEnd });
+  } = useAudioPlayer({ playOnce, autoPlay, onEnd });
 
   useEffect(() => {
     if (src) {
@@ -75,10 +76,9 @@ export default function AudioPlayer({ src, playOnce, onEnd }: AudioPlayerProps) 
           disabled={!isLoaded || !canPlay}
           className={`
             flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors
-            ${
-              !isLoaded || !canPlay
-                ? 'cursor-not-allowed bg-gray-100 text-gray-400'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+            ${!isLoaded || !canPlay
+              ? 'cursor-not-allowed bg-gray-100 text-gray-400'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
             }
           `}
           title={!canPlay ? 'Audio has already been played' : isPlaying ? 'Pause' : 'Play'}
