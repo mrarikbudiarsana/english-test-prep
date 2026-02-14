@@ -96,7 +96,7 @@ function CriteriaAnalytics({ criteria, color = '#3b82f6' }: { criteria: Criteria
                             <PolarRadiusAxis domain={[0, 9]} tick={false} axisLine={false} />
                             <Radar dataKey="score" stroke={color} strokeWidth={2} fill={color} fillOpacity={0.2} />
                             <Tooltip
-                                formatter={(v: number) => [`Band ${v}`, 'Score']}
+                                formatter={(v: any) => [`Band ${v}`, 'Score']}
                                 contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 12 }}
                             />
                         </RadarChart>
@@ -113,12 +113,12 @@ function CriteriaAnalytics({ criteria, color = '#3b82f6' }: { criteria: Criteria
                             <XAxis type="number" domain={[0, 9]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                             <YAxis type="category" dataKey="subject" width={110} tick={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} axisLine={false} tickLine={false} />
                             <Tooltip
-                                formatter={(v: number) => [`Band ${v}`, 'Score']}
+                                formatter={(v: any) => [`Band ${v}`, 'Score']}
                                 contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 12 }}
                             />
                             <Bar dataKey="score" radius={[0, 6, 6, 0]} maxBarSize={28}>
                                 {barData.map((_, i) => <Cell key={i} fill={color} fillOpacity={0.8} />)}
-                                <LabelList dataKey="score" position="right" formatter={(v: number) => `${v}`} style={{ fill: '#475569', fontSize: 12, fontWeight: 700 }} />
+                                <LabelList dataKey="score" position="right" formatter={(v: any) => `${v}`} style={{ fill: '#475569', fontSize: 12, fontWeight: 700 }} />
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>
@@ -364,39 +364,39 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                             { label: 'Grammar & Accuracy', short: 'GRA', band: task.grammaticalRangeAccuracy.band },
                         ];
                         return (
-                        <div key={task.taskNumber} className="border-t border-gray-100 pt-5">
-                            <div className="flex items-center justify-between mb-4">
-                                <h4 className="font-semibold text-gray-900">Task {task.taskNumber}</h4>
-                                <div className="flex items-center gap-3">
-                                    {task.wordCount > 0 && (
-                                        <span className="text-xs text-gray-400">{task.wordCount} words</span>
-                                    )}
-                                    <span className={`text-sm font-bold px-3 py-1 rounded-full ${getBandBgColor(task.overallBand)} ${getBandColor(task.overallBand)}`}>
-                                        Band {task.overallBand}
-                                    </span>
+                            <div key={task.taskNumber} className="border-t border-gray-100 pt-5">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="font-semibold text-gray-900">Task {task.taskNumber}</h4>
+                                    <div className="flex items-center gap-3">
+                                        {task.wordCount > 0 && (
+                                            <span className="text-xs text-gray-400">{task.wordCount} words</span>
+                                        )}
+                                        <span className={`text-sm font-bold px-3 py-1 rounded-full ${getBandBgColor(task.overallBand)} ${getBandColor(task.overallBand)}`}>
+                                            Band {task.overallBand}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <CriteriaAnalytics criteria={writingCriteria} color="#3b82f6" />
+                                <CriteriaAnalytics criteria={writingCriteria} color="#3b82f6" />
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {task.taskAchievement && (
-                                    <CriterionCard label="Task Achievement" data={task.taskAchievement} />
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {task.taskAchievement && (
+                                        <CriterionCard label="Task Achievement" data={task.taskAchievement} />
+                                    )}
+                                    {task.taskResponse && (
+                                        <CriterionCard label="Task Response" data={task.taskResponse} />
+                                    )}
+                                    <CriterionCard label="Coherence & Cohesion" data={task.coherenceCohesion} />
+                                    <CriterionCard label="Lexical Resource" data={task.lexicalResource} />
+                                    <CriterionCard label="Grammatical Range & Accuracy" data={task.grammaticalRangeAccuracy} />
+                                </div>
+
+                                {task.generalFeedback && (
+                                    <p className="mt-4 text-sm text-gray-600 bg-blue-50 rounded-lg p-3 whitespace-pre-wrap">
+                                        {task.generalFeedback}
+                                    </p>
                                 )}
-                                {task.taskResponse && (
-                                    <CriterionCard label="Task Response" data={task.taskResponse} />
-                                )}
-                                <CriterionCard label="Coherence & Cohesion" data={task.coherenceCohesion} />
-                                <CriterionCard label="Lexical Resource" data={task.lexicalResource} />
-                                <CriterionCard label="Grammatical Range & Accuracy" data={task.grammaticalRangeAccuracy} />
                             </div>
-
-                            {task.generalFeedback && (
-                                <p className="mt-4 text-sm text-gray-600 bg-blue-50 rounded-lg p-3 whitespace-pre-wrap">
-                                    {task.generalFeedback}
-                                </p>
-                            )}
-                        </div>
                         );
                     })}
                 </div>
