@@ -260,11 +260,10 @@ export default function DashboardPage() {
                     }}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg transition-all ${
-                        attempt.overallBand
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg transition-all ${attempt.overallBand
                           ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-200'
                           : 'bg-slate-100 text-slate-400 border border-slate-200'
-                      }`}>
+                        }`}>
                         {displayScore(attempt.overallBand)}
                       </div>
                       <div>
@@ -426,7 +425,8 @@ function TipCard({
   );
 }
 
-function displayScore(score: number | null | undefined) {
+function displayScore(score: any) {
   if (score === null || score === undefined) return '-';
-  return score % 1 === 0 ? score : score.toFixed(1);
+  const numScore = Number(score);
+  return numScore % 1 === 0 ? numScore : numScore.toFixed(1);
 }

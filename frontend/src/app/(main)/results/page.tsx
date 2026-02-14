@@ -197,7 +197,7 @@ export default function ResultsPage() {
             <p className="text-sm font-medium text-[#5a6c7d] mb-1">Highest Score</p>
             <p className="text-3xl font-bold text-[#2c3e50]">
               {attempts.filter(a => a.overallBand).length > 0
-                ? Math.max(...attempts.filter(a => a.overallBand).map(a => a.overallBand!)).toFixed(1)
+                ? Math.max(...attempts.filter(a => a.overallBand).map(a => Number(a.overallBand))).toFixed(1)
                 : '-'}
             </p>
           </div>
@@ -211,7 +211,7 @@ export default function ResultsPage() {
             <p className="text-sm font-medium text-[#5a6c7d] mb-1">Average Score</p>
             <p className="text-3xl font-bold text-[#2c3e50]">
               {attempts.filter(a => a.overallBand).length > 0
-                ? (attempts.filter(a => a.overallBand).reduce((sum, a) => sum + (a.overallBand || 0), 0) /
+                ? (attempts.filter(a => a.overallBand).reduce((sum, a) => sum + Number(a.overallBand || 0), 0) /
                   attempts.filter(a => a.overallBand).length).toFixed(1)
                 : '-'}
             </p>
@@ -229,8 +229,8 @@ export default function ResultsPage() {
                 key={status}
                 onClick={() => setFilterStatus(status)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterStatus === status
-                    ? 'bg-[#e4002b] text-white shadow-sm'
-                    : 'bg-[#f8f9fa] text-[#5a6c7d] hover:bg-[#e8ecef]'
+                  ? 'bg-[#e4002b] text-white shadow-sm'
+                  : 'bg-[#f8f9fa] text-[#5a6c7d] hover:bg-[#e8ecef]'
                   }`}
               >
                 {status === 'all' ? 'All' : status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -285,8 +285,8 @@ export default function ResultsPage() {
                     {/* Left: Score Badge */}
                     <div className="flex items-start gap-5">
                       <div className={`w-20 h-20 rounded-xl flex flex-col items-center justify-center font-bold transition-all border-2 ${attempt.overallBand
-                          ? `${getBandBgColor(attempt.overallBand)} ${attempt.overallBand >= 7 ? 'border-emerald-300' : attempt.overallBand >= 5 ? 'border-blue-300' : 'border-amber-300'}`
-                          : 'bg-[#f8f9fa] border-[#e8ecef]'
+                        ? `${getBandBgColor(attempt.overallBand)} ${attempt.overallBand >= 7 ? 'border-emerald-300' : attempt.overallBand >= 5 ? 'border-blue-300' : 'border-amber-300'}`
+                        : 'bg-[#f8f9fa] border-[#e8ecef]'
                         }`}>
                         {attempt.overallBand ? (
                           <>
@@ -310,15 +310,15 @@ export default function ResultsPage() {
                           </h3>
                           {scoreChange !== null && (
                             <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg ${scoreChange > 0
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-rose-50 text-rose-700 border border-rose-200'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-rose-50 text-rose-700 border border-rose-200'
                               }`}>
                               {scoreChange > 0 ? (
                                 <HiTrendingUp className="w-3 h-3" />
                               ) : (
                                 <HiTrendingDown className="w-3 h-3" />
                               )}
-                              {Math.abs(scoreChange).toFixed(1)}
+                              {Math.abs(Number(scoreChange)).toFixed(1)}
                             </span>
                           )}
                         </div>

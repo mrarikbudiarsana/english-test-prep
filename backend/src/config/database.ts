@@ -1,9 +1,12 @@
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
 import { env } from './env';
+
+// Force DECIMAL (OID 1700) to be parsed as number/float instead of string
+types.setTypeParser(1700, (val) => parseFloat(val));
 
 export const pool = new Pool({
   connectionString: env.databaseUrl,
-  ssl: env.nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: env.nodeEnv === 'production',
 });
 
 pool.on('error', (err) => {

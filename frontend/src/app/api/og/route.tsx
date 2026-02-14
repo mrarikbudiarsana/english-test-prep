@@ -35,9 +35,7 @@ export async function GET(req: NextRequest) {
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: 'white',
-                        backgroundImage: 'radial-gradient(circle at 25px 25px, lightgray 2%, transparent 0%), radial-gradient(circle at 75px 75px, lightgray 2%, transparent 0%)',
-                        backgroundSize: '100px 100px',
-                        fontFamily: 'sans-serif',
+                        padding: '40px',
                     }}
                 >
                     {/* Main Card */}
@@ -48,10 +46,9 @@ export async function GET(req: NextRequest) {
                             alignItems: 'center',
                             justifyContent: 'center',
                             backgroundColor: 'white',
-                            border: '4px solid #F3F4F6', // gray-100
+                            border: '4px solid #E5E7EB',
                             borderRadius: '24px',
                             padding: '40px 80px',
-                            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
                         }}
                     >
                         {/* Logo / Brand */}
@@ -59,12 +56,13 @@ export async function GET(req: NextRequest) {
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                marginBottom: '20px',
+                                marginBottom: '16px',
+                                fontSize: 28,
+                                fontWeight: 700,
+                                color: '#374151',
                             }}
                         >
-                            <span style={{ fontSize: 24, fontWeight: 600, color: '#374151' }}>
-                                English with Arik
-                            </span>
+                            English with Arik
                         </div>
 
                         {/* Practice Label */}
@@ -73,23 +71,30 @@ export async function GET(req: NextRequest) {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                backgroundColor: '#EFF6FF', // blue-50
-                                color: '#2563EB', // blue-600
-                                padding: '8px 20px',
+                                backgroundColor: '#DBEAFE',
+                                color: '#2563EB',
+                                padding: '8px 24px',
                                 borderRadius: '50px',
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontWeight: 600,
-                                marginTop: '10px',
-                                marginBottom: '20px',
-                                textTransform: 'uppercase',
-                                letterSpacing: '1px',
+                                marginBottom: '24px',
                             }}
                         >
-                            Practice Test Result
+                            PRACTICE TEST RESULT
                         </div>
 
                         {/* Test Title */}
-                        <div style={{ fontSize: 36, color: '#111827', textAlign: 'center', marginBottom: '20px', fontWeight: 800, lineHeight: 1.2, maxWidth: '800px' }}>
+                        <div
+                            style={{
+                                display: 'flex',
+                                fontSize: 32,
+                                color: '#111827',
+                                textAlign: 'center',
+                                marginBottom: '32px',
+                                fontWeight: 800,
+                                maxWidth: '700px',
+                            }}
+                        >
                             {title}
                         </div>
 
@@ -97,46 +102,30 @@ export async function GET(req: NextRequest) {
                         <div
                             style={{
                                 display: 'flex',
+                                flexDirection: 'column',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                width: '180px',
-                                height: '180px',
+                                width: '160px',
+                                height: '160px',
                                 borderRadius: '50%',
                                 backgroundColor: scoreColor,
                                 color: 'white',
-                                marginBottom: '40px',
-                                boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-                                position: 'relative',
+                                marginBottom: '32px',
                             }}
                         >
-                            {/* Inner Ring to make it look nicer */}
-                            <div
-                                style={{
-                                    position: 'absolute',
-                                    top: '10px',
-                                    left: '10px',
-                                    right: '10px',
-                                    bottom: '10px',
-                                    borderRadius: '50%',
-                                    border: '2px solid rgba(255,255,255,0.3)',
-                                }}
-                            />
-
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                <div style={{ fontSize: 16, textTransform: 'uppercase', opacity: 0.9, letterSpacing: '1px' }}>Band Score</div>
-                                <div style={{ fontSize: 72, fontWeight: 900, lineHeight: 1 }}>{score}</div>
-                            </div>
+                            <div style={{ display: 'flex', fontSize: 14, fontWeight: 600 }}>BAND SCORE</div>
+                            <div style={{ display: 'flex', fontSize: 64, fontWeight: 900 }}>{score}</div>
                         </div>
 
                         {/* Date */}
-                        <div style={{ fontSize: 20, color: '#6B7280', fontWeight: 500 }}>
+                        <div style={{ display: 'flex', fontSize: 18, color: '#6B7280', fontWeight: 500 }}>
                             Completed on {date}
                         </div>
+                    </div>
 
-                        {/* Footer disclaimer */}
-                        <div style={{ position: 'absolute', bottom: '20px', fontSize: 14, color: '#9CA3AF' }}>
-                            * Unofficial score for practice purposes only • English with Arik
-                        </div>
+                    {/* Footer disclaimer */}
+                    <div style={{ display: 'flex', marginTop: '20px', fontSize: 14, color: '#9CA3AF' }}>
+                        Unofficial score for practice purposes only
                     </div>
                 </div>
             ),
