@@ -33,6 +33,12 @@ function sanitizeMcqOptionText(input: unknown, optionKey?: string): string {
     text = dupMatch[1].trim();
   }
 
+  // Collapse punctuation-separated duplicate: "X.. X." / "X! X"
+  const punctDupMatch = text.match(/^(.+?)[.!?]+\s+\1[.!?]*$/i);
+  if (punctDupMatch) {
+    text = punctDupMatch[1].trim();
+  }
+
   return text;
 }
 

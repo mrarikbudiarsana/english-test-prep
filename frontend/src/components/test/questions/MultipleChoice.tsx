@@ -42,6 +42,12 @@ export default function MultipleChoice({
       return punctSplit[1].trim();
     }
 
+    // Handles cases like "Text.. Text." or "Text! Text"
+    const punctDuplicate = stripped.match(/^(.+?)[.!?]+\s+\1[.!?]*$/i);
+    if (punctDuplicate) {
+      return punctDuplicate[1].trim();
+    }
+
     const words = stripped.split(' ');
     if (words.length >= 8 && words.length % 2 === 0) {
       const midpoint = words.length / 2;
