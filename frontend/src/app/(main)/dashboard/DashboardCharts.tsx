@@ -12,6 +12,10 @@ import {
     PolarAngleAxis,
     PolarRadiusAxis,
     Radar,
+    BarChart,
+    Bar,
+    Cell,
+    LabelList,
 } from 'recharts';
 import { sectionTypeLabel } from '@/lib/utils';
 import { ExamType } from '@/types/user';
@@ -36,12 +40,14 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
         title: attempt.testTitle,
     }));
 
-    // Prepare data for Skills Radar Chart based on exam sections
+    // Prepare data for Skills Chart based on exam sections
     const skillsData = examSections.map((section) => ({
         subject: section.label,
         score: sectionAverages[section.key] || 0,
         fullMark: scoreRange.max,
     }));
+    const scoredSections = skillsData.filter(s => s.score > 0);
+    const useRadar = scoredSections.length >= 3;
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -121,7 +127,17 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                     <p className="text-sm text-slate-500">Your performance by section</p>
                 </div>
                 <div className="h-[300px] w-full">
-                    {skillsData.some(s => s.score > 0) ? (
+                    {scoredSections.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+                                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                </svg>
+                            </div>
+                            <p className="font-semibold text-slate-600 mb-1 text-center">No data yet</p>
+                            <p className="text-sm text-slate-500 text-center">Take tests to see your skills analysis</p>
+                        </div>
+                    ) : useRadar ? (
                         <ResponsiveContainer width="100%" height="100%">
                             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={skillsData}>
                                 <defs>
@@ -162,15 +178,53 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                             </RadarChart>
                         </ResponsiveContainer>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
-                                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                </svg>
-                            </div>
-                            <p className="font-semibold text-slate-600 mb-1 text-center">No data yet</p>
-                            <p className="text-sm text-slate-500 text-center">Take tests to see your skills analysis</p>
-                        </div>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={scoredSections}
+                                layout="vertical"
+                                margin={{ top: 8, right: 48, left: 8, bottom: 8 }}
+                                barCategoryGap="30%"
+                            >
+                                <CartesianGrid horizontal={false} stroke="#e2e8f0" />
+                                <XAxis
+                                    type="number"
+                                    domain={[0, scoreRange.max]}
+                                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <YAxis
+                                    type="category"
+                                    dataKey="subject"
+                                    tick={{ fill: '#475569', fontSize: 13, fontWeight: 600 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    width={64}
+                                />
+                                <Tooltip
+                                    formatter={(value: number) => [value.toFixed(1), scoreLabel]}
+                                    contentStyle={{
+                                        borderRadius: '12px',
+                                        border: '1px solid #e2e8f0',
+                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                                        backgroundColor: 'white',
+                                        padding: '8px 12px'
+                                    }}
+                                    labelStyle={{ fontWeight: 600, color: '#1e293b' }}
+                                />
+                                <Bar dataKey="score" radius={[0, 8, 8, 0]} maxBarSize={40}>
+                                    {scoredSections.map((_, i) => (
+                                        <Cell key={i} fill={chartColor} fillOpacity={0.85} />
+                                    ))}
+                                    <LabelList
+                                        dataKey="score"
+                                        position="right"
+                                        formatter={(v: number) => v.toFixed(1)}
+                                        style={{ fill: '#475569', fontSize: 13, fontWeight: 700 }}
+                                    />
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
                     )}
                 </div>
             </div>
