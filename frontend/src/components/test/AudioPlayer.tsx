@@ -22,13 +22,20 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled =
     play,
     pause,
     seek,
-  } = useAudioPlayer({ playOnce, autoPlay, onEnd });
+  } = useAudioPlayer({ playOnce, autoPlay: disabled ? false : autoPlay, onEnd });
 
   useEffect(() => {
     if (src) {
       loadAudio(src);
     }
   }, [src, loadAudio]);
+
+  // If review mode disables audio while it is already playing, force-stop it.
+  useEffect(() => {
+    if (disabled && isPlaying) {
+      pause();
+    }
+  }, [disabled, isPlaying, pause]);
 
   const formatTime = useCallback((seconds: number): string => {
     if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
