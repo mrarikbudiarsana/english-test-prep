@@ -674,6 +674,20 @@ function TestTakingContent() {
     );
   }
 
+  const isToeflItpReading = testType === 'toefl_itp' && state.currentSectionType === 'reading';
+  const toeflReadingLocalIndex = isToeflItpReading && currentQuestion
+    ? Math.max(0, activePartQuestions.findIndex(q => q.id === currentQuestion.id))
+    : currentQuestionIndex;
+  const toeflReadingAnsweredIndices = useMemo(
+    () =>
+      new Set(
+        activePartQuestions
+          .map((q, idx) => state.answers[q.id] ? idx : -1)
+          .filter(idx => idx !== -1)
+      ),
+    [activePartQuestions, state.answers]
+  );
+
   return (
     <div className={`h-screen flex flex-col bg-gray-50 overflow-hidden ${isResizing ? 'select-none cursor-col-resize' : ''}`}>
       {/* Test Header */}
@@ -1057,26 +1071,7 @@ function TestTakingContent() {
                     <div className="border-b border-gray-200 bg-white px-6 py-2.5 shrink-0">
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium text-gray-700">Reading Layout</div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setLeftPaneWidth(62)}
-                            className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                          >
-                            Reading Focus
-                          </button>
-                          <button
-                            onClick={() => setLeftPaneWidth(55)}
-                            className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                          >
-                            Balanced
-                          </button>
-                          <button
-                            onClick={() => setLeftPaneWidth(45)}
-                            className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                          >
-                            Question Focus
-                          </button>
-                        </div>
+                        <div className="text-xs text-gray-500">Fixed split view</div>
                       </div>
                     </div>
                   )}
@@ -1094,7 +1089,7 @@ function TestTakingContent() {
                     {/* Left Pane: Reading Passage */}
                     <div
                       className="h-full border-r border-gray-200 bg-white shrink-0"
-                      style={{ width: `${leftPaneWidth}%` }}
+                      style={{ width: `${isToeflItpReading ? 55 : leftPaneWidth}%` }}
                     >
                       <div className="h-full overflow-y-auto">
                         {currentSectionPart && (
@@ -1102,18 +1097,20 @@ function TestTakingContent() {
                             title={currentSectionPart.passageTitle || ''}
                             content={currentSectionPart.passageText || ''}
                             highlightEnabled={true}
+                            variant={isToeflItpReading ? 'toefl_itp' : 'default'}
                           />
                         )}
                       </div>
                     </div>
 
-                    {/* Drag Handle */}
-                    <div
-                      className="w-1.5 bg-gray-100 hover:bg-blue-400 cursor-col-resize hover:w-2 transition-all z-10 flex items-center justify-center shrink-0 active:bg-blue-600 -ml-0.5"
-                      onMouseDown={startResizing}
-                    >
-                      <div className="h-8 w-1 bg-gray-300 rounded-full" />
-                    </div>
+                    {!isToeflItpReading && (
+                      <div
+                        className="w-1.5 bg-gray-100 hover:bg-blue-400 cursor-col-resize hover:w-2 transition-all z-10 flex items-center justify-center shrink-0 active:bg-blue-600 -ml-0.5"
+                        onMouseDown={startResizing}
+                      >
+                        <div className="h-8 w-1 bg-gray-300 rounded-full" />
+                      </div>
+                    )}
 
                     {/* Right Pane: Questions */}
                     <div
@@ -1139,7 +1136,13 @@ function TestTakingContent() {
                             const grouped: { [key: string]: Question[] } = {};
                             const ungrouped: Question[] = [];
 
-                            activePartQuestions.forEach(q => {
+                            const questionsToRender = (
+                              testType === 'toefl_itp' &&
+                              state.currentSectionType === 'reading' &&
+                              currentQuestion
+                            ) ? [currentQuestion] : activePartQuestions;
+
+                            questionsToRender.forEach(q => {
                               if (q.groupLabel) {
                                 if (!grouped[q.groupLabel]) {
                                   grouped[q.groupLabel] = [];
@@ -1415,20 +1418,31 @@ function TestTakingContent() {
                       {testType === 'toefl_itp' && (
                         <div className="w-[21rem] shrink-0 pl-4 self-start sticky top-4">
                           <QuestionNavigator
-                            totalQuestions={questions.length}
-                            currentIndex={currentQuestionIndex}
+                            totalQuestions={isToeflItpReading ? activePartQuestions.length : questions.length}
+                            currentIndex={isToeflItpReading ? toeflReadingLocalIndex : currentQuestionIndex}
                             onSelect={(index) => {
+                              if (isToeflItpReading) {
+                                const targetQuestion = activePartQuestions[index];
+                                if (!targetQuestion) return;
+                                const globalIndex = questions.findIndex(q => q.id === targetQuestion.id);
+                                if (globalIndex !== -1) {
+                                  selectQuestionIndex(globalIndex);
+                                }
+                                return;
+                              }
                               selectQuestionIndex(index);
                             }}
                             answeredIndices={
-                              new Set(
-                                questions
-                                  .map((q, idx) => state.answers[q.id] ? idx : -1)
-                                  .filter(idx => idx !== -1)
-                              )
+                              isToeflItpReading
+                                ? toeflReadingAnsweredIndices
+                                : new Set(
+                                  questions
+                                    .map((q, idx) => state.answers[q.id] ? idx : -1)
+                                    .filter(idx => idx !== -1)
+                                )
                             }
                             allowNavigation={true}
-                            startIndex={1}
+                            startIndex={isToeflItpReading ? partNumberOffset + 1 : 1}
                             variant="grid"
                             onPrevious={handlePreviousQuestion}
                             onNext={handleNextQuestion}
