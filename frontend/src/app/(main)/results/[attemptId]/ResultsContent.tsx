@@ -213,7 +213,8 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     const testType = attempt.test?.testType || 'academic';
     const isToefl = testType === 'toefl_itp';
 
-    const sections = isToefl ? [
+    // Only show sections that have data (score or raw) - hides sections not in the test
+    const allSections = isToefl ? [
         { type: 'listening', label: 'Listening', score: attempt.listeningScore, raw: attempt.listeningRaw, total: 50 },
         { type: 'structure', label: 'Structure', score: attempt.structureScore, raw: attempt.structureScore, total: 40 },
         { type: 'reading', label: 'Reading', score: attempt.readingScore, raw: attempt.readingRaw, total: 50 },
@@ -223,6 +224,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
         { type: 'writing', label: 'Writing', score: attempt.writingBand, raw: null, total: null },
         { type: 'speaking', label: 'Speaking', score: attempt.speakingBand, raw: null, total: null },
     ];
+    const sections = allSections.filter(s => s.score !== null && s.score !== undefined);
 
     const writingFeedback = attempt.writingFeedback as WritingFeedback | null | undefined;
     const speakingFeedback = attempt.speakingFeedback as SpeakingFeedback | null | undefined;
