@@ -235,6 +235,18 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     const writingFeedback = attempt.writingFeedback as WritingFeedback | null | undefined;
     const speakingFeedback = attempt.speakingFeedback as SpeakingFeedback | null | undefined;
 
+    // Determine if this is a partial test (only 1 section taken)
+    const isPartialTest = sections.length === 1;
+    const singleSection = isPartialTest ? sections[0] : null;
+
+    // For partial tests, use the single section's score; for full tests, use overall
+    const displayScore = isPartialTest && singleSection
+        ? singleSection.score
+        : (isToefl ? attempt.overallScore : attempt.overallBand);
+    const displayLabel = isPartialTest && singleSection
+        ? `Your IELTS ${singleSection.label} Band Score`
+        : (isToefl ? 'Your TOEFL Total Score' : 'Your IELTS Overall Band Score');
+
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             {/* Back link */}
@@ -243,17 +255,11 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                 Back to Dashboard
             </Link>
 
-            {/* Overall Score Banner */}
-            <div className={`rounded-2xl p-8 text-center border-2 ${isToefl
-                    ? (attempt.overallScore ? getBandBgColor(attempt.overallScore) : 'bg-gray-100 border-gray-200')
-                    : (attempt.overallBand ? getBandBgColor(attempt.overallBand) : 'bg-gray-100 border-gray-200')
-                }`}>
-                <p className="text-sm font-medium text-gray-600 mb-2">{isToefl ? 'TOEFL Total Score' : 'Your IELTS Overall Band Score'}</p>
-                <div className={`text-6xl font-bold ${isToefl
-                        ? (attempt.overallScore ? getBandColor(attempt.overallScore) : 'text-gray-400')
-                        : (attempt.overallBand ? getBandColor(attempt.overallBand) : 'text-gray-400')
-                    }`}>
-                    {isToefl ? attempt.overallScore : formatBand(attempt.overallBand)}
+            {/* Score Banner */}
+            <div className={`rounded-2xl p-8 text-center border-2 ${displayScore ? getBandBgColor(displayScore) : 'bg-gray-100 border-gray-200'}`}>
+                <p className="text-sm font-medium text-gray-600 mb-2">{displayLabel}</p>
+                <div className={`text-6xl font-bold ${displayScore ? getBandColor(displayScore) : 'text-gray-400'}`}>
+                    {isToefl && !isPartialTest ? displayScore : formatBand(displayScore)}
                 </div>
                 {attempt.completedAt && (
                     <p className="mt-3 text-sm text-gray-500">Completed on {formatDate(attempt.completedAt)}</p>
@@ -266,20 +272,22 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                 </button>
             </div>
 
-            {/* Section Scores */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {sections.map((section) => (
-                    <div key={section.type} className="bg-white rounded-xl border border-gray-200 p-5 text-center">
-                        <p className="text-sm font-medium text-gray-500 mb-1">{section.label}</p>
-                        <p className={`text-3xl font-bold ${section.score ? getBandColor(section.score) : 'text-gray-400'}`}>
-                            {isToefl ? section.score : formatBand(section.score)}
-                        </p>
-                        {section.raw !== null && !isToefl && (
-                            <p className="text-xs text-gray-400 mt-1">{section.raw}/{section.total} correct</p>
-                        )}
-                    </div>
-                ))}
-            </div>
+            {/* Section Scores - only show for full tests with multiple sections */}
+            {!isPartialTest && sections.length > 0 && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {sections.map((section) => (
+                        <div key={section.type} className="bg-white rounded-xl border border-gray-200 p-5 text-center">
+                            <p className="text-sm font-medium text-gray-500 mb-1">{section.label}</p>
+                            <p className={`text-3xl font-bold ${section.score ? getBandColor(section.score) : 'text-gray-400'}`}>
+                                {isToefl ? section.score : formatBand(section.score)}
+                            </p>
+                            {section.raw !== null && !isToefl && (
+                                <p className="text-xs text-gray-400 mt-1">{section.raw}/{section.total} correct</p>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Writing Feedback - only show if writing was actually taken (score > 0) */}
             {attempt.writingBand && attempt.writingBand > 0 && writingFeedback?.tasks && writingFeedback.tasks.length > 0 && (
