@@ -10,6 +10,11 @@ import { AttemptMode, SectionType } from '../types/test.types';
 const WRITING_TIMEOUT_MS = Number(process.env.AI_WRITING_TIMEOUT_MS || 120000);
 const SPEAKING_TIMEOUT_MS = Number(process.env.AI_SPEAKING_TIMEOUT_MS || 180000);
 const FINALIZE_TIMEOUT_MS = Number(process.env.AI_FINALIZE_TIMEOUT_MS || 45000);
+const RESULTS_RESCUE_TIMEOUT_MS = Number(process.env.AI_RESULTS_RESCUE_TIMEOUT_MS || 55000);
+const SCORING_RETRY_INTERVAL_MS = Number(process.env.AI_SCORING_RETRY_INTERVAL_MS || 10000);
+
+const scoringInFlight = new Set<string>();
+const lastScoringAttemptAt = new Map<string, number>();
 
 const EXAM_TYPE_TO_TEST_TYPES: Record<string, string[]> = {
   ielts: ['academic', 'general_training'],
@@ -138,13 +143,44 @@ export async function startAttempt(
  * Get an attempt by ID, ensuring it belongs to the given user.
  */
 export async function getAttempt(id: string, userId: string) {
-  const attempt = await attemptModel.findById(id);
+  let attempt = await attemptModel.findById(id);
   if (!attempt) {
     throw new NotFoundError('Attempt not found');
   }
   if (attempt.userId !== userId) {
     throw new ForbiddenError('You do not have access to this attempt');
   }
+
+  // In serverless deployments, fire-and-forget scoring may be interrupted.
+  // Results polling calls this method repeatedly, so we opportunistically
+  // resume scoring here and keep attempts from being stuck in "scoring".
+  if (attempt.status === 'scoring') {
+    const now = Date.now();
+    const lastAttempt = lastScoringAttemptAt.get(id) ?? 0;
+    const isCoolingDown = now - lastAttempt < SCORING_RETRY_INTERVAL_MS;
+
+    if (!isCoolingDown && !scoringInFlight.has(id)) {
+      scoringInFlight.add(id);
+      lastScoringAttemptAt.set(id, now);
+      try {
+        await withTimeout(
+          triggerAIScoring(id),
+          RESULTS_RESCUE_TIMEOUT_MS,
+          'Results rescue scoring',
+        );
+      } catch (err) {
+        console.error('Results rescue scoring did not finish in time:', err);
+      } finally {
+        scoringInFlight.delete(id);
+      }
+
+      const refreshed = await attemptModel.findById(id);
+      if (refreshed) {
+        attempt = refreshed;
+      }
+    }
+  }
+
   return attempt;
 }
 

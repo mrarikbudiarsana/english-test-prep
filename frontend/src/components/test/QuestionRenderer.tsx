@@ -31,6 +31,7 @@ interface QuestionRendererProps {
   onAudioEnd?: () => void;
   playOnce?: boolean;
   autoPlay?: boolean;
+  disableAudio?: boolean;
 }
 
 export default function QuestionRenderer({
@@ -43,6 +44,7 @@ export default function QuestionRenderer({
   onAudioEnd,
   playOnce = false,
   autoPlay = false,
+  disableAudio = false,
 }: QuestionRendererProps) {
   const handleChange = (newAnswer: any) => {
     onAnswerChange(question.id, newAnswer);
@@ -225,6 +227,7 @@ export default function QuestionRenderer({
                   playOnce={playOnce}
                   autoPlay={autoPlay}
                   onEnd={onAudioEnd}
+                  disabled={disableAudio}
                 />
               </div>
             )}

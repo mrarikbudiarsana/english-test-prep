@@ -19,6 +19,41 @@ export default function MultipleChoice({
   correctAnswer,
 }: MultipleChoiceProps) {
   const { options, multiSelect, expectedAnswers } = data;
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const canonicalize = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/[.,!?;:]+$/g, '')
+      .trim();
+
+  const normalizeOptionText = (text: string, optionKey: string) => {
+    const escapedKey = escapeRegExp(optionKey);
+    const keyPattern = new RegExp(
+      `^\\s*(?:\\(${escapedKey}\\)|\\[${escapedKey}\\]|${escapedKey}(?=[).:\\-\\s]))[).:\\-]?\\s*`,
+      'i'
+    );
+    const stripped = text.replace(keyPattern, '').replace(/\s+/g, ' ').trim();
+
+    const punctSplit = stripped.match(/^(.+?[.!?])\s+(.+)$/);
+    if (punctSplit && canonicalize(punctSplit[1]) === canonicalize(punctSplit[2])) {
+      return punctSplit[1].trim();
+    }
+
+    const words = stripped.split(' ');
+    if (words.length >= 8 && words.length % 2 === 0) {
+      const midpoint = words.length / 2;
+      const firstHalf = words.slice(0, midpoint).join(' ').trim();
+      const secondHalf = words.slice(midpoint).join(' ').trim();
+      if (canonicalize(firstHalf) === canonicalize(secondHalf)) {
+        return firstHalf;
+      }
+    }
+
+    return stripped;
+  };
 
   const handleSingleSelect = useCallback(
     (key: string) => {
@@ -129,7 +164,8 @@ export default function MultipleChoice({
                 </span>
                 {/* Simple rich text rendering for options (supports <u>) */}
                 {(() => {
-                  const parts = option.text.split(/(<u>.*?<\/u>)/g);
+                  const normalizedText = normalizeOptionText(option.text, optionKey);
+                  const parts = normalizedText.split(/(<u>.*?<\/u>)/g);
                   return (
                     <span>
                       {parts.map((part, i) => {

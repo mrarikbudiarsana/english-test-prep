@@ -498,6 +498,10 @@ function TestTakingContent() {
         : mode === 'full' && upcomingSectionType
           ? `Go to ${sectionTypeLabel(upcomingSectionType)}`
           : 'Review & Submit';
+  const isListeningReviewAudioLocked =
+    testType === 'toefl_itp' &&
+    state.currentSectionType === 'listening' &&
+    toeflReviewUnlocked;
 
   // Reset activePartIndex and currentPromptIndex when changing section type
   useEffect(() => {
@@ -775,6 +779,7 @@ function TestTakingContent() {
                         src={currentSectionPart.audioUrl}
                         playOnce={true}
                         autoPlay={true}
+                        disabled={isListeningReviewAudioLocked}
                       />
                     </div>
                   )}
@@ -825,6 +830,7 @@ function TestTakingContent() {
                                   onAnswerChange={handleAnswerChange}
                                   displayNumber={startNum}
                                   isActive={questions.indexOf(question) === currentQuestionIndex}
+                                  disableAudio={isListeningReviewAudioLocked}
                                 />
                               );
                             })}
@@ -864,6 +870,7 @@ function TestTakingContent() {
                               onAudioEnd={handleAudioEnd}
                               playOnce={testType === 'toefl_itp'}
                               autoPlay={true}
+                              disableAudio={isListeningReviewAudioLocked}
                             />
                           </div>
                         </div>

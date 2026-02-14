@@ -2,6 +2,60 @@ import * as questionModel from '../models/question.model';
 import * as sectionModel from '../models/section.model';
 import { NotFoundError } from '../middleware/errorHandler';
 
+function sanitizeMcqOptionText(input: unknown, optionKey?: string): string {
+  let text = typeof input === 'string' ? input : '';
+  let hadOptionPrefix = false;
+
+  // Remove common import artifact: "Option (A) ..."
+  text = text.replace(/^option\s*\(\s*[a-z0-9]+\s*\)\s*/i, () => {
+    hadOptionPrefix = true;
+    return '';
+  });
+
+  if (optionKey) {
+    const escapedKey = optionKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    text = text.replace(
+      new RegExp(`^\\s*(?:\\(${escapedKey}\\)|\\[${escapedKey}\\]|${escapedKey}(?=[).:\\-\\s]))[).:\\-]?\\s*`, 'i'),
+      ''
+    );
+  }
+
+  text = text.replace(/\s+/g, ' ').trim();
+
+  // Some imports append trailing ". text"
+  if (hadOptionPrefix) {
+    text = text.replace(/(?:\s*[.]\s*)?text\s*$/i, '').trim();
+  }
+
+  // Collapse exact duplicated full sentence: "X X"
+  const dupMatch = text.match(/^(.+)\s+\1$/i);
+  if (dupMatch) {
+    text = dupMatch[1].trim();
+  }
+
+  return text;
+}
+
+function sanitizeQuestionData(questionType: string, questionData: any) {
+  if (questionType !== 'multiple_choice' || !questionData || !Array.isArray(questionData.options)) {
+    return questionData;
+  }
+
+  return {
+    ...questionData,
+    options: questionData.options.map((opt: any, idx: number) => {
+      const key = typeof opt?.key === 'string' && opt.key.trim()
+        ? opt.key
+        : String.fromCharCode(65 + idx);
+      return {
+        ...opt,
+        key,
+        text: sanitizeMcqOptionText(opt?.text, key),
+      };
+    }),
+  };
+}
+
 /**
  * Get questions for a section WITHOUT correct_answer (for student view).
  * Strips out correctAnswer and explanation fields from results.
@@ -41,7 +95,7 @@ export async function getQuestionsBySectionId(sectionId: string) {
     questionType: q.questionType,
     questionText: q.questionText,
     audioUrl: q.audioUrl,
-    questionData: q.questionData,
+    questionData: sanitizeQuestionData(q.questionType, q.questionData),
     points: q.points,
     groupLabel: q.groupLabel,
     groupInstructions: q.groupInstructions,
@@ -61,7 +115,11 @@ export async function getQuestionsBySectionIdWithAnswers(sectionId: string) {
     throw new NotFoundError('Section not found');
   }
 
-  return questionModel.findBySectionId(sectionId);
+  const rows = await questionModel.findBySectionId(sectionId);
+  return rows.map((q: any) => ({
+    ...q,
+    questionData: sanitizeQuestionData(q.questionType, q.questionData),
+  }));
 }
 
 /**
@@ -72,7 +130,10 @@ export async function getQuestionById(id: string) {
   if (!question) {
     throw new NotFoundError('Question not found');
   }
-  return question;
+  return {
+    ...question,
+    questionData: sanitizeQuestionData(question.questionType, question.questionData),
+  };
 }
 
 /**
@@ -106,6 +167,7 @@ export async function createQuestion(
     data.questionNumber && data.questionNumber > 0
       ? data.questionNumber
       : (await questionModel.getMaxQuestionNumber(sectionId)) + 1;
+  const sanitizedQuestionData = sanitizeQuestionData(data.questionType, data.questionData);
 
   return questionModel.create({
     sectionId,
@@ -113,7 +175,7 @@ export async function createQuestion(
     questionType: data.questionType,
     questionText: data.questionText,
     audioUrl: data.audioUrl,
-    questionData: data.questionData,
+    questionData: sanitizedQuestionData,
     correctAnswer: data.correctAnswer,
     points: data.points,
     explanation: data.explanation,
@@ -145,7 +207,15 @@ export async function updateQuestion(
     throw new NotFoundError('Question not found');
   }
 
-  return questionModel.update(id, data);
+  const resolvedType = data.questionType ?? existing.questionType;
+  const sanitizedData = {
+    ...data,
+    questionData: data.questionData !== undefined
+      ? sanitizeQuestionData(resolvedType, data.questionData)
+      : data.questionData,
+  };
+
+  return questionModel.update(id, sanitizedData);
 }
 
 /**

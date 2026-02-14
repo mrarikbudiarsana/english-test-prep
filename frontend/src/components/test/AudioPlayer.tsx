@@ -8,9 +8,10 @@ interface AudioPlayerProps {
   playOnce?: boolean;
   autoPlay?: boolean;
   onEnd?: () => void;
+  disabled?: boolean;
 }
 
-export default function AudioPlayer({ src, playOnce, autoPlay, onEnd }: AudioPlayerProps) {
+export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled = false }: AudioPlayerProps) {
   const {
     isPlaying,
     currentTime,
@@ -43,22 +44,24 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd }: AudioPla
 
   const handleProgressClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      if (disabled) return;
       if (!duration) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const newTime = (clickX / rect.width) * duration;
       seek(Math.max(0, Math.min(newTime, duration)));
     },
-    [duration, seek]
+    [disabled, duration, seek]
   );
 
   const handlePlayPause = useCallback(() => {
+    if (disabled) return;
     if (isPlaying) {
       pause();
     } else {
       play();
     }
-  }, [isPlaying, play, pause]);
+  }, [disabled, isPlaying, play, pause]);
 
   const durationDisplay = useMemo(() => {
     if (!isLoaded || !duration || !isFinite(duration)) return '--:--';
@@ -73,15 +76,15 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd }: AudioPla
         {/* Play/Pause Button */}
         <button
           onClick={handlePlayPause}
-          disabled={!isLoaded || !canPlay}
+          disabled={disabled || !isLoaded || !canPlay}
           className={`
             flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors
-            ${!isLoaded || !canPlay
+            ${disabled || !isLoaded || !canPlay
               ? 'cursor-not-allowed bg-gray-100 text-gray-400'
               : 'bg-blue-600 text-white hover:bg-blue-700'
             }
           `}
-          title={!canPlay ? 'Audio has already been played' : isPlaying ? 'Pause' : 'Play'}
+          title={disabled ? 'Audio is disabled during review' : !canPlay ? 'Audio has already been played' : isPlaying ? 'Pause' : 'Play'}
         >
           {isPlaying ? (
             <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -124,6 +127,11 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd }: AudioPla
       {playOnce && !canPlay && (
         <p className="mt-2 text-xs text-amber-600">
           This audio can only be played once, as in the real IELTS exam.
+        </p>
+      )}
+      {disabled && (
+        <p className="mt-2 text-xs text-gray-500">
+          Audio playback is disabled during review.
         </p>
       )}
     </div>
