@@ -104,14 +104,18 @@ export default function TestOverviewPage() {
         mode,
         practiceSectionType: sectionType,
       });
-      const attemptId = response.data.id || (response.data as any).data?.id;
+      const attemptId =
+        (response.data as any)?.data?.id ||
+        (response.data as any)?.id ||
+        (response.data as any)?.data?.attemptId ||
+        (response.data as any)?.attemptId;
 
-      if (!attemptId) {
+      if (!attemptId || attemptId === 'undefined') {
         console.error('Failed to get attempt ID from response:', response.data);
         throw new Error('Invalid server response');
       }
 
-      router.push(`/tests/${testId}/take?attemptId=${attemptId}&mode=${mode}${sectionType ? `&section=${sectionType}` : ''}`);
+      router.push(`/tests/${testId}/take?attemptId=${encodeURIComponent(attemptId)}&mode=${mode}${sectionType ? `&section=${sectionType}` : ''}`);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to start test');
       setStarting(false);

@@ -54,7 +54,8 @@ function TestTakingContent() {
   const { isFocusMode, toggleFocusMode } = useLayout();
 
   const testId = params.testId as string;
-  const attemptId = searchParams.get('attemptId') || '';
+  const attemptIdParam = searchParams.get('attemptId');
+  const attemptId = attemptIdParam && attemptIdParam !== 'undefined' ? attemptIdParam : '';
   const mode = searchParams.get('mode') || 'full';
   const practiceSection = searchParams.get('section') as SectionType | null;
 
@@ -214,7 +215,10 @@ function TestTakingContent() {
     timer.start(totalDuration * 60);
 
     // Notify backend
-    await api.put(`/attempts/${attemptId}/section-start`, { sectionType });
+    const resolvedAttemptId = state.attemptId || attemptId;
+    if (resolvedAttemptId) {
+      await api.put(`/attempts/${resolvedAttemptId}/section-start`, { sectionType });
+    }
 
     // For TOEFL iTP, show directions initially
     if (activeTestType === 'toefl_itp') {
@@ -223,9 +227,13 @@ function TestTakingContent() {
   }
 
   function advanceToNextSection() {
+    const resolvedAttemptId = state.attemptId || attemptId;
+
     if (mode === 'section_practice') {
       // Practice mode: go to results
-      router.push(`/results/${attemptId}`);
+      if (resolvedAttemptId) {
+        router.push(`/results/${resolvedAttemptId}`);
+      }
       return;
     }
 
@@ -451,7 +459,10 @@ function TestTakingContent() {
   };
 
   const handleViewResults = () => {
-    router.push(`/results/${attemptId}`);
+    const resolvedAttemptId = state.attemptId || attemptId;
+    if (resolvedAttemptId) {
+      router.push(`/results/${resolvedAttemptId}`);
+    }
   };
 
   const openSubmitModal = (type: 'section' | 'test') => {
@@ -1452,8 +1463,8 @@ function TestTakingContent() {
                                 }
                               }}
                               className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${isActive
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                ? 'bg-white text-blue-700 shadow-sm'
+                                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
                                 }`}
                             >
                               Task {part.taskNumber}
@@ -1466,19 +1477,36 @@ function TestTakingContent() {
                       <div>
                         {currentSectionPart && (
                           <div className="bg-white rounded-xl border border-gray-200 p-6">
-                            <h3 className="text-lg font-semibold mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
                               Writing Task {currentSectionPart.taskNumber}
                             </h3>
-                            {currentSectionPart.imageUrl && (
-                              <img
-                                src={currentSectionPart.imageUrl}
-                                alt="Task chart/graph"
-                                className="mb-4 rounded-lg border border-gray-200 max-w-full"
-                              />
+                            {currentSectionPart.taskNumber === 1 ? (
+                              <>
+                                <div className="prose prose-sm text-gray-900 prose-p:text-gray-900 prose-headings:text-gray-900 prose-li:text-gray-900 max-w-none">
+                                  {currentSectionPart.taskDescription}
+                                </div>
+                                {currentSectionPart.imageUrl && (
+                                  <img
+                                    src={currentSectionPart.imageUrl}
+                                    alt="Task chart/graph"
+                                    className="mt-4 mb-4 rounded-lg border border-gray-200 max-w-full"
+                                  />
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                {currentSectionPart.imageUrl && (
+                                  <img
+                                    src={currentSectionPart.imageUrl}
+                                    alt="Task chart/graph"
+                                    className="mb-4 rounded-lg border border-gray-200 max-w-full"
+                                  />
+                                )}
+                                <div className="prose prose-sm text-gray-900 prose-p:text-gray-900 prose-headings:text-gray-900 prose-li:text-gray-900 max-w-none">
+                                  {currentSectionPart.taskDescription}
+                                </div>
+                              </>
                             )}
-                            <div className="prose prose-sm text-gray-900 prose-p:text-gray-900 prose-headings:text-gray-900 prose-li:text-gray-900 max-w-none">
-                              {currentSectionPart.taskDescription}
-                            </div>
                             <p className="mt-3 text-sm text-gray-900 font-medium">
                               Write at least {currentSectionPart.minWords} words.
                             </p>
@@ -1659,7 +1687,7 @@ function TestTakingContent() {
         onClose={() => setShowCongratulationsModal(false)}
         onViewResults={handleViewResults}
         testTitle={testTitle}
-        attemptId={attemptId}
+        attemptId={state.attemptId || attemptId}
       />
     </div>
   );

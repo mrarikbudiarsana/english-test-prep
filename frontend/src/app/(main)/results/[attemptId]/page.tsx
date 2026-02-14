@@ -5,11 +5,11 @@ import { Attempt } from '@/types/test';
 import ResultsContent from './ResultsContent';
 
 type Props = {
-  params: { attemptId: string };
+  params: { attemptId: string } | Promise<{ attemptId: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const attemptId = params.attemptId;
+  const { attemptId } = await Promise.resolve(params);
 
   // Fetch attempt data for metadata
   let attempt: Attempt | null = null;
@@ -60,6 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function ResultsPage({ params }: Props) {
-  return <ResultsContent attemptId={params.attemptId} />;
+export default async function ResultsPage({ params }: Props) {
+  const { attemptId } = await Promise.resolve(params);
+  return <ResultsContent attemptId={attemptId} />;
 }

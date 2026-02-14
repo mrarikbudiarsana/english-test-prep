@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { Attempt } from '@/types/test';
@@ -70,24 +71,31 @@ function CriterionCard({ label, data }: { label: string; data: BandFeedback }) {
 }
 
 export default function ResultsContent({ attemptId }: ResultsContentProps) {
+    const params = useParams<{ attemptId?: string | string[] }>();
     const [attempt, setAttempt] = useState<Attempt | null>(null);
     const [loading, setLoading] = useState(true);
     const [showShareModal, setShowShareModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const routeAttemptId = Array.isArray(params?.attemptId) ? params.attemptId[0] : params?.attemptId;
+    const resolvedAttemptId = (attemptId && attemptId !== 'undefined' ? attemptId : routeAttemptId)?.trim();
 
     useEffect(() => {
-        if (!attemptId || attemptId === 'undefined') {
+        if (!resolvedAttemptId) {
             setErrorMessage('Invalid result link.');
             setLoading(false);
             return;
         }
         fetchResults();
-    }, [attemptId]);
+    }, [resolvedAttemptId]);
 
     async function fetchResults() {
         try {
             setErrorMessage(null);
-            const res = await api.get(`/attempts/${attemptId}/results`);
+            if (!resolvedAttemptId) {
+                setErrorMessage('Invalid result link.');
+                return;
+            }
+            const res = await api.get(`/attempts/${resolvedAttemptId}/results`);
             setAttempt(res.data);
 
             if (res.data.status === 'scoring') {
@@ -329,7 +337,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                 onClose={() => setShowShareModal(false)}
                 onViewResults={() => setShowShareModal(false)}
                 testTitle={attempt.test?.title}
-                attemptId={attemptId}
+                attemptId={resolvedAttemptId}
             />
         </div>
     );
