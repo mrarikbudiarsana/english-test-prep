@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import {
     LineChart,
     Line,
@@ -27,10 +28,55 @@ interface DashboardChartsProps {
     examType?: ExamType;
 }
 
+type SkillsTab = 'sections' | 'writing' | 'speaking';
+
+function CriteriaPanel({ criteria, color, radarId }: {
+    criteria: { label: string; short: string; band: number }[];
+    color: string;
+    radarId: string;
+}) {
+    const radarData = criteria.map(c => ({ subject: c.short, score: c.band, fullMark: 9 }));
+    const barData = criteria.map(c => ({ subject: c.label, score: c.band }));
+    return (
+        <div className="flex flex-col gap-3 h-full">
+            <div className="h-[140px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
+                        <defs>
+                            <linearGradient id={radarId} x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor={color} /><stop offset="100%" stopColor={color} />
+                            </linearGradient>
+                        </defs>
+                        <PolarGrid stroke="#e2e8f0" />
+                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }} />
+                        <PolarRadiusAxis domain={[0, 9]} tick={false} axisLine={false} />
+                        <Radar dataKey="score" stroke={color} strokeWidth={2} fill={color} fillOpacity={0.2} />
+                        <Tooltip formatter={(v: number) => [`Band ${v}`, 'Score']} contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 11 }} />
+                    </RadarChart>
+                </ResponsiveContainer>
+            </div>
+            <div className="flex-1">
+                <ResponsiveContainer width="100%" height={criteria.length * 36 + 8}>
+                    <BarChart data={barData} layout="vertical" margin={{ top: 2, right: 36, left: 4, bottom: 2 }} barCategoryGap="20%">
+                        <XAxis type="number" domain={[0, 9]} hide />
+                        <YAxis type="category" dataKey="subject" width={108} tick={{ fontSize: 11, fill: '#475569', fontWeight: 500 }} axisLine={false} tickLine={false} />
+                        <Tooltip formatter={(v: number) => [`Band ${v}`, 'Score']} contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 11 }} />
+                        <Bar dataKey="score" radius={[0, 6, 6, 0]} maxBarSize={22}>
+                            {barData.map((_, i) => <Cell key={i} fill={color} fillOpacity={0.8} />)}
+                            <LabelList dataKey="score" position="right" formatter={(v: number) => `${v}`} style={{ fill: '#475569', fontSize: 12, fontWeight: 700 }} />
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+}
+
 export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'ielts' }: DashboardChartsProps) {
     const examConfig = getExamConfig(examType);
     const { scoreRange, scoreLabel, sections: examSections, theme } = examConfig;
     const chartColor = theme.chartColor;
+    const [skillsTab, setSkillsTab] = useState<SkillsTab>('sections');
 
     // Prepare data for Progress Chart (reverse recentAttempts to show oldest to newest)
     const progressData = [...recentAttempts].reverse().slice(-10).map((attempt, index) => ({
@@ -48,6 +94,35 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
     }));
     const scoredSections = skillsData.filter(s => s.score > 0);
     const useRadar = scoredSections.length >= 3;
+
+    // Extract most recent writing/speaking criteria from recentAttempts
+    const recentWriting = recentAttempts.find(a => a.writingFeedback?.tasks?.length > 0);
+    const recentSpeaking = recentAttempts.find(a => a.speakingFeedback?.fluencyCoherence);
+
+    const writingCriteria = recentWriting ? (() => {
+        const tasks = recentWriting.writingFeedback.tasks as any[];
+        // Average criteria across tasks
+        const avg = (key: string) => Math.round(tasks.reduce((s: number, t: any) => s + (t[key]?.band ?? 0), 0) / tasks.length);
+        const hasTA = tasks.some((t: any) => t.taskAchievement);
+        const hasTR = tasks.some((t: any) => t.taskResponse);
+        return [
+            ...(hasTA ? [{ label: 'Task Achievement', short: 'TA', band: avg('taskAchievement') }] : []),
+            ...(hasTR ? [{ label: 'Task Response', short: 'TR', band: avg('taskResponse') }] : []),
+            { label: 'Coherence & Cohesion', short: 'CC', band: avg('coherenceCohesion') },
+            { label: 'Lexical Resource', short: 'LR', band: avg('lexicalResource') },
+            { label: 'Grammar & Accuracy', short: 'GRA', band: avg('grammaticalRangeAccuracy') },
+        ];
+    })() : null;
+
+    const speakingCriteria = recentSpeaking ? [
+        { label: 'Fluency & Coherence', short: 'FC', band: recentSpeaking.speakingFeedback.fluencyCoherence.band },
+        { label: 'Lexical Resource', short: 'LR', band: recentSpeaking.speakingFeedback.lexicalResource.band },
+        { label: 'Grammar & Accuracy', short: 'GRA', band: recentSpeaking.speakingFeedback.grammaticalRangeAccuracy.band },
+        { label: 'Pronunciation', short: 'Pron', band: recentSpeaking.speakingFeedback.pronunciation.band },
+    ] : null;
+
+    const showWritingTab = !!writingCriteria;
+    const showSpeakingTab = !!speakingCriteria;
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -120,14 +195,42 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                 </div>
             </div>
 
-            {/* Skills Radar Chart - 1/3 width */}
+            {/* Skills Breakdown - 1/3 width */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                <div className="mb-6">
-                    <h3 className="text-lg font-bold text-slate-800 mb-1">Skills Breakdown</h3>
-                    <p className="text-sm text-slate-500">Your performance by section</p>
+                <div className="mb-4">
+                    <h3 className="text-lg font-bold text-slate-800 mb-3">Skills Breakdown</h3>
+                    {/* Tabs */}
+                    <div className="flex gap-1 bg-slate-100 rounded-lg p-1 text-xs font-semibold">
+                        <button
+                            onClick={() => setSkillsTab('sections')}
+                            className={`flex-1 py-1.5 rounded-md transition-all ${skillsTab === 'sections' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Sections
+                        </button>
+                        {showWritingTab && (
+                            <button
+                                onClick={() => setSkillsTab('writing')}
+                                className={`flex-1 py-1.5 rounded-md transition-all ${skillsTab === 'writing' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Writing
+                            </button>
+                        )}
+                        {showSpeakingTab && (
+                            <button
+                                onClick={() => setSkillsTab('speaking')}
+                                className={`flex-1 py-1.5 rounded-md transition-all ${skillsTab === 'speaking' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Speaking
+                            </button>
+                        )}
+                    </div>
                 </div>
-                <div className="h-[300px] w-full">
-                    {scoredSections.length === 0 ? (
+                <div className="h-[300px] w-full overflow-y-auto">
+                    {skillsTab === 'writing' && writingCriteria ? (
+                        <CriteriaPanel criteria={writingCriteria} color="#3b82f6" radarId="dashWritingRadar" />
+                    ) : skillsTab === 'speaking' && speakingCriteria ? (
+                        <CriteriaPanel criteria={speakingCriteria} color="#8b5cf6" radarId="dashSpeakingRadar" />
+                    ) : scoredSections.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-slate-400">
                             <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
                                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">

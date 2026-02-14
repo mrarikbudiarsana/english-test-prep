@@ -11,6 +11,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getTestTypesForExam } from '@/config/examConfig';
 import { HiArrowLeft } from 'react-icons/hi';
 import CongratulationsModal from '@/components/test/CongratulationsModal';
+import {
+    RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+    BarChart, Bar, XAxis, YAxis, Cell, LabelList,
+    ResponsiveContainer, Tooltip,
+} from 'recharts';
 
 interface ResultsContentProps {
     attemptId: string;
@@ -68,6 +73,57 @@ function CriterionCard({ label, data }: { label: string; data: BandFeedback }) {
             {data.feedback && (
                 <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap">{data.feedback}</p>
             )}
+        </div>
+    );
+}
+
+interface CriteriaItem { label: string; short: string; band: number; }
+
+function CriteriaAnalytics({ criteria, color = '#3b82f6' }: { criteria: CriteriaItem[]; color?: string; }) {
+    const radarData = criteria.map(c => ({ subject: c.short, score: c.band, fullMark: 9 }));
+    const barData = criteria.map(c => ({ subject: c.label, score: c.band }));
+
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            {/* Radar */}
+            <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Criteria Shape</p>
+                <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                            <PolarGrid stroke="#e2e8f0" />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }} />
+                            <PolarRadiusAxis domain={[0, 9]} tick={false} axisLine={false} />
+                            <Radar dataKey="score" stroke={color} strokeWidth={2} fill={color} fillOpacity={0.2} />
+                            <Tooltip
+                                formatter={(v: number) => [`Band ${v}`, 'Score']}
+                                contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 12 }}
+                            />
+                        </RadarChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Bars */}
+            <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Band Scores</p>
+                <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={barData} layout="vertical" margin={{ top: 4, right: 40, left: 4, bottom: 4 }} barCategoryGap="25%">
+                            <XAxis type="number" domain={[0, 9]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                            <YAxis type="category" dataKey="subject" width={110} tick={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                            <Tooltip
+                                formatter={(v: number) => [`Band ${v}`, 'Score']}
+                                contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 12 }}
+                            />
+                            <Bar dataKey="score" radius={[0, 6, 6, 0]} maxBarSize={28}>
+                                {barData.map((_, i) => <Cell key={i} fill={color} fillOpacity={0.8} />)}
+                                <LabelList dataKey="score" position="right" formatter={(v: number) => `${v}`} style={{ fill: '#475569', fontSize: 12, fontWeight: 700 }} />
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
         </div>
     );
 }
@@ -299,7 +355,15 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                         )}
                     </div>
 
-                    {writingFeedback.tasks.map((task) => (
+                    {writingFeedback.tasks.map((task) => {
+                        const writingCriteria: CriteriaItem[] = [
+                            ...(task.taskAchievement ? [{ label: 'Task Achievement', short: 'TA', band: task.taskAchievement.band }] : []),
+                            ...(task.taskResponse ? [{ label: 'Task Response', short: 'TR', band: task.taskResponse.band }] : []),
+                            { label: 'Coherence & Cohesion', short: 'CC', band: task.coherenceCohesion.band },
+                            { label: 'Lexical Resource', short: 'LR', band: task.lexicalResource.band },
+                            { label: 'Grammar & Accuracy', short: 'GRA', band: task.grammaticalRangeAccuracy.band },
+                        ];
+                        return (
                         <div key={task.taskNumber} className="border-t border-gray-100 pt-5">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="font-semibold text-gray-900">Task {task.taskNumber}</h4>
@@ -312,6 +376,8 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                                     </span>
                                 </div>
                             </div>
+
+                            <CriteriaAnalytics criteria={writingCriteria} color="#3b82f6" />
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {task.taskAchievement && (
@@ -331,7 +397,8 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                                 </p>
                             )}
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
@@ -345,7 +412,18 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                         )}
                     </div>
 
-                    {/* Overall criteria */}
+                    {/* Overall criteria analytics */}
+                    <CriteriaAnalytics
+                        criteria={[
+                            { label: 'Fluency & Coherence', short: 'FC', band: speakingFeedback.fluencyCoherence.band },
+                            { label: 'Lexical Resource', short: 'LR', band: speakingFeedback.lexicalResource.band },
+                            { label: 'Grammar & Accuracy', short: 'GRA', band: speakingFeedback.grammaticalRangeAccuracy.band },
+                            { label: 'Pronunciation', short: 'Pron', band: speakingFeedback.pronunciation.band },
+                        ]}
+                        color="#8b5cf6"
+                    />
+
+                    {/* Overall criteria detail cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <CriterionCard label="Fluency & Coherence" data={speakingFeedback.fluencyCoherence} />
                         <CriterionCard label="Lexical Resource" data={speakingFeedback.lexicalResource} />
