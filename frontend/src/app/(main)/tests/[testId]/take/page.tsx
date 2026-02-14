@@ -91,7 +91,7 @@ function TestTakingContent() {
   }, [testId]);
 
   // Resizable split pane state
-  const [leftPaneWidth, setLeftPaneWidth] = useState(50); // percentage
+  const [leftPaneWidth, setLeftPaneWidth] = useState(55); // percentage
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -103,7 +103,7 @@ function TestTakingContent() {
       if (isResizing && containerRef.current) {
         const containerRect = containerRef.current.getBoundingClientRect();
         const newWidth = ((mouseMoveEvent.clientX - containerRect.left) / containerRect.width) * 100;
-        if (newWidth >= 20 && newWidth <= 80) { // Limit between 20% and 80%
+        if (newWidth >= 35 && newWidth <= 70) { // Keep reading split balanced
           setLeftPaneWidth(newWidth);
         }
       }
@@ -618,6 +618,17 @@ function TestTakingContent() {
     return questions.filter(q => !state.answeredQuestions.has(q.id)).length;
   })();
 
+  const answeredCount = useMemo(
+    () => questions.filter((q) => Boolean(state.answers[q.id])).length,
+    [questions, state.answers]
+  );
+
+  const shouldUseToeflFocusCard =
+    testType === 'toefl_itp' &&
+    (state.currentSectionType === 'listening' || state.currentSectionType === 'structure') &&
+    !viewingDirections &&
+    !isPartBCMode;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -747,9 +758,15 @@ function TestTakingContent() {
                   )}
                   */}
 
-                  <div className="flex-1 min-h-0 flex flex-col xl:flex-row gap-4">
+                  <div className={cn(
+                    "flex-1 min-h-0 flex flex-col xl:flex-row",
+                    shouldUseToeflFocusCard ? "gap-6" : "gap-4"
+                  )}>
                     {/* Question Content */}
-                    <div className="flex-1 overflow-y-auto min-h-0 bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+                    <div className={cn(
+                      "flex-1 overflow-y-auto min-h-0 bg-white rounded-2xl border border-gray-200 shadow-sm",
+                      shouldUseToeflFocusCard ? "p-6 xl:p-8 bg-gradient-to-b from-white to-slate-50" : "p-8"
+                    )}>
                       {isPartBCMode ? (
                         // Part B/C: all questions for this recording, scrollable
                         <div className="space-y-2">
@@ -772,7 +789,19 @@ function TestTakingContent() {
                             })}
                         </div>
                       ) : currentQuestion && (
-                        <div className="space-y-6">
+                        <div className={cn("space-y-6", shouldUseToeflFocusCard && "mx-auto w-full max-w-3xl")}>
+                          {shouldUseToeflFocusCard && (
+                            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                              <div className="flex items-center justify-between gap-4 text-sm">
+                                <div className="font-semibold text-slate-800">
+                                  Part {getResolvedPartNumber(activePartIndex)} · Question {currentQuestionIndex + 1} of {questions.length}
+                                </div>
+                                <div className="text-slate-500">
+                                  Answered {answeredCount} / {questions.length}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           {/* Group Instructions if present */}
                           {currentQuestion.groupLabel && (
                             <GroupInstruction
@@ -782,22 +811,25 @@ function TestTakingContent() {
                             />
                           )}
 
-                          {/* Question Itself */}
-                          <QuestionRenderer
-                            question={currentQuestion}
-                            answer={state.answers[currentQuestion.id]}
-                            onAnswerChange={handleAnswerChange}
-                            displayNumber={currentQuestionIndex + 1}
-                            isActive={true}
-                            onAudioEnd={handleAudioEnd}
-                            playOnce={testType === 'toefl_itp'}
-                          />
+                          <div className={cn(
+                            shouldUseToeflFocusCard && "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                          )}>
+                            <QuestionRenderer
+                              question={currentQuestion}
+                              answer={state.answers[currentQuestion.id]}
+                              onAnswerChange={handleAnswerChange}
+                              displayNumber={currentQuestionIndex + 1}
+                              isActive={true}
+                              onAudioEnd={handleAudioEnd}
+                              playOnce={testType === 'toefl_itp'}
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
 
                     {/* Right-side Question Navigator */}
-                    <div className="w-full xl:w-[21rem] shrink-0 xl:self-start">
+                    <div className="w-full xl:w-[21rem] shrink-0 xl:self-start xl:sticky xl:top-4">
                       <QuestionNavigator
                         totalQuestions={questions.length}
                         currentIndex={currentQuestionIndex}
@@ -807,7 +839,7 @@ function TestTakingContent() {
                               ? toeflReviewUnlocked
                               : state.currentSectionType !== 'listening';
                           if (canJumpToQuestion) {
-                            setCurrentQuestionIndex(index);
+                            selectQuestionIndex(index);
                           }
                         }}
                         answeredIndices={
@@ -971,6 +1003,33 @@ function TestTakingContent() {
               {/* Reading Section */}
               {state.currentSectionType === 'reading' && (
                 <div className="flex flex-col h-full">
+                  {testType === 'toefl_itp' && (
+                    <div className="border-b border-gray-200 bg-white px-6 py-2.5 shrink-0">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium text-gray-700">Reading Layout</div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setLeftPaneWidth(62)}
+                            className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                          >
+                            Reading Focus
+                          </button>
+                          <button
+                            onClick={() => setLeftPaneWidth(55)}
+                            className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                          >
+                            Balanced
+                          </button>
+                          <button
+                            onClick={() => setLeftPaneWidth(45)}
+                            className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                          >
+                            Question Focus
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
 
 
@@ -1010,7 +1069,19 @@ function TestTakingContent() {
                     <div
                       className="h-full bg-white grow min-w-0 flex" // min-w-0 used to allow flex child to shrink below content size
                     >
-                      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
+                      <div
+                        className={cn(
+                          "flex-1 overflow-y-auto px-6 py-6",
+                          testType === 'toefl_itp' && activePartQuestions.length === 1 && "flex items-start justify-center"
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            testType === 'toefl_itp' && activePartQuestions.length === 1
+                              ? "w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-8"
+                              : "space-y-8"
+                          )}
+                        >
 
 
                         {/* Group questions by groupLabel */}
@@ -1285,18 +1356,19 @@ function TestTakingContent() {
                           );
                         })()}
 
-                        {/* Bottom spacer for footer */}
-                        <div className="h-20" />
+                          {/* Bottom spacer for footer */}
+                          <div className="h-20" />
+                        </div>
                       </div>
 
                       {/* Right-side Question Navigator for Reading */}
                       {testType === 'toefl_itp' && (
-                        <div className="w-[21rem] shrink-0 pl-4 self-start">
+                        <div className="w-[21rem] shrink-0 pl-4 self-start sticky top-4">
                           <QuestionNavigator
                             totalQuestions={questions.length}
                             currentIndex={currentQuestionIndex}
                             onSelect={(index) => {
-                              setCurrentQuestionIndex(index);
+                              selectQuestionIndex(index);
                             }}
                             answeredIndices={
                               new Set(

@@ -24,6 +24,11 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     durationchange: () => void;
     timeupdate: () => void;
   } | null>(null);
+  const onEndRef = useRef(onEnd);
+
+  useEffect(() => {
+    onEndRef.current = onEnd;
+  }, [onEnd]);
 
   const updateTime = useCallback(() => {
     const audio = audioRef.current;
@@ -92,7 +97,7 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
       setHasPlayed(true);
       playingRef.current = false;
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      onEnd?.();
+      onEndRef.current?.();
     });
 
     audio.addEventListener('error', (e) => {
@@ -103,7 +108,7 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
 
     // Kick off the request immediately so metadata/canplay can resolve.
     audio.load();
-  }, [onEnd]);
+  }, []);
 
   const play = useCallback(() => {
     if (!audioRef.current) return;
