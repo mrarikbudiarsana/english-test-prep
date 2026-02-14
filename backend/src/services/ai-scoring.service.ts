@@ -600,11 +600,13 @@ export async function finalizeScoring(attemptId: string) {
     );
   } else {
     // IELTS default
+    // Parse band values as numbers since pg returns NUMERIC columns as strings
+    const parseBand = (v: any) => (v !== null && v !== undefined ? parseFloat(v) : null);
     overall = calculateOverallBand(
-      attempt.listening_band,
-      attempt.reading_band,
-      attempt.writing_band,
-      attempt.speaking_band,
+      parseBand(attempt.listening_band),
+      parseBand(attempt.reading_band),
+      parseBand(attempt.writing_band),
+      parseBand(attempt.speaking_band),
       null,
       testType
     );
