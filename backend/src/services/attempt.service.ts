@@ -10,11 +10,13 @@ import { AttemptMode, SectionType } from '../types/test.types';
 const WRITING_TIMEOUT_MS = Number(process.env.AI_WRITING_TIMEOUT_MS || 120000);
 const SPEAKING_TIMEOUT_MS = Number(process.env.AI_SPEAKING_TIMEOUT_MS || 180000);
 const FINALIZE_TIMEOUT_MS = Number(process.env.AI_FINALIZE_TIMEOUT_MS || 45000);
-const RESULTS_RESCUE_TIMEOUT_MS = Number(process.env.AI_RESULTS_RESCUE_TIMEOUT_MS || 55000);
+const RESULTS_RESCUE_TIMEOUT_MS = Number(process.env.AI_RESULTS_RESCUE_TIMEOUT_MS || 200000);
 const SCORING_RETRY_INTERVAL_MS = Number(process.env.AI_SCORING_RETRY_INTERVAL_MS || 10000);
+const MAX_RESCUE_ATTEMPTS = Number(process.env.AI_MAX_RESCUE_ATTEMPTS || 5);
 
 const scoringInFlight = new Set<string>();
 const lastScoringAttemptAt = new Map<string, number>();
+const rescueAttemptCount = new Map<string, number>();
 
 const EXAM_TYPE_TO_TEST_TYPES: Record<string, string[]> = {
   ielts: ['academic', 'general_training'],
@@ -158,16 +160,33 @@ export async function getAttempt(id: string, userId: string) {
     const now = Date.now();
     const lastAttempt = lastScoringAttemptAt.get(id) ?? 0;
     const isCoolingDown = now - lastAttempt < SCORING_RETRY_INTERVAL_MS;
+    const attempts = rescueAttemptCount.get(id) ?? 0;
 
-    if (!isCoolingDown && !scoringInFlight.has(id)) {
+    // Force completion after too many rescue attempts to prevent infinite hangs
+    if (attempts >= MAX_RESCUE_ATTEMPTS) {
+      console.error(`Max rescue attempts (${MAX_RESCUE_ATTEMPTS}) exceeded for attempt ${id}, forcing completion`);
+      try {
+        await attemptModel.complete(id);
+        rescueAttemptCount.delete(id);
+        const refreshed = await attemptModel.findById(id);
+        if (refreshed) {
+          attempt = refreshed;
+        }
+      } catch (err) {
+        console.error('Error forcing completion after max rescue attempts:', err);
+      }
+    } else if (!isCoolingDown && !scoringInFlight.has(id)) {
       scoringInFlight.add(id);
       lastScoringAttemptAt.set(id, now);
+      rescueAttemptCount.set(id, attempts + 1);
       try {
         await withTimeout(
           triggerAIScoring(id),
           RESULTS_RESCUE_TIMEOUT_MS,
           'Results rescue scoring',
         );
+        // Success - clear the rescue counter
+        rescueAttemptCount.delete(id);
       } catch (err) {
         console.error('Results rescue scoring did not finish in time:', err);
       } finally {

@@ -324,18 +324,18 @@ export function calculateOverallBand(
     return Math.round(total); // Usually rounded to nearest whole number
   }
 
-  // IELTS Logic
-  const l = listening || 0;
-  const r = reading || 0;
-  const w = writing || 0;
-  const s = speaking || 0;
+  // IELTS Logic - only count sections that exist (non-null)
+  const sections: number[] = [];
+  if (listening !== null && listening !== undefined) sections.push(listening);
+  if (reading !== null && reading !== undefined) sections.push(reading);
+  if (writing !== null && writing !== undefined) sections.push(writing);
+  if (speaking !== null && speaking !== undefined) sections.push(speaking);
 
-  // If any section is missing (0), we usually can't calculate a valid total,
-  // but for "practice" mode we might return partial.
-  // Assuming full test completion for overall score:
-  const count = 4;
-  const sum = l + r + w + s;
-  const avg = sum / count;
+  // If no sections scored, return 0
+  if (sections.length === 0) return 0;
+
+  const sum = sections.reduce((a, b) => a + b, 0);
+  const avg = sum / sections.length;
 
   // IELTS Rounding: nearest 0.5
   // .0 -> .0, .125 -> .0, .25 -> .5, .75 -> 1.0
@@ -372,6 +372,11 @@ export async function scoreObjectiveSection(attemptId: string, sectionType: Sect
     [attemptId, sectionType]
   );
   const questions = questionsResult.rows;
+
+  // No questions for this section type - return without updating band (leave it null)
+  if (questions.length === 0) {
+    return 0;
+  }
 
   const responsesResult = await query(
     `SELECT * FROM user_responses WHERE attempt_id = $1 AND section_id IN (

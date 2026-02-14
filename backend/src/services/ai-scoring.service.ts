@@ -417,7 +417,13 @@ export async function scoreSpeaking(attemptId: string): Promise<void> {
 
       for (const url of audioUrls) {
         try {
-          const audioResponse = await fetch(url);
+          // Add timeout to prevent hanging on unreachable audio URLs
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+          const audioResponse = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
           const audioBlob = await audioResponse.blob();
           // eslint-disable-next-line no-undef
           const audioFile = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
