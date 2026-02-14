@@ -324,14 +324,17 @@ export function calculateOverallBand(
     return Math.round(total); // Usually rounded to nearest whole number
   }
 
-  // IELTS Logic - only count sections that exist (non-null)
+  // IELTS Logic - only count sections that exist and are valid numbers
   const sections: number[] = [];
-  if (listening !== null && listening !== undefined) sections.push(listening);
-  if (reading !== null && reading !== undefined) sections.push(reading);
-  if (writing !== null && writing !== undefined) sections.push(writing);
-  if (speaking !== null && speaking !== undefined) sections.push(speaking);
+  const isValidBand = (v: number | null): v is number =>
+    v !== null && v !== undefined && typeof v === 'number' && !isNaN(v);
 
-  // If no sections scored, return 0
+  if (isValidBand(listening)) sections.push(listening);
+  if (isValidBand(reading)) sections.push(reading);
+  if (isValidBand(writing)) sections.push(writing);
+  if (isValidBand(speaking)) sections.push(speaking);
+
+  // If no valid sections scored, return 0
   if (sections.length === 0) return 0;
 
   const sum = sections.reduce((a, b) => a + b, 0);
