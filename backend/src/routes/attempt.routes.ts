@@ -13,6 +13,7 @@ router.post('/:attemptId/auto-save', authMiddleware, attemptController.autoSave)
 router.post('/:attemptId/submit-section', authMiddleware, attemptController.submitSection);
 router.post('/:attemptId/submit', authMiddleware, attemptController.submitTest);
 router.get('/:attemptId/results', authMiddleware, attemptController.getResults);
+router.get('/:attemptId/share', attemptController.getShareInfo); // Public endpoint for OG image
 router.delete('/:attemptId', authMiddleware, attemptController.deleteAttempt);
 
 export default router;

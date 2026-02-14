@@ -146,6 +146,25 @@ export async function getResults(
   }
 }
 
+/**
+ * Public endpoint for sharing - returns only basic info for OG image generation
+ */
+export async function getShareInfo(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const shareInfo = await attemptService.getShareInfo(attemptId);
+    // Cache for 1 hour since this data doesn't change
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.json(shareInfo);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function deleteAttempt(
   req: Request,
   res: Response,

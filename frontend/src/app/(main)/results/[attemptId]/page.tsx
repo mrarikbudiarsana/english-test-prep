@@ -11,28 +11,31 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { attemptId } = await Promise.resolve(params);
 
-  // Fetch attempt data for metadata
-  let attempt: Attempt | null = null;
+  // Fetch public share info for metadata (no auth required)
+  let shareInfo: { testTitle?: string; testType?: string; overallBand?: number; overallScore?: number; completedAt?: string } | null = null;
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/attempts/${attemptId}/results`, {
-      cache: 'no-store'
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/attempts/${attemptId}/share`, {
+      next: { revalidate: 3600 } // Cache for 1 hour
     });
     if (res.ok) {
-      attempt = await res.json();
+      shareInfo = await res.json();
     }
   } catch (e) {
-    console.error('Error fetching attempt for metadata', e);
+    console.error('Error fetching share info for metadata', e);
   }
 
-  if (!attempt) {
+  if (!shareInfo) {
     return {
       title: 'Test Result | English with Arik',
     };
   }
 
-  const title = attempt.test?.title || 'English Practice Test';
-  const score = attempt.overallBand ? attempt.overallBand.toString() : '-';
-  const date = attempt.completedAt ? new Date(attempt.completedAt).toLocaleDateString() : new Date().toLocaleDateString();
+  const title = shareInfo.testTitle || 'English Practice Test';
+  const isToefl = shareInfo.testType === 'toefl_itp';
+  const score = isToefl
+    ? (shareInfo.overallScore ? shareInfo.overallScore.toString() : '-')
+    : (shareInfo.overallBand ? shareInfo.overallBand.toString() : '-');
+  const date = shareInfo.completedAt ? new Date(shareInfo.completedAt).toLocaleDateString() : new Date().toLocaleDateString();
 
   const ogImageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.englishwitharik.com'}/api/og?title=${encodeURIComponent(title)}&score=${encodeURIComponent(score)}&date=${encodeURIComponent(date)}`;
 

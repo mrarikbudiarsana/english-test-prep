@@ -204,6 +204,26 @@ export async function getAttempt(id: string, userId: string) {
 }
 
 /**
+ * Get public share info for an attempt (no auth required).
+ * Only returns basic info for OG image generation.
+ */
+export async function getShareInfo(id: string) {
+  const attempt = await attemptModel.findById(id);
+  if (!attempt) {
+    throw new NotFoundError('Attempt not found');
+  }
+
+  // Only return public info needed for sharing
+  return {
+    testTitle: attempt.test?.title || 'English Practice Test',
+    testType: attempt.test?.testType || 'academic',
+    overallBand: attempt.overallBand,
+    overallScore: attempt.overallScore,
+    completedAt: attempt.completedAt,
+  };
+}
+
+/**
  * Get all attempts for a user with pagination.
  */
 export async function getUserAttempts(
