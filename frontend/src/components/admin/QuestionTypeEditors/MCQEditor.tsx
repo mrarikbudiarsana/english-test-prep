@@ -138,7 +138,7 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
               })()}
             </div>
             <span className="w-8 text-center text-sm font-medium text-gray-500">
-              {displayKey(index, option.key)}
+              {String.fromCharCode(65 + index)}
             </span>
             <div className="flex-1">
               {multiSelect ? (
