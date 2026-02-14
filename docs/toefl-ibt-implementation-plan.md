@@ -75,7 +75,11 @@ Must support:
 - Writing/speaking score pipeline (AI/hybrid/manual-ready)
 - Section raw -> band conversion tables
 - Overall band calculation policy
-- Optional concordance fields for 0-30 and 0-120 reporting
+- Dual score display policy:
+  - Primary: section and overall `1-6` band
+  - Companion display: section `0-30` and overall `0-120`
+- MyBest policy (highest valid section scores across eligible date window)
+- CEFR comparison table mapping by overall/section band
 
 ## 4. Architecture Changes
 
@@ -98,6 +102,10 @@ Rationale:
 - Keep current question model operational for existing IELTS/TOEFL ITP content.
 - Introduce `deliveryModel: 'legacy' | 'toefl_ibt_2026'` at test level.
 - Gate new UI/validation/scoring rules by `deliveryModel`.
+- Hard isolation rule: `toefl_ibt_2026` code paths must never execute for `academic`, `general_training`, or `toefl_itp` tests.
+- Hard isolation rule: no shared style/token overrides; IELTS/TOEFL ITP pages must render with existing components and CSS classes unchanged.
+- Hard isolation rule: no mutation of existing IELTS/TOEFL ITP scoring formulas, mappings, timers, section order, or submission logic.
+- Hard isolation rule: no schema migration may rewrite legacy test data; only additive columns/tables are allowed.
 
 ## 5. Data Model and Contracts
 
@@ -345,7 +353,15 @@ Rationale:
   - `writing_band DECIMAL(2,1)`
   - `speaking_band DECIMAL(2,1)`
   - `overall_band DECIMAL(2,1)`
-  - optional concordance fields: `overall_120 SMALLINT`, section 0-30 equivalents
+  - `reading_score_30 SMALLINT NULL`
+  - `listening_score_30 SMALLINT NULL`
+  - `writing_score_30 SMALLINT NULL`
+  - `speaking_score_30 SMALLINT NULL`
+  - `overall_score_120 SMALLINT NULL`
+  - `score_mapping_version VARCHAR(20) NOT NULL DEFAULT 'toefl_ibt_2026_v1'`
+  - `cefr_level VARCHAR(4) NULL`
+  - `score_reportable BOOLEAN NOT NULL DEFAULT true`
+  - `valid_until DATE NULL`
 
 - `responses`
   - `response_payload JSONB`
@@ -361,6 +377,7 @@ Rationale:
 4. Deploy read-compatible backend
 5. Deploy write paths for new model
 6. Enable admin creation for `toefl_ibt_2026`
+7. Run legacy integrity checks to confirm IELTS/TOEFL ITP outputs are byte-for-byte equivalent for representative fixtures
 
 ## 7. Adaptive Engine (Reading/Listening MST)
 
@@ -412,10 +429,30 @@ Initial cut-score policy:
 
 ### 8.4 Concordance Output
 
-If enabled:
-- Map section band to 0-30 ranges (midpoint or lower-bound rule configurable)
-- Map overall band to 0-120 concordance values
-- Store provenance version for mapping table used
+Companion display (always for score reports in this model):
+- Do not infer `0-30` from band midpoint at runtime.
+- Derive section `0-30` from an official score mapping table keyed by section raw score and mapping version.
+- Derive overall `0-120` as the sum of the four section `0-30` values when all four sections are reportable.
+- If one or more sections are missing/not administered, set `overall_score_120 = NULL` and display section scores only.
+- Store provenance via `score_mapping_version` with every scored attempt.
+
+### 8.5 Report Semantics (Aligned with Score Report)
+
+- Authoritative reported score family: band scale (`1-6`, step `0.5`) for each section and overall.
+- Companion reported score family: section `0-30` and overall `0-120`.
+- CEFR comparison is shown using the active ETS mapping table for the same `score_mapping_version`.
+- Report date is explicit and immutable once generated.
+
+MyBest logic:
+- Compute MyBest as highest valid section scores from all valid attempts up to the report date.
+- Validity window default: last 2 years from report date.
+- Exclude expired attempts and non-reportable attempts.
+- For administrations before January 21, 2026, apply the configured legacy-to-updated concordance bridge before MyBest aggregation.
+
+Rounding and consistency rules:
+- Band scores must be one decimal with allowed set `{1.0, 1.5, ..., 6.0}`.
+- `overall_band` must be recomputed from section bands using the configured policy and not manually overridden.
+- Numeric companion scores (`0-30`, `0-120`) must be recomputed from the same mapping version used for sections to avoid mixed-version reports.
 
 ## 9. Frontend Delivery Plan
 
@@ -502,7 +539,7 @@ Steps:
 
 - `GET /attempts/:id/scores`
 - `GET /attempts/:id/report`
-- include raw, band, and optional concordance
+- include raw, band, section `0-30`, overall `0-120`, CEFR level, score mapping version, and MyBest summary
 
 ## 12. Security and Integrity
 
@@ -553,18 +590,23 @@ Logs:
 Phase 1: Foundation
 - Schema + enums + blueprint storage
 - Feature flags for new delivery model
+- Add kill switch `ENABLE_TOEFL_IBT_2026` default `false`
 
 Phase 2: Reading/Listening MST
 - Adaptive engine, task renderers, objective scoring
+- Deploy only behind `deliveryModel=toefl_ibt_2026` and feature flag
 
 Phase 3: Writing/Speaking
 - New task UIs, media orchestration, rubric score pipeline
+- Keep legacy speaking/writing runners untouched and selected only for non-`toefl_ibt_2026`
 
 Phase 4: Reporting + Concordance
 - Full score report payloads and downloads
+- Add report versioning so IELTS/TOEFL ITP reports continue using existing serializers/templates
 
 Phase 5: Hardening
 - Load/perf testing, analytics validation, operational runbooks
+- Mandatory non-regression signoff for IELTS and TOEFL ITP before enabling production flag
 
 ## 16. Risks and Mitigations
 
@@ -576,6 +618,8 @@ Phase 5: Hardening
   - Mitigation: versioned mapping/scoring config and immutable score logs
 - Risk: Regression in legacy exams
   - Mitigation: strict feature gating by `deliveryModel`
+- Risk: Styling/design drift in IELTS/TOEFL ITP from shared component edits
+  - Mitigation: avoid editing legacy renderer components; implement `toefl_ibt_2026` views in separate component tree and route only by delivery model
 
 ## 17. Definition of Done
 
@@ -584,8 +628,9 @@ Done when all are true:
 - Candidate can complete all four sections end-to-end
 - Reading/listening adaptive routing is deterministic and auditable
 - Writing/speaking tasks support required media and timers
-- Final report returns section raw + band + overall band (+ optional concordance)
+- Final report returns section raw + band + overall band + section `0-30` + overall `0-120` + CEFR + MyBest
 - Automated test suite passes with no critical regressions
+- IELTS and TOEFL ITP snapshots (UI + scoring + API response contracts) are unchanged from pre-rollout baselines
 
 ## 18. Suggested Repo Placement
 
