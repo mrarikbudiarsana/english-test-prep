@@ -379,7 +379,7 @@ export async function scoreObjectiveSection(attemptId: string, sectionType: Sect
   }
 
   const responsesResult = await query(
-    `SELECT * FROM user_responses WHERE attempt_id = $1 AND section_id IN (
+    `SELECT * FROM responses WHERE attempt_id = $1 AND section_id IN (
        SELECT id FROM sections WHERE section_type = $2
     )`,
     [attemptId, sectionType]
@@ -406,7 +406,7 @@ export async function scoreObjectiveSection(attemptId: string, sectionType: Sect
 
       // Optional: Update response with is_correct field for feedback
       await query(
-        `UPDATE user_responses SET is_correct = $1, score = $2 WHERE id = $3`,
+        `UPDATE responses SET is_correct = $1, score = $2 WHERE id = $3`,
         [isCorrect, points, response.id]
       );
     }
