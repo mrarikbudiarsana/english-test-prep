@@ -289,8 +289,14 @@ function TestTakingContent() {
   }, [questions, state.answeredQuestions]);
 
   const handleNextQuestion = () => {
-    // TOEFL ITP Navigation Logic
+    // TOEFL ITP Navigation Logic for Listening
     if (testType === 'toefl_itp' && state.currentSectionType === 'listening' && !toeflReviewUnlocked) {
+      handleToeflNavigation('next');
+      return;
+    }
+
+    // TOEFL ITP Structure section - show directions between parts
+    if (testType === 'toefl_itp' && state.currentSectionType === 'structure') {
       handleToeflNavigation('next');
       return;
     }
@@ -328,7 +334,14 @@ function TestTakingContent() {
 
 
   const handlePreviousQuestion = () => {
+    // TOEFL ITP Navigation Logic for Listening
     if (testType === 'toefl_itp' && state.currentSectionType === 'listening' && !toeflReviewUnlocked) {
+      handleToeflNavigation('prev');
+      return;
+    }
+
+    // TOEFL ITP Structure section - show directions between parts
+    if (testType === 'toefl_itp' && state.currentSectionType === 'structure') {
       handleToeflNavigation('prev');
       return;
     }
@@ -392,8 +405,19 @@ function TestTakingContent() {
             setViewingDirections(shouldShowDirectionsBetweenParts(activePartIndex, nextPartIdx));
           }
         } else {
-          // End of first-pass flow: unlock review instead of immediate submit.
-          startToeflReview();
+          // End of section
+          if (state.currentSectionType === 'structure') {
+            // Structure section: open submit modal
+            const sectionOrder = testType === 'toefl_itp' ? SECTION_ORDER_TOEFL : SECTION_ORDER;
+            openSubmitModal(
+              mode === 'full' && sectionOrder.indexOf(state.currentSectionType) < sectionOrder.length - 1
+                ? 'section'
+                : 'test'
+            );
+          } else {
+            // Listening section: unlock review instead of immediate submit
+            startToeflReview();
+          }
         }
       } else {
         // Normal next question
@@ -476,6 +500,9 @@ function TestTakingContent() {
     [sections, state.currentSectionType]
   );
   const isToeflLockedSection = testType === 'toefl_itp' && state.currentSectionType === 'listening';
+  const isIeltsListeningSection =
+    (testType === 'academic' || testType === 'general_training') &&
+    state.currentSectionType === 'listening';
   const currentSectionOrder = testType === 'toefl_itp' ? SECTION_ORDER_TOEFL : SECTION_ORDER;
   const currentSectionIndex = state.currentSectionType
     ? currentSectionOrder.indexOf(state.currentSectionType)
@@ -670,18 +697,6 @@ function TestTakingContent() {
     !isPartBCMode;
 
   const isToeflItpReading = testType === 'toefl_itp' && state.currentSectionType === 'reading';
-  const toeflReadingLocalIndex = isToeflItpReading && currentQuestion
-    ? Math.max(0, activePartQuestions.findIndex(q => q.id === currentQuestion.id))
-    : currentQuestionIndex;
-  const toeflReadingAnsweredIndices = useMemo(
-    () =>
-      new Set(
-        activePartQuestions
-          .map((q, idx) => state.answers[q.id] ? idx : -1)
-          .filter(idx => idx !== -1)
-      ),
-    [activePartQuestions, state.answers]
-  );
 
   if (loading) {
     return (
@@ -953,7 +968,7 @@ function TestTakingContent() {
                   <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
                     {/* Part Navigation for Listening/Structure */}
-                    {currentSectionParts.length > 1 && (
+                    {currentSectionParts.length > 1 && !isIeltsListeningSection && (
                       <div className="flex items-center space-x-1 mb-4 border-b border-gray-200 pb-2 overflow-x-auto">
                         {currentSectionParts.map((part, idx) => (
                           <button
@@ -1073,31 +1088,49 @@ function TestTakingContent() {
               {/* Reading Section */}
               {state.currentSectionType === 'reading' && (
                 <div className="flex flex-col h-full">
-                  {testType === 'toefl_itp' && (
-                    <div className="border-b border-gray-200 bg-white px-6 py-2.5 shrink-0">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium text-gray-700">Reading Layout</div>
-                        <div className="text-xs text-gray-500">Fixed split view</div>
+
+                  {/* TOEFL ITP Reading Directions Page */}
+                  {isToeflItpReading && viewingDirections ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-white">
+                      <div className="max-w-3xl mx-auto">
+                        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-6 mx-auto">
+                          <HiBookOpen className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                          Reading Comprehension
+                        </h2>
+                        <div className="prose prose-blue max-w-none text-gray-600 mb-8 text-left">
+                          <p className="text-base leading-relaxed">
+                            {currentSectionPart?.instructions || 'In this section, you will read several passages. Each passage is followed by several questions about it. For questions 1–50, choose the best answer (A, B, C, or D) for each question. Then, select the letter that corresponds to your answer. Answer all questions following a passage based on what is stated or implied in that passage.'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setViewingDirections(false)}
+                          className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                        >
+                          Begin Reading Section
+                        </button>
                       </div>
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      {/* Full-width Instructions Banner (non-TOEFL ITP only) */}
+                      {!isToeflItpReading && currentSectionPart?.instructions && (
+                        <div className="bg-blue-50 border-b border-blue-200 px-6 py-3 text-center text-sm font-medium text-blue-800 shrink-0">
+                          {currentSectionPart.instructions}
+                        </div>
+                      )}
 
-
-
-                  {/* Full-width Instructions Banner */}
-                  {currentSectionPart?.instructions && (
-                    <div className="bg-blue-50 border-b border-blue-200 px-6 py-3 text-center text-sm font-medium text-blue-800 shrink-0">
-                      {currentSectionPart.instructions}
-                    </div>
-                  )}
-
-                  <div className="flex flex-1 overflow-hidden" ref={containerRef}>
+                      <div className="flex flex-1 overflow-hidden" ref={containerRef}>
                     {/* Left Pane: Reading Passage */}
                     <div
-                      className="h-full border-r border-gray-200 bg-white shrink-0"
+                      className={cn(
+                        "h-full border-r border-gray-200 bg-white shrink-0",
+                        isToeflItpReading && "shadow-[2px_0_8px_rgba(0,0,0,0.04)]"
+                      )}
                       style={{ width: `${isToeflItpReading ? 55 : leftPaneWidth}%` }}
                     >
-                      <div className="h-full overflow-y-auto">
+                      <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
                         {currentSectionPart && (
                           <ReadingPassage
                             title={currentSectionPart.passageTitle || ''}
@@ -1120,19 +1153,23 @@ function TestTakingContent() {
 
                     {/* Right Pane: Questions */}
                     <div
-                      className="h-full bg-white grow min-w-0 flex" // min-w-0 used to allow flex child to shrink below content size
+                      className={cn(
+                        "h-full grow min-w-0 flex",
+                        isToeflItpReading ? "toefl-itp-question-panel" : "bg-white"
+                      )}
                     >
                       <div
                         className={cn(
-                          "flex-1 overflow-y-auto px-6 py-6",
-                          testType === 'toefl_itp' && activePartQuestions.length === 1 && "flex items-start justify-center"
+                          "flex-1 overflow-y-auto",
+                          isToeflItpReading ? "px-6 py-5" : "px-6 py-6",
+                          isToeflItpReading && activePartQuestions.length === 1 && "flex items-start justify-center pt-8"
                         )}
                       >
                         <div
                           className={cn(
-                            testType === 'toefl_itp' && activePartQuestions.length === 1
-                              ? "w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-8"
-                              : "space-y-8"
+                            isToeflItpReading && activePartQuestions.length === 1
+                              ? "toefl-itp-question-card w-full max-w-xl space-y-6"
+                              : "space-y-8 max-w-2xl"
                           )}
                         >
 
@@ -1424,31 +1461,30 @@ function TestTakingContent() {
                       {testType === 'toefl_itp' && (
                         <div className="w-[21rem] shrink-0 pl-4 self-start sticky top-4">
                           <QuestionNavigator
-                            totalQuestions={isToeflItpReading ? activePartQuestions.length : questions.length}
-                            currentIndex={isToeflItpReading ? toeflReadingLocalIndex : currentQuestionIndex}
+                            totalQuestions={questions.length}
+                            currentIndex={currentQuestionIndex}
                             onSelect={(index) => {
-                              if (isToeflItpReading) {
-                                const targetQuestion = activePartQuestions[index];
-                                if (!targetQuestion) return;
-                                const globalIndex = questions.findIndex(q => q.id === targetQuestion.id);
-                                if (globalIndex !== -1) {
-                                  selectQuestionIndex(globalIndex);
-                                }
-                                return;
+                              // Find the question and switch to its passage if needed
+                              const targetQuestion = questions[index];
+                              if (!targetQuestion) return;
+
+                              // Find which part this question belongs to
+                              const partIdx = currentSectionParts.findIndex(p => p.id === targetQuestion.sectionId);
+                              if (partIdx !== -1 && partIdx !== activePartIndex) {
+                                setActivePartIndex(partIdx);
                               }
+
                               selectQuestionIndex(index);
                             }}
                             answeredIndices={
-                              isToeflItpReading
-                                ? toeflReadingAnsweredIndices
-                                : new Set(
-                                  questions
-                                    .map((q, idx) => state.answers[q.id] ? idx : -1)
-                                    .filter(idx => idx !== -1)
-                                )
+                              new Set(
+                                questions
+                                  .map((q, idx) => state.answers[q.id] ? idx : -1)
+                                  .filter(idx => idx !== -1)
+                              )
                             }
                             allowNavigation={true}
-                            startIndex={isToeflItpReading ? partNumberOffset + 1 : 1}
+                            startIndex={1}
                             variant="grid"
                             onPrevious={handlePreviousQuestion}
                             onNext={handleNextQuestion}
@@ -1465,6 +1501,8 @@ function TestTakingContent() {
                       )}
                     </div>
                   </div>
+                    </>
+                  )}
                 </div>
               )}
 
