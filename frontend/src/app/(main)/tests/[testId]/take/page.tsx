@@ -471,7 +471,10 @@ function TestTakingContent() {
   };
 
   const currentQuestion = questions[currentQuestionIndex];
-  const currentSectionParts = sections.filter(s => s.sectionType === state.currentSectionType);
+  const currentSectionParts = useMemo(
+    () => sections.filter(s => s.sectionType === state.currentSectionType),
+    [sections, state.currentSectionType]
+  );
   const isToeflLockedSection = testType === 'toefl_itp' && state.currentSectionType === 'listening';
   const currentSectionOrder = testType === 'toefl_itp' ? SECTION_ORDER_TOEFL : SECTION_ORDER;
   const currentSectionIndex = state.currentSectionType
@@ -516,7 +519,10 @@ function TestTakingContent() {
   }, [activePartIndex]);
 
   // Current active part based on tab selection
-  const currentSectionPart = currentSectionParts[activePartIndex] || currentSectionParts[0];
+  const currentSectionPart = useMemo(
+    () => currentSectionParts[activePartIndex] || currentSectionParts[0],
+    [currentSectionParts, activePartIndex]
+  );
 
   const resolvedPartNumbers = useMemo(() => {
     const resolved: number[] = [];
