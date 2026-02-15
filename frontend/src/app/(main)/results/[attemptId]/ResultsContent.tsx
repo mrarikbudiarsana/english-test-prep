@@ -332,18 +332,10 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                         <div className="pointer-events-none absolute -bottom-16 -right-10 h-40 w-40 rounded-full bg-indigo-200/30 blur-2xl" />
                     </>
                 )}
-                {isToeflItp && (
-                    <div className="mb-4 inline-flex items-center rounded-full border border-violet-200 bg-white/80 px-3 py-1 text-xs font-semibold tracking-wide text-violet-700">
-                        ETS TOEFL ITP
-                    </div>
-                )}
                 <p className={`mb-2 text-sm font-medium ${isToeflItp ? 'text-violet-800' : 'text-gray-600'}`}>{displayLabel}</p>
                 <div className={`text-6xl font-bold ${toeflScoreClass}`}>
                     {isToeflItp && !isPartialTest ? displayScore : formatBand(displayScore)}
                 </div>
-                {isToeflItp && !isPartialTest && (
-                    <p className="mt-2 text-xs font-medium text-violet-600">Total range: 310-677</p>
-                )}
                 {attempt.completedAt && (
                     <p className={`mt-3 text-sm ${isToeflItp ? 'text-violet-700/80' : 'text-gray-500'}`}>Completed on {formatDate(attempt.completedAt)}</p>
                 )}
@@ -371,15 +363,17 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                             <p className={`text-3xl font-bold ${isToeflItp ? 'text-violet-700' : (section.score ? getBandColor(section.score) : 'text-gray-400')}`}>
                                 {isToeflItp ? section.score : formatBand(section.score)}
                             </p>
-                            {isToeflItp && (
-                                <p className="mt-1 text-xs text-violet-500">Scaled score (31-68)</p>
-                            )}
                             {section.raw !== null && !isToeflItp && (
                                 <p className="text-xs text-gray-400 mt-1">{section.raw}/{section.total} correct</p>
                             )}
                         </div>
                     ))}
                 </div>
+            )}
+            {isToeflItp && !isPartialTest && (
+                <p className="text-center text-sm text-violet-700/80">
+                    TOEFL ITP reports one total score and three section scores.
+                </p>
             )}
 
             {/* Writing Feedback - only show if writing was actually taken (score > 0) */}

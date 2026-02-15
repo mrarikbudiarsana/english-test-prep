@@ -167,10 +167,20 @@ export function normalizeAnswer(text: string): string {
 }
 
 function unwrapAnswer(value: any): any {
-  if (value && typeof value === 'object' && 'answer' in value) {
-    return (value as { answer: any }).answer;
+  if (value && typeof value === 'object') {
+    if ('answer' in value) return unwrapAnswer((value as { answer: any }).answer);
+    if ('key' in value) return (value as { key: any }).key;
+    if ('value' in value) return (value as { value: any }).value;
   }
   return value;
+}
+
+function normalizeChoice(value: any): string {
+  return String(unwrapAnswer(value)).trim().toUpperCase();
+}
+
+function normalizeChoiceArray(values: any[]): string[] {
+  return values.map((v) => normalizeChoice(v)).sort();
 }
 
 /**
@@ -233,12 +243,12 @@ function compareMultipleChoice(user: any, correct: any): boolean {
     // user should also be an array
     if (!Array.isArray(userValue)) return false;
     if (userValue.length !== correctValue.length) return false;
-    const sortedUser = [...userValue].sort();
-    const sortedCorrect = [...correctValue].sort();
+    const sortedUser = normalizeChoiceArray(userValue);
+    const sortedCorrect = normalizeChoiceArray(correctValue);
     return sortedUser.every((val, idx) => val === sortedCorrect[idx]);
   }
   // Single select
-  return String(userValue) === String(correctValue);
+  return normalizeChoice(userValue) === normalizeChoice(correctValue);
 }
 
 function compareCompletion(user: any, correct: any, qData: any): boolean {
