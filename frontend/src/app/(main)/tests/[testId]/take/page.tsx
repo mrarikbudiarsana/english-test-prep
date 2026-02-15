@@ -669,17 +669,6 @@ function TestTakingContent() {
     !viewingDirections &&
     !isPartBCMode;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-500">Loading test...</p>
-        </div>
-      </div>
-    );
-  }
-
   const isToeflItpReading = testType === 'toefl_itp' && state.currentSectionType === 'reading';
   const toeflReadingLocalIndex = isToeflItpReading && currentQuestion
     ? Math.max(0, activePartQuestions.findIndex(q => q.id === currentQuestion.id))
@@ -693,6 +682,17 @@ function TestTakingContent() {
       ),
     [activePartQuestions, state.answers]
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+          <p className="mt-4 text-gray-500">Loading test...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`h-screen flex flex-col bg-gray-50 overflow-hidden ${isResizing ? 'select-none cursor-col-resize' : ''}`}>
