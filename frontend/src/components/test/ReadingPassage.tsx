@@ -101,10 +101,7 @@ function ReadingPassage({
                     <div key={index} className="toefl-line-row">
                       <div className="toefl-line-marker" aria-hidden="true">
                         {showLineLabel && (
-                          <>
-                            <span>Line</span>
-                            <span>{lineNumber}</span>
-                          </>
+                          <span>{`Line ${lineNumber}`}</span>
                         )}
                       </div>
                       <pre className="toefl-line-text">{line || '\u00A0'}</pre>

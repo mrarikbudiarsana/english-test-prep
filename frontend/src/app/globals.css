@@ -130,10 +130,9 @@ body {
   font-size: 0.8125rem;
   font-style: italic;
   user-select: none;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: flex-start;
+  text-align: right;
+  white-space: nowrap;
+  line-height: 1.6;
 }
 
 .toefl-itp-passage-content .toefl-line-text {
