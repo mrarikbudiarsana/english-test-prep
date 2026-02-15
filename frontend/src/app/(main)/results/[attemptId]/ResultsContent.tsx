@@ -309,6 +309,12 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
         : (isToeflItp
             ? 'Your TOEFL ITP Total Score'
             : (isBandScale ? `Your ${examName} Overall Band Score` : `Your ${examName} Overall Score`));
+    const toeflBannerClass = isToeflItp
+        ? 'bg-gradient-to-br from-violet-50 via-indigo-50 to-white border-violet-200 shadow-[0_12px_35px_rgba(88,72,184,0.14)]'
+        : (displayScore ? getBandBgColor(displayScore) : 'bg-gray-100 border-gray-200');
+    const toeflScoreClass = isToeflItp
+        ? 'text-violet-700 drop-shadow-[0_3px_10px_rgba(88,72,184,0.25)]'
+        : (displayScore ? getBandColor(displayScore) : 'text-gray-400');
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
@@ -319,17 +325,33 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
             </Link>
 
             {/* Score Banner */}
-            <div className={`rounded-2xl p-8 text-center border-2 ${displayScore ? getBandBgColor(displayScore) : 'bg-gray-100 border-gray-200'}`}>
-                <p className="text-sm font-medium text-gray-600 mb-2">{displayLabel}</p>
-                <div className={`text-6xl font-bold ${displayScore ? getBandColor(displayScore) : 'text-gray-400'}`}>
+            <div className={`relative overflow-hidden rounded-3xl p-8 text-center border-2 ${toeflBannerClass}`}>
+                {isToeflItp && (
+                    <>
+                        <div className="pointer-events-none absolute -top-16 -left-10 h-40 w-40 rounded-full bg-violet-200/30 blur-2xl" />
+                        <div className="pointer-events-none absolute -bottom-16 -right-10 h-40 w-40 rounded-full bg-indigo-200/30 blur-2xl" />
+                    </>
+                )}
+                {isToeflItp && (
+                    <div className="mb-4 inline-flex items-center rounded-full border border-violet-200 bg-white/80 px-3 py-1 text-xs font-semibold tracking-wide text-violet-700">
+                        ETS TOEFL ITP
+                    </div>
+                )}
+                <p className={`mb-2 text-sm font-medium ${isToeflItp ? 'text-violet-800' : 'text-gray-600'}`}>{displayLabel}</p>
+                <div className={`text-6xl font-bold ${toeflScoreClass}`}>
                     {isToeflItp && !isPartialTest ? displayScore : formatBand(displayScore)}
                 </div>
+                {isToeflItp && !isPartialTest && (
+                    <p className="mt-2 text-xs font-medium text-violet-600">Total range: 310-677</p>
+                )}
                 {attempt.completedAt && (
-                    <p className="mt-3 text-sm text-gray-500">Completed on {formatDate(attempt.completedAt)}</p>
+                    <p className={`mt-3 text-sm ${isToeflItp ? 'text-violet-700/80' : 'text-gray-500'}`}>Completed on {formatDate(attempt.completedAt)}</p>
                 )}
                 <button
                     onClick={() => setShowShareModal(true)}
-                    className="mt-6 px-6 py-2 bg-white text-blue-600 font-medium rounded-full shadow-sm hover:shadow-md transition-all text-sm border border-blue-100"
+                    className={`mt-6 rounded-full px-6 py-2 text-sm font-medium transition-all ${isToeflItp
+                        ? 'border border-violet-200 bg-white text-violet-700 shadow-sm hover:-translate-y-0.5 hover:shadow-md'
+                        : 'border border-blue-100 bg-white text-blue-600 shadow-sm hover:shadow-md'}`}
                 >
                     Share Result
                 </button>
@@ -337,13 +359,21 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
             {/* Section Scores - only show for full tests with multiple sections */}
             {!isPartialTest && sections.length > 0 && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className={`grid gap-4 ${isToeflItp ? 'mx-auto w-full max-w-3xl grid-cols-1 sm:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`}>
                     {sections.map((section) => (
-                        <div key={section.type} className="bg-white rounded-xl border border-gray-200 p-5 text-center">
-                            <p className="text-sm font-medium text-gray-500 mb-1">{section.label}</p>
-                            <p className={`text-3xl font-bold ${section.score ? getBandColor(section.score) : 'text-gray-400'}`}>
+                        <div
+                            key={section.type}
+                            className={`rounded-2xl border p-5 text-center ${isToeflItp
+                                ? 'border-violet-200 bg-gradient-to-b from-white to-violet-50/70 shadow-[0_10px_25px_rgba(88,72,184,0.08)]'
+                                : 'border-gray-200 bg-white'}`}
+                        >
+                            <p className={`mb-1 text-sm font-medium ${isToeflItp ? 'text-violet-700' : 'text-gray-500'}`}>{section.label}</p>
+                            <p className={`text-3xl font-bold ${isToeflItp ? 'text-violet-700' : (section.score ? getBandColor(section.score) : 'text-gray-400')}`}>
                                 {isToeflItp ? section.score : formatBand(section.score)}
                             </p>
+                            {isToeflItp && (
+                                <p className="mt-1 text-xs text-violet-500">Scaled score (31-68)</p>
+                            )}
                             {section.raw !== null && !isToeflItp && (
                                 <p className="text-xs text-gray-400 mt-1">{section.raw}/{section.total} correct</p>
                             )}
@@ -471,10 +501,10 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
             {/* Actions */}
             <div className="flex justify-center space-x-4">
-                <Link href="/tests" className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
+                <Link href="/tests" className={`px-6 py-3 rounded-lg text-white font-medium transition-colors ${isToeflItp ? 'bg-violet-700 hover:bg-violet-800' : 'bg-blue-600 hover:bg-blue-700'}`}>
                     Take Another Test
                 </Link>
-                <Link href="/dashboard" className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors">
+                <Link href="/dashboard" className={`px-6 py-3 border rounded-lg font-medium transition-colors ${isToeflItp ? 'border-violet-200 text-violet-800 hover:bg-violet-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
                     View Dashboard
                 </Link>
             </div>

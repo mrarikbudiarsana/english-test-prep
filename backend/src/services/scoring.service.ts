@@ -166,6 +166,13 @@ export function normalizeAnswer(text: string): string {
     .trim();
 }
 
+function unwrapAnswer(value: any): any {
+  if (value && typeof value === 'object' && 'answer' in value) {
+    return (value as { answer: any }).answer;
+  }
+  return value;
+}
+
 /**
  * Compare user answer vs correct answer for a single question.
  * Returns points earned (usually 1 or 0).
@@ -189,7 +196,7 @@ export function checkAnswer(
 
       case 'true_false_not_given':
       case 'yes_no_not_given':
-        isCorrect = String(userAnswer).toUpperCase() === String(correctAnswer).toUpperCase();
+        isCorrect = String(unwrapAnswer(userAnswer)).toUpperCase() === String(unwrapAnswer(correctAnswer)).toUpperCase();
         break;
 
       case 'completion':
@@ -218,25 +225,29 @@ export function checkAnswer(
 }
 
 function compareMultipleChoice(user: any, correct: any): boolean {
-  if (Array.isArray(correct)) {
+  const userValue = unwrapAnswer(user);
+  const correctValue = unwrapAnswer(correct);
+
+  if (Array.isArray(correctValue)) {
     // Multi-select (e.g. "Choose TWO")
     // user should also be an array
-    if (!Array.isArray(user)) return false;
-    if (user.length !== correct.length) return false;
-    const sortedUser = [...user].sort();
-    const sortedCorrect = [...correct].sort();
+    if (!Array.isArray(userValue)) return false;
+    if (userValue.length !== correctValue.length) return false;
+    const sortedUser = [...userValue].sort();
+    const sortedCorrect = [...correctValue].sort();
     return sortedUser.every((val, idx) => val === sortedCorrect[idx]);
   }
   // Single select
-  return String(user) === String(correct);
+  return String(userValue) === String(correctValue);
 }
 
 function compareCompletion(user: any, correct: any, qData: any): boolean {
   // correct answer can be a string or array of accepted strings
   // e.g. "bus station" or ["bus station", "station"]
 
-  const userNorm = normalizeAnswer(String(user));
-  const acceptedAnswers = Array.isArray(correct) ? correct : [correct];
+  const userNorm = normalizeAnswer(String(unwrapAnswer(user)));
+  const correctValue = unwrapAnswer(correct);
+  const acceptedAnswers = Array.isArray(correctValue) ? correctValue : [correctValue];
 
   return acceptedAnswers.some((ans: string) => {
     return normalizeAnswer(ans) === userNorm;
@@ -245,20 +256,24 @@ function compareCompletion(user: any, correct: any, qData: any): boolean {
 
 function compareMatching(user: any, correct: any): boolean {
   // user and correct are objects: { "A": "B", "C": "D" }
-  if (typeof user !== 'object' || typeof correct !== 'object') return false;
-  const keys = Object.keys(correct);
+  const userValue = unwrapAnswer(user);
+  const correctValue = unwrapAnswer(correct);
+  if (typeof userValue !== 'object' || typeof correctValue !== 'object') return false;
+  const keys = Object.keys(correctValue);
   for (const key of keys) {
-    if (user[key] !== correct[key]) return false;
+    if (userValue[key] !== correctValue[key]) return false;
   }
   return true;
 }
 
 function compareDropdown(user: any, correct: any): boolean {
   // similar to matching: { "blank1": "optionA", "blank2": "optionB" }
-  if (typeof user !== 'object' || typeof correct !== 'object') return false;
-  const keys = Object.keys(correct);
+  const userValue = unwrapAnswer(user);
+  const correctValue = unwrapAnswer(correct);
+  if (typeof userValue !== 'object' || typeof correctValue !== 'object') return false;
+  const keys = Object.keys(correctValue);
   for (const key of keys) {
-    if (user[key] !== correct[key]) return false;
+    if (userValue[key] !== correctValue[key]) return false;
   }
   return true;
 }
