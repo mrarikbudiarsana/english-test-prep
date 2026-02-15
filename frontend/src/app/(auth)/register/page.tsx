@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -15,13 +16,10 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Helper to determine redirect path based on user's exam preference
-  const getRedirectPath = (userData: typeof user) => {
-    return userData?.preferredExamType ? '/dashboard' : '/select-exam';
-  };
-
   React.useEffect(() => {
-    if (user) router.push(getRedirectPath(user));
+    if (!user) return;
+    const redirectPath = user.preferredExamType ? '/dashboard' : '/select-exam';
+    router.push(redirectPath);
   }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,10 +62,13 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link href="/" className="flex justify-center items-center space-x-2">
-          <img
+          <Image
             src="https://scobvornehcncgsqngag.supabase.co/storage/v1/object/public/Public/Logo%20fix.svg"
             alt="EnglishTest"
             className="h-14 w-auto"
+            width={160}
+            height={56}
+            unoptimized
           />
         </Link>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">

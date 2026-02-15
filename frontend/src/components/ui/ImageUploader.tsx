@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, type ChangeEvent } from 'react';
+import Image from 'next/image';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Progress } from '@/components/ui/Progress';
@@ -74,10 +75,13 @@ export default function ImageUploader({ onUpload, currentUrl }: ImageUploaderPro
       {uploadedUrl ? (
         <div className="space-y-2">
           <div className="relative inline-block rounded-lg overflow-hidden border border-gray-200">
-            <img
+            <Image
               src={uploadedUrl}
               alt="Uploaded preview"
               className="max-w-full max-h-48 object-contain"
+              width={800}
+              height={480}
+              unoptimized
             />
           </div>
           <div>

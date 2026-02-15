@@ -336,7 +336,6 @@ export default function AdminSectionQuestionsPage() {
         size="lg"
       >
         <QuestionEditor
-          sectionId={sectionId}
           testType={test?.testType}
           sectionType={section?.sectionType}
           partNumber={section?.partNumber ?? undefined}

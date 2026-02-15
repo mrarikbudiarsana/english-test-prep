@@ -104,35 +104,49 @@ body {
 /* Passage wrapper - contains line numbers and text */
 .toefl-itp-passage-content {
   position: relative;
-  padding-left: 3.5rem;
+  overflow-x: auto;
+  padding-right: 0.5rem;
   font-size: 0.9375rem;
   line-height: 1.6;
   color: #1f2937;
 }
 
-/* Line numbers container - absolutely positioned in left margin */
-.toefl-itp-passage-content .line-numbers {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 3rem;
+/* Strict line-locked layout for plain-text TOEFL ITP passages */
+.toefl-itp-passage-content .toefl-line-grid {
+  min-width: 42rem;
+  width: max-content;
+}
+
+.toefl-itp-passage-content .toefl-line-row {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  align-items: start;
+}
+
+.toefl-itp-passage-content .toefl-line-marker {
+  min-height: 1.6em;
+  padding-right: 0.5rem;
+  color: #6b7280;
   font-size: 0.8125rem;
   font-style: italic;
-  color: #6b7280;
-  font-family: system-ui, -apple-system, sans-serif;
   user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
 }
 
-/* Individual line number - positioned by top value */
-.toefl-itp-passage-content .line-numbers .ln {
-  position: absolute;
-  right: 0.5rem;
-  text-align: right;
+.toefl-itp-passage-content .toefl-line-text {
+  margin: 0;
+  font: inherit;
+  white-space: pre;
+  line-height: 1.6;
+  color: inherit;
 }
 
-/* Passage text - preserves manual line breaks */
+/* Legacy HTML passages (backward compatibility) */
 .toefl-itp-passage-content .toefl-passage {
-  white-space: pre-line;
+  white-space: pre-wrap;
   line-height: 1.6;
 }
 

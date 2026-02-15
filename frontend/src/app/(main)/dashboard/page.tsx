@@ -18,8 +18,7 @@ import {
   HiBadgeCheck,
 } from 'react-icons/hi';
 import { DashboardCharts } from './DashboardCharts';
-import { examConfigs, getExamConfig } from '@/config/examConfig';
-import { ExamType } from '@/types/user';
+import { getExamConfig } from '@/config/examConfig';
 
 export default function DashboardPage() {
   const { user } = useAuth();

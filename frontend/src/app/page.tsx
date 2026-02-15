@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -70,14 +71,13 @@ export default function LandingPage() {
 
             <div className="relative lg:h-[600px] w-full flex items-center justify-center">
               <div className="relative w-full aspect-[4/3] lg:aspect-auto lg:h-full rounded-3xl overflow-hidden shadow-2xl ring-1 ring-slate-900/5 bg-slate-100">
-                {/* 
-                     Using standard img tag to ensure it works even without Next.js Image optimization configuration for simple static assets.
-                     Object-cover ensures it fills the area nicely.
-                  */}
-                <img
+                <Image
                   src="/landing-hero.png"
                   alt="Students studying nicely"
                   className="w-full h-full object-cover"
+                  width={1200}
+                  height={900}
+                  priority
                 />
 
                 {/* Floating badge branding element */}

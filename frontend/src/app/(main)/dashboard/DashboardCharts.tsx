@@ -18,7 +18,6 @@ import {
     Cell,
     LabelList,
 } from 'recharts';
-import { sectionTypeLabel } from '@/lib/utils';
 import { ExamType } from '@/types/user';
 import { getExamConfig } from '@/config/examConfig';
 

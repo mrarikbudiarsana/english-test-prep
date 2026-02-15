@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import api from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -119,10 +120,13 @@ export default function AdminUsersPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {user.photoUrl ? (
-                          <img
+                          <Image
                             src={user.photoUrl}
                             alt=""
                             className="w-8 h-8 rounded-full object-cover"
+                            width={32}
+                            height={32}
+                            unoptimized
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700">

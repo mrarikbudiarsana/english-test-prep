@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { Card } from '@/components/ui/Card';
@@ -16,7 +16,6 @@ import type { Test, Section, SectionType } from '@/types/test';
 
 export default function AdminEditTestPage() {
   const params = useParams();
-  const router = useRouter();
   const testId = params.testId as string;
 
   const [test, setTest] = useState<Test | null>(null);
@@ -320,7 +319,6 @@ export default function AdminEditTestPage() {
         size="lg"
       >
         <SectionEditor
-          testId={testId}
           testType={test.testType}
           existingSections={sections}
           initialData={editingSection || undefined}

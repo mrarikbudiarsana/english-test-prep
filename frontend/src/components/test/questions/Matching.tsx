@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { MatchingData } from '@/types/test';
 
 interface MatchingProps {
@@ -18,7 +18,7 @@ export default function Matching({
   readOnly = false,
   correctAnswer,
 }: MatchingProps) {
-  const currentAnswer = answer || {};
+  const currentAnswer = useMemo(() => answer || {}, [answer]);
 
   const handleSelect = useCallback(
     (itemKey: string, optionKey: string) => {

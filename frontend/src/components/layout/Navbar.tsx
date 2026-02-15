@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { HiMenu, HiX, HiUser, HiLogout, HiCog, HiSwitchHorizontal } from 'react-icons/hi';
 import { examConfigs, getAllExamTypes } from '@/config/examConfig';
@@ -39,10 +40,13 @@ export default function Navbar() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2 group">
-              <img
+              <Image
                 src="https://scobvornehcncgsqngag.supabase.co/storage/v1/object/public/Public/Logo%20fix.svg"
                 alt="EnglishTest"
                 className="h-12 w-auto group-hover:scale-105 transition-all"
+                width={140}
+                height={48}
+                unoptimized
               />
             </Link>
           </div>
@@ -152,10 +156,13 @@ export default function Navbar() {
                   >
                     <div className="w-9 h-9 bg-[#ffe5ea] rounded-xl flex items-center justify-center border border-[#e4002b]/20 overflow-hidden">
                       {user.photoUrl ? (
-                        <img
+                        <Image
                           src={user.photoUrl}
                           alt={user.displayName || 'User'}
                           className="w-full h-full object-cover"
+                          width={36}
+                          height={36}
+                          unoptimized
                         />
                       ) : (
                         <HiUser className="w-5 h-5 text-[#e4002b]" />

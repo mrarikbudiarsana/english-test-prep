@@ -33,7 +33,6 @@ interface SectionFormData {
 }
 
 interface SectionEditorProps {
-  testId: string;
   testType: string;
   existingSections?: Section[];
   initialData?: Partial<Section>;
@@ -128,7 +127,7 @@ function getStructureGuide(testType: string): { title: string; lines: string[] }
 
 // ---------- Component ----------
 
-export default function SectionEditor({ testId, testType, existingSections = [], initialData, onSubmit, onCancel }: SectionEditorProps) {
+export default function SectionEditor({ testType, existingSections = [], initialData, onSubmit, onCancel }: SectionEditorProps) {
   const sectionTypeOptions = getSectionTypeOptions(testType);
   const structureGuide = getStructureGuide(testType);
   const [showGuide, setShowGuide] = useState(false);
@@ -201,6 +200,9 @@ export default function SectionEditor({ testId, testType, existingSections = [],
     if (!validate()) return;
     setLoading(true);
     try {
+      // Preserve reading passage exactly as typed for TOEFL ITP line-referenced questions.
+      // Only use trim to decide whether the field is empty.
+      const normalizedPassageText = passageText.replace(/\r\n/g, '\n');
       await onSubmit({
         sectionType,
         sectionOrder,
@@ -209,7 +211,9 @@ export default function SectionEditor({ testId, testType, existingSections = [],
         durationMinutes,
         audioUrl: sectionType === 'listening' ? audioUrl : null,
         passageTitle: sectionType === 'reading' ? passageTitle.trim() || null : null,
-        passageText: sectionType === 'reading' ? passageText.trim() || null : null,
+        passageText: sectionType === 'reading'
+          ? (normalizedPassageText.trim().length > 0 ? normalizedPassageText : null)
+          : null,
         taskNumber: sectionType === 'writing' ? taskNumber : null,
         taskDescription: sectionType === 'writing' ? taskDescription.trim() || null : null,
         minWords: sectionType === 'writing' ? minWords : null,
@@ -401,6 +405,11 @@ export default function SectionEditor({ testId, testType, existingSections = [],
             placeholder="Enter the full reading passage here..."
             rows={10}
           />
+          {testType === 'toefl_itp' && (
+            <p className="text-xs text-green-700">
+              Paste plain text exactly as the source and keep manual line breaks where line references should point.
+            </p>
+          )}
         </div>
       )
       }

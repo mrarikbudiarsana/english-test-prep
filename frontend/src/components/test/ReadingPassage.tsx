@@ -11,10 +11,6 @@ interface ReadingPassageProps {
   variant?: 'default' | 'toefl_itp';
 }
 
-const TOEFL_LINE_HEIGHT = 1.6;
-const TOEFL_FONT_SIZE_PX = 15;
-const TOEFL_LINE_HEIGHT_PX = TOEFL_FONT_SIZE_PX * TOEFL_LINE_HEIGHT;
-
 function ReadingPassage({
   title,
   content,
@@ -38,41 +34,42 @@ function ReadingPassage({
       .replace(/'/g, '&#39;');
 
   const processedContent = useMemo(() => {
-    if (!content) return { html: '', lineCount: 0 };
+    if (!content) {
+      return {
+        mode: 'default_html' as const,
+        html: '',
+        lines: [] as string[],
+      };
+    }
 
     // Default variant: simple newline to <br> conversion
     if (variant !== 'toefl_itp') {
-      return { html: content.replace(/\n/g, '<br />'), lineCount: 0 };
+      return {
+        mode: 'default_html' as const,
+        html: content.replace(/\n/g, '<br />'),
+        lines: [] as string[],
+      };
     }
 
     // TOEFL ITP variant: Check if content already has HTML tags (legacy format)
     if (containsHtmlTags(content)) {
       // Content has HTML - sanitize and render directly (legacy support)
       const html = isMounted ? sanitizeToeflPassage(content) : escapeHtml(content);
-      return { html, lineCount: 0 };
+      return {
+        mode: 'toefl_legacy_html' as const,
+        html,
+        lines: [] as string[],
+      };
     }
 
-    // Plain text content with manual line breaks - new format
-    // Count lines (excluding empty lines at start/end)
+    // Plain text content with manual line breaks - strict line-locked format
     const lines = content.replace(/\r\n/g, '\n').split('\n');
-    const lineCount = lines.filter(l => l.trim() !== '').length;
-
-    // Escape and preserve the content structure
-    const html = `<div class="toefl-passage">${escapeHtml(content)}</div>`;
-
-    return { html, lineCount };
+    return {
+      mode: 'toefl_plain' as const,
+      html: '',
+      lines,
+    };
   }, [content, variant, isMounted]);
-
-  // Generate line numbers for TOEFL ITP (every 5 lines)
-  const lineNumbers = useMemo(() => {
-    if (variant !== 'toefl_itp' || processedContent.lineCount === 0) return null;
-
-    const numbers: number[] = [];
-    for (let i = 5; i <= processedContent.lineCount; i += 5) {
-      numbers.push(i);
-    }
-    return numbers;
-  }, [variant, processedContent.lineCount]);
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -94,22 +91,30 @@ function ReadingPassage({
               : "prose prose-sm max-w-none text-gray-800 leading-relaxed prose-headings:text-gray-900 prose-headings:font-semibold prose-p:mb-4 prose-p:text-gray-700 prose-strong:text-gray-900 prose-em:text-gray-600 selection:bg-blue-100"
             }
           >
-            {/* Line numbers for TOEFL ITP */}
-            {lineNumbers && lineNumbers.length > 0 && (
-              <div className="line-numbers" aria-hidden="true">
-                {lineNumbers.map(num => (
-                  <span
-                    key={num}
-                    className="ln"
-                    style={{ top: `${(num - 0.5) * TOEFL_LINE_HEIGHT_PX}px` }}
-                  >
-                    {num}
-                  </span>
-                ))}
+            {variant === 'toefl_itp' && processedContent.mode === 'toefl_plain' ? (
+              <div className="toefl-line-grid">
+                {processedContent.lines.map((line, index) => {
+                  const lineNumber = index + 1;
+                  const showLineLabel = lineNumber % 5 === 0;
+
+                  return (
+                    <div key={index} className="toefl-line-row">
+                      <div className="toefl-line-marker" aria-hidden="true">
+                        {showLineLabel && (
+                          <>
+                            <span>Line</span>
+                            <span>{lineNumber}</span>
+                          </>
+                        )}
+                      </div>
+                      <pre className="toefl-line-text">{line || '\u00A0'}</pre>
+                    </div>
+                  );
+                })}
               </div>
+            ) : (
+              <div dangerouslySetInnerHTML={{ __html: processedContent.html }} />
             )}
-            {/* Passage content */}
-            <div dangerouslySetInnerHTML={{ __html: processedContent.html }} />
           </div>
         </TextHighlighter>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Question, Section } from '@/types/test';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 
@@ -38,11 +38,13 @@ export default function TestFooter({
     const currentQuestion = questions[currentQuestionIndex];
 
     // Group questions by section (Part)
-    const groupedQuestions = sections.map((section, sectionIdx) => ({
-        section,
-        questions: questions.filter(q => q.sectionId === section.id),
-        partLabel: sectionPartLabels?.[section.id] || `Part ${sectionIdx + 1}`
-    })).filter(group => group.questions.length > 0);
+    const groupedQuestions = useMemo(() => (
+        sections.map((section, sectionIdx) => ({
+            section,
+            questions: questions.filter(q => q.sectionId === section.id),
+            partLabel: sectionPartLabels?.[section.id] || `Part ${sectionIdx + 1}`
+        })).filter(group => group.questions.length > 0)
+    ), [sections, questions, sectionPartLabels]);
 
     // If no sections (or single section), fall back to simple list
     const hasMultipleParts = groupedQuestions.length > 1;
@@ -67,7 +69,7 @@ export default function TestFooter({
                 setExpandedParts(new Set([partIdx]));
             }
         }
-    }, [currentQuestion?.id, hasMultipleParts]);
+    }, [currentQuestion, groupedQuestions, hasMultipleParts]);
 
     const togglePart = (partIdx: number) => {
         setExpandedParts(prev => {

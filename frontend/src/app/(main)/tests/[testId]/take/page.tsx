@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Section, Question, SectionType, MCQData, DropdownData, TestType } from '@/types/test';
@@ -16,12 +17,9 @@ import SectionProgress from '@/components/test/SectionProgress';
 import SubmitConfirmation from '@/components/test/SubmitConfirmation';
 import TestFooter from '@/components/test/TestFooter';
 import GroupInstruction from '@/components/test/GroupInstruction';
-import { renderFormattedText } from '@/components/test/GroupInstruction';
 import { useTimer } from '@/hooks/useTimer';
 import { sectionTypeLabel } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { useLayout } from '@/contexts/LayoutContext';
-import { EnterFullScreenIcon, ExitFullScreenIcon } from '@radix-ui/react-icons';
 import CongratulationsModal from '@/components/test/CongratulationsModal';
 import QuestionNavigator from '@/components/test/QuestionNavigator';
 
@@ -50,8 +48,7 @@ function TestTakingContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { state, dispatch, autoSave, submitSection, submitTest } = useTestSession();
-  const { isFocusMode, toggleFocusMode } = useLayout();
+  const { state, dispatch, submitSection, submitTest } = useTestSession();
 
   const testId = params.testId as string;
   const attemptIdParam = searchParams.get('attemptId');
@@ -126,12 +123,12 @@ function TestTakingContent() {
     };
   }, [isResizing, resize, stopResizing]);
 
-  const handleTimeUp = useCallback(async () => {
+  const handleTimeUp = async () => {
     if (state.currentSectionType) {
       await submitSection(state.currentSectionType);
       advanceToNextSection();
     }
-  }, [state.currentSectionType, submitSection]);
+  };
 
   const timer = useTimer({ onTimeUp: handleTimeUp });
 
@@ -182,6 +179,7 @@ function TestTakingContent() {
       }
     }
     init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testId, attemptId, mode, practiceSection]);
 
   async function loadSectionQuestions(
@@ -321,7 +319,7 @@ function TestTakingContent() {
     }
   };
 
-  const handleAudioEnd = useCallback(() => {
+  const handleAudioEnd = () => {
     if (testType === 'toefl_itp' && state.currentSectionType === 'listening') {
       // Auto-advance when audio ends
       // We use a small timeout to allow the user to see the "Audio Finished" state briefly if needed,
@@ -330,7 +328,7 @@ function TestTakingContent() {
       // This simple call is usually safe as it updates state based on current state.
       handleNextQuestion();
     }
-  }, [testType, state.currentSectionType, handleNextQuestion]);
+  };
 
 
   const handlePreviousQuestion = () => {
@@ -1548,20 +1546,26 @@ function TestTakingContent() {
                                   {currentSectionPart.taskDescription}
                                 </div>
                                 {currentSectionPart.imageUrl && (
-                                  <img
+                                  <Image
                                     src={currentSectionPart.imageUrl}
                                     alt="Task chart/graph"
                                     className="mt-4 mb-4 rounded-lg border border-gray-200 max-w-full"
+                                    width={1200}
+                                    height={800}
+                                    unoptimized
                                   />
                                 )}
                               </>
                             ) : (
                               <>
                                 {currentSectionPart.imageUrl && (
-                                  <img
+                                  <Image
                                     src={currentSectionPart.imageUrl}
                                     alt="Task chart/graph"
                                     className="mb-4 rounded-lg border border-gray-200 max-w-full"
+                                    width={1200}
+                                    height={800}
+                                    unoptimized
                                   />
                                 )}
                                 <div className="prose prose-sm text-gray-900 prose-p:text-gray-900 prose-headings:text-gray-900 prose-li:text-gray-900 max-w-none">

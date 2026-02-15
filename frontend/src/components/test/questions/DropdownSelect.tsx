@@ -21,7 +21,7 @@ export default function DropdownSelect({
   correctAnswer,
   displayNumber,
 }: DropdownSelectProps) {
-  const currentAnswer = answer || {};
+  const currentAnswer = useMemo(() => answer || {}, [answer]);
 
   const handleSelect = useCallback(
     (dropdownKey: string, value: string) => {
@@ -34,7 +34,7 @@ export default function DropdownSelect({
     [readOnly, currentAnswer, onChange]
   );
 
-  const getDropdownStatus = (
+  const getDropdownStatus = useCallback((
     key: string
   ): 'correct' | 'incorrect' | null => {
     if (!readOnly || !correctAnswer) return null;
@@ -42,18 +42,11 @@ export default function DropdownSelect({
     const correctVal = correctAnswer[key];
     if (!userVal) return 'incorrect';
     return userVal === correctVal ? 'correct' : 'incorrect';
-  };
+  }, [readOnly, correctAnswer, currentAnswer]);
 
   // Parse the context text and replace placeholders {1}, {2}, etc. with dropdowns
   const renderedContent = useMemo(() => {
     const dropdownKeys = Object.keys(data.dropdowns);
-    // Sort keys to ensure consistent ordering for display number calculation
-    const sortedKeys = [...dropdownKeys].sort((a, b) => {
-      const numA = parseInt(a, 10);
-      const numB = parseInt(b, 10);
-      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-      return a.localeCompare(b);
-    });
 
     // Build a regex to match all placeholders like {1}, {2}, etc.
     const pattern = new RegExp(
@@ -72,11 +65,6 @@ export default function DropdownSelect({
         const status = getDropdownStatus(key);
 
         // Calculate placeholder text: use displayNumber if provided, otherwise fall back to key
-        const keyIndex = sortedKeys.indexOf(key);
-        const placeholderNum = displayNumber !== undefined
-          ? (typeof displayNumber === 'number' ? displayNumber + keyIndex : displayNumber)
-          : key;
-
         const selectStyle = (() => {
           if (status === 'correct') return 'border-green-400 bg-green-50 text-green-800';
           if (status === 'incorrect') return 'border-red-400 bg-red-50 text-red-800';
@@ -120,7 +108,7 @@ export default function DropdownSelect({
       // Regular text
       return <span key={index}>{part}</span>;
     });
-  }, [data, currentAnswer, readOnly, correctAnswer, handleSelect, displayNumber]);
+  }, [data, currentAnswer, readOnly, handleSelect, getDropdownStatus]);
 
   return (
     <div>

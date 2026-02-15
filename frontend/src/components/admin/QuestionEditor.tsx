@@ -37,7 +37,6 @@ interface QuestionFormData {
 }
 
 interface QuestionEditorProps {
-  sectionId: string;
   testType?: TestType;
   sectionType?: SectionType;
   partNumber?: number;
@@ -287,7 +286,6 @@ function normalizeCorrectAnswer(type: QuestionType, answer: any): any {
 // ---------- Component ----------
 
 export default function QuestionEditor({
-  sectionId,
   testType,
   sectionType,
   partNumber,
