@@ -123,6 +123,10 @@ body {
   align-items: start;
 }
 
+.toefl-itp-passage-content .toefl-line-row.paragraph-start {
+  margin-top: 0.85em;
+}
+
 .toefl-itp-passage-content .toefl-line-marker {
   min-height: 1.6em;
   padding-right: 0.5rem;
@@ -141,6 +145,10 @@ body {
   white-space: pre;
   line-height: 1.6;
   color: inherit;
+}
+
+.toefl-itp-passage-content .toefl-line-text.paragraph-start {
+  text-indent: 2em;
 }
 
 /* Legacy HTML passages (backward compatibility) */

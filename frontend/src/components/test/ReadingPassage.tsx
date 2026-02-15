@@ -71,6 +71,31 @@ function ReadingPassage({
     };
   }, [content, variant, isMounted]);
 
+  const renderedToeflLines = useMemo(() => {
+    if (variant !== 'toefl_itp' || processedContent.mode !== 'toefl_plain') return [];
+
+    const result: { text: string; lineNumber: number; paragraphStart: boolean }[] = [];
+    let lineNumber = 0;
+    let paragraphStart = true;
+
+    for (const rawLine of processedContent.lines) {
+      if (rawLine.trim() === '') {
+        paragraphStart = true;
+        continue;
+      }
+
+      lineNumber += 1;
+      result.push({
+        text: rawLine,
+        lineNumber,
+        paragraphStart,
+      });
+      paragraphStart = false;
+    }
+
+    return result;
+  }, [variant, processedContent]);
+
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Scrollable Content */}
@@ -93,18 +118,23 @@ function ReadingPassage({
           >
             {variant === 'toefl_itp' && processedContent.mode === 'toefl_plain' ? (
               <div className="toefl-line-grid">
-                {processedContent.lines.map((line, index) => {
-                  const lineNumber = index + 1;
+                {renderedToeflLines.map((line, index) => {
+                  const lineNumber = line.lineNumber;
                   const showLineLabel = lineNumber % 5 === 0;
 
                   return (
-                    <div key={index} className="toefl-line-row">
+                    <div
+                      key={index}
+                      className={`toefl-line-row${line.paragraphStart ? ' paragraph-start' : ''}`}
+                    >
                       <div className="toefl-line-marker" aria-hidden="true">
                         {showLineLabel && (
                           <span>{`Line ${lineNumber}`}</span>
                         )}
                       </div>
-                      <pre className="toefl-line-text">{line || '\u00A0'}</pre>
+                      <pre className={`toefl-line-text${line.paragraphStart ? ' paragraph-start' : ''}`}>
+                        {line.text}
+                      </pre>
                     </div>
                   );
                 })}
