@@ -72,7 +72,7 @@ export default function SectionProgress({
               <div className="flex flex-col items-center gap-1">
                 <div
                   className={`
-                    flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors
+                    flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all duration-500 ease-out
                     ${status === 'completed'
                       ? 'border-green-500 bg-green-500 text-white'
                       : status === 'current'
@@ -90,7 +90,7 @@ export default function SectionProgress({
                   )}
                 </div>
                 <span
-                  className={`text-xs font-medium ${status === 'completed'
+                  className={`text-xs font-medium transition-colors duration-500 ease-out ${status === 'completed'
                     ? 'text-green-600'
                     : status === 'current'
                       ? 'text-blue-600'
@@ -103,10 +103,13 @@ export default function SectionProgress({
 
               {/* Connector Line */}
               {!isLast && (
-                <div className="mx-2 mt-[-1.25rem] h-0.5 flex-1">
+                <div className="mx-2 mt-[-1.25rem] h-0.5 flex-1 overflow-hidden rounded-full bg-gray-200">
                   <div
-                    className={`h-full transition-colors ${completedSections.has(section) ? 'bg-green-500' : 'bg-gray-200'
-                      }`}
+                    className={`
+                      h-full origin-left transform rounded-full bg-green-500
+                      transition-transform duration-500 ease-out
+                      ${completedSections.has(section) ? 'scale-x-100' : 'scale-x-0'}
+                    `}
                   />
                 </div>
               )}

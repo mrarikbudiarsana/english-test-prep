@@ -67,7 +67,9 @@ function TestTakingContent() {
   const [activePartIndex, setActivePartIndex] = useState(0);
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [viewingDirections, setViewingDirections] = useState(false); // Controls interstitial directions pages
+  const [isDirectionsTransitioning, setIsDirectionsTransitioning] = useState(false);
   const [toeflReviewUnlocked, setToeflReviewUnlocked] = useState(false);
+  const directionsTransitionTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [testTitle, setTestTitle] = useState<string>('');
   const [testType, setTestType] = useState<TestType>('academic'); // Default, updated on load
@@ -122,6 +124,14 @@ function TestTakingContent() {
       window.removeEventListener('mouseup', stopResizing);
     };
   }, [isResizing, resize, stopResizing]);
+
+  useEffect(() => {
+    return () => {
+      if (directionsTransitionTimeoutRef.current) {
+        clearTimeout(directionsTransitionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleTimeUp = async () => {
     if (state.currentSectionType) {
@@ -252,6 +262,15 @@ function TestTakingContent() {
 
   const handleAnswerChange = (questionId: string, answer: any) => {
     dispatch({ type: 'SET_ANSWER', payload: { questionId, answer } });
+
+    // TOEFL ITP Listening Part B/C shows multiple questions at once.
+    // Keep navigator/current focus synced when user answers any question directly.
+    if (isPartBCMode) {
+      const answeredQuestionIndex = questions.findIndex(q => q.id === questionId);
+      if (answeredQuestionIndex !== -1 && answeredQuestionIndex !== currentQuestionIndex) {
+        selectQuestionIndex(answeredQuestionIndex);
+      }
+    }
   };
 
   const handleToggleFlag = (questionId: string) => {
@@ -285,6 +304,17 @@ function TestTakingContent() {
       setCurrentQuestionIndex(reviewIndex);
     }
   }, [questions, state.answeredQuestions]);
+
+  const exitDirectionsView = useCallback(() => {
+    if (!viewingDirections) return;
+    if (isDirectionsTransitioning) return;
+
+    setIsDirectionsTransitioning(true);
+    directionsTransitionTimeoutRef.current = setTimeout(() => {
+      setViewingDirections(false);
+      setIsDirectionsTransitioning(false);
+    }, 220);
+  }, [isDirectionsTransitioning, viewingDirections]);
 
   const handleNextQuestion = () => {
     // TOEFL ITP Navigation Logic for Listening
@@ -358,7 +388,7 @@ function TestTakingContent() {
 
     if (dir === 'next') {
       if (viewingDirections) {
-        setViewingDirections(false);
+        exitDirectionsView();
         return;
       }
 
@@ -437,7 +467,7 @@ function TestTakingContent() {
           if (lastQOfPrevPart) {
             setActivePartIndex(prevPartIdx);
             setCurrentQuestionIndex(questions.indexOf(lastQOfPrevPart));
-            setViewingDirections(false);
+            exitDirectionsView();
           }
         }
         // If first part, do nothing (keep showing directions)
@@ -786,7 +816,12 @@ function TestTakingContent() {
           {testType === 'toefl_itp' && state.currentSectionType !== 'reading' ? (
             <div className="max-w-7xl mx-auto px-4 py-8 h-full flex flex-col">
               {viewingDirections ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-white rounded-xl border border-gray-200 shadow-sm animate-in fade-in duration-300">
+                <div
+                  className={cn(
+                    "flex-1 flex flex-col items-center justify-center text-center p-8 bg-white rounded-xl border border-gray-200 shadow-sm transition-all duration-200 ease-out",
+                    isDirectionsTransitioning ? "opacity-0 translate-y-1 scale-[0.99]" : "opacity-100 translate-y-0 scale-100"
+                  )}
+                >
                   <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-6">
                     <HiBookOpen className="w-8 h-8" />
                   </div>
@@ -797,7 +832,7 @@ function TestTakingContent() {
                     {currentSectionPart.instructions || 'Please read the instructions carefully before proceeding.'}
                   </div>
                   <button
-                    onClick={() => setViewingDirections(false)}
+                    onClick={exitDirectionsView}
                     className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
                   >
                     Start {currentSectionPart.title ? currentSectionPart.title : 'Part'}
@@ -1089,7 +1124,12 @@ function TestTakingContent() {
 
                   {/* TOEFL ITP Reading Directions Page */}
                   {isToeflItpReading && viewingDirections ? (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-white">
+                    <div
+                      className={cn(
+                        "flex-1 flex flex-col items-center justify-center text-center p-8 bg-white transition-all duration-200 ease-out",
+                        isDirectionsTransitioning ? "opacity-0 translate-y-1 scale-[0.99]" : "opacity-100 translate-y-0 scale-100"
+                      )}
+                    >
                       <div className="max-w-3xl mx-auto">
                         <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-6 mx-auto">
                           <HiBookOpen className="w-8 h-8" />
@@ -1103,7 +1143,7 @@ function TestTakingContent() {
                           </p>
                         </div>
                         <button
-                          onClick={() => setViewingDirections(false)}
+                          onClick={exitDirectionsView}
                           className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
                         >
                           Begin Reading Section
