@@ -33,11 +33,15 @@ const SELECT_COLUMNS = `
 const scoreFieldMap: Record<string, string> = {
   listeningRaw: 'listening_raw',
   listeningBand: 'listening_band',
+  listeningScore: 'listening_score',
   readingRaw: 'reading_raw',
   readingBand: 'reading_band',
+  readingScore: 'reading_score',
+  structureScore: 'structure_score',
   writingBand: 'writing_band',
   speakingBand: 'speaking_band',
   overallBand: 'overall_band',
+  overallScore: 'overall_score',
   writingFeedback: 'writing_feedback',
   speakingFeedback: 'speaking_feedback',
 };
@@ -203,11 +207,15 @@ export async function updateScores(
   scores: Partial<{
     listeningRaw: number;
     listeningBand: number;
+    listeningScore: number;
     readingRaw: number;
     readingBand: number;
+    readingScore: number;
+    structureScore: number;
     writingBand: number;
     speakingBand: number;
     overallBand: number;
+    overallScore: number;
     writingFeedback: any;
     speakingFeedback: any;
   }>,

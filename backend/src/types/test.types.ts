@@ -1,5 +1,5 @@
 export type TestType = 'academic' | 'general_training' | 'toefl_ibt' | 'toefl_itp' | 'pte_academic';
-export type SectionType = 'listening' | 'reading' | 'writing' | 'speaking';
+export type SectionType = 'listening' | 'reading' | 'writing' | 'speaking' | 'structure';
 export type QuestionType =
   | 'multiple_choice'
   | 'true_false_not_given'

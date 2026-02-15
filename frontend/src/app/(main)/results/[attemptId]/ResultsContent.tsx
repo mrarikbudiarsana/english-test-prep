@@ -275,20 +275,22 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     // For objective sections (listening/reading): show if score > 0 or raw > 0
     // For subjective sections (writing/speaking): show if score exists and > 0
     const allSections = isToeflItp ? [
-        { type: 'listening', label: 'Listening', score: attempt.listeningScore, raw: attempt.listeningRaw, total: 50 },
-        { type: 'structure', label: 'Structure', score: attempt.structureScore, raw: attempt.structureScore, total: 40 },
-        { type: 'reading', label: 'Reading', score: attempt.readingScore, raw: attempt.readingRaw, total: 50 },
+        { type: 'listening', label: 'Listening Comprehension', score: attempt.listeningScore, raw: attempt.listeningRaw, total: 50 },
+        { type: 'structure', label: 'Structure and Written Expression', score: attempt.structureScore, raw: attempt.structureScore, total: 40 },
+        { type: 'reading', label: 'Reading Comprehension', score: attempt.readingScore, raw: attempt.readingRaw, total: 50 },
     ] : [
         { type: 'listening', label: 'Listening', score: attempt.listeningBand, raw: attempt.listeningRaw, total: 40 },
         { type: 'reading', label: 'Reading', score: attempt.readingBand, raw: attempt.readingRaw, total: 40 },
         { type: 'writing', label: 'Writing', score: attempt.writingBand, raw: null, total: null },
         { type: 'speaking', label: 'Speaking', score: attempt.speakingBand, raw: null, total: null },
     ];
-    const sections = allSections.filter(s => {
-        const hasScore = s.score !== null && s.score !== undefined && s.score > 0;
-        const hasRaw = s.raw !== null && s.raw !== undefined && s.raw > 0;
-        return hasScore || hasRaw;
-    });
+    const sections = isToeflItp
+        ? allSections
+        : allSections.filter(s => {
+            const hasScore = s.score !== null && s.score !== undefined && s.score > 0;
+            const hasRaw = s.raw !== null && s.raw !== undefined && s.raw > 0;
+            return hasScore || hasRaw;
+        });
 
     const writingFeedback = attempt.writingFeedback as WritingFeedback | null | undefined;
     const speakingFeedback = attempt.speakingFeedback as SpeakingFeedback | null | undefined;
@@ -300,11 +302,13 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     // For partial tests, use the single section's score; for full tests, use overall
     const displayScore = isPartialTest && singleSection
         ? singleSection.score
-        : (isToeflItp ? attempt.overallScore : attempt.overallBand);
-    const sectionScoreLabel = isBandScale ? 'Band Score' : 'Score';
+        : (isToeflItp ? (attempt.overallScore ?? attempt.overallBand) : attempt.overallBand);
+    const sectionScoreLabel = isToeflItp ? 'Scaled Score' : (isBandScale ? 'Band Score' : 'Score');
     const displayLabel = isPartialTest && singleSection
         ? `Your ${examName} ${singleSection.label} ${sectionScoreLabel}`
-        : (isBandScale ? `Your ${examName} Overall Band Score` : `Your ${examName} Overall Score`);
+        : (isToeflItp
+            ? 'Your TOEFL ITP Total Score'
+            : (isBandScale ? `Your ${examName} Overall Band Score` : `Your ${examName} Overall Score`));
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">

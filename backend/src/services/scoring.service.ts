@@ -317,9 +317,9 @@ export function calculateOverallBand(
 ): number {
   if (testType === 'toefl_itp') {
     // Formula: (Listening + Structure + Reading) * 10 / 3
-    const l = listening || 31;
-    const s = structure || 31;
-    const r = reading || 31;
+    const l = listening ?? 31;
+    const s = structure ?? 31;
+    const r = reading ?? 31;
     const total = (l + s + r) * 10 / 3;
     return Math.round(total); // Usually rounded to nearest whole number
   }

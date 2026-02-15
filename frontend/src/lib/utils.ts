@@ -119,7 +119,8 @@ export function testTypeShortLabel(testType: string): string {
 
 export function examNameFromTestType(testType: string): string {
   if (testType === 'academic' || testType === 'general_training') return 'IELTS';
-  if (testType === 'toefl_ibt' || testType === 'toefl_itp') return 'TOEFL';
+  if (testType === 'toefl_ibt') return 'TOEFL iBT';
+  if (testType === 'toefl_itp') return 'TOEFL ITP';
   if (testType === 'pte_academic') return 'PTE';
   return 'English';
 }

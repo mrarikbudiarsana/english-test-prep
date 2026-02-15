@@ -61,7 +61,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   } else {
     skillLabel = 'Overall';
     score = isToeflItp
-      ? (shareInfo.overallScore ? shareInfo.overallScore.toString() : '-')
+      ? ((shareInfo.overallScore ?? shareInfo.overallBand) ? (shareInfo.overallScore ?? shareInfo.overallBand)!.toString() : '-')
       : (shareInfo.overallBand ? shareInfo.overallBand.toString() : '-');
     ogTitle = `My Result: ${testTitle}`;
     const fullScorePrefix = isBandScale ? 'Band ' : '';

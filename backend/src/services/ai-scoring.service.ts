@@ -4,7 +4,7 @@ import * as attemptModel from '../models/attempt.model';
 import * as sectionModel from '../models/section.model';
 import * as responseModel from '../models/response.model';
 import * as userModel from '../models/user.model';
-import { calculateOverallBand } from './scoring.service';
+import { calculateOverallBand, scoreObjectiveSection } from './scoring.service';
 import * as emailService from './email.service';
 import { NotFoundError } from '../middleware/errorHandler';
 
@@ -588,14 +588,32 @@ export async function finalizeScoring(attemptId: string) {
   let overall = 0;
 
   if (testType === 'toefl_itp') {
-    // For TOEFL iTP, we need to ensure all sections are scored.
-    // Structure is objective, so it should have been scored by scoreObjectiveSection.
-    // Listening and Reading are also objective.
+    // Ensure all objective sections are scored before computing the TOEFL ITP total.
+    let listeningScore = attempt.listening_score !== null && attempt.listening_score !== undefined
+      ? parseFloat(attempt.listening_score)
+      : null;
+    let structureScore = attempt.structure_score !== null && attempt.structure_score !== undefined
+      ? parseFloat(attempt.structure_score)
+      : null;
+    let readingScore = attempt.reading_score !== null && attempt.reading_score !== undefined
+      ? parseFloat(attempt.reading_score)
+      : null;
+
+    if (listeningScore === null) {
+      listeningScore = await scoreObjectiveSection(attemptId, 'listening', testType);
+    }
+    if (structureScore === null) {
+      structureScore = await scoreObjectiveSection(attemptId, 'structure', testType);
+    }
+    if (readingScore === null) {
+      readingScore = await scoreObjectiveSection(attemptId, 'reading', testType);
+    }
+
     overall = calculateOverallBand(
-      attempt.listening_score,
-      attempt.reading_score,
+      listeningScore,
+      readingScore,
       0, 0,
-      attempt.structure_score,
+      structureScore,
       testType
     );
   } else {
@@ -613,12 +631,20 @@ export async function finalizeScoring(attemptId: string) {
   }
 
   // 3. Update attempt with overall score
-  await query(
-    `UPDATE attempts SET overall_band = $1, status = 'completed' WHERE id = $2`,
-    [overall, attemptId]
-  );
+  if (testType === 'toefl_itp') {
+    await query(
+      `UPDATE attempts SET overall_score = $1, status = 'completed' WHERE id = $2`,
+      [overall, attemptId]
+    );
+    await attemptModel.updateScores(attemptId, { overallScore: overall });
+  } else {
+    await query(
+      `UPDATE attempts SET overall_band = $1, status = 'completed' WHERE id = $2`,
+      [overall, attemptId]
+    );
+    await attemptModel.updateScores(attemptId, { overallBand: overall });
+  }
 
-  await attemptModel.updateScores(attemptId, { overallBand: overall });
   await attemptModel.complete(attemptId);
 
   // Send results-ready email (fire-and-forget)

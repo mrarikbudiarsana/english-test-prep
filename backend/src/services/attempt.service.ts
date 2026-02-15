@@ -220,13 +220,13 @@ export async function getShareInfo(id: string) {
   const sections: { type: string; label: string; score: number }[] = [];
   if (isToeflItp) {
     if (attempt.listeningScore && attempt.listeningScore > 0) {
-      sections.push({ type: 'listening', label: 'Listening', score: attempt.listeningScore });
+      sections.push({ type: 'listening', label: 'Listening Comprehension', score: attempt.listeningScore });
     }
     if (attempt.structureScore && attempt.structureScore > 0) {
-      sections.push({ type: 'structure', label: 'Structure', score: attempt.structureScore });
+      sections.push({ type: 'structure', label: 'Structure and Written Expression', score: attempt.structureScore });
     }
     if (attempt.readingScore && attempt.readingScore > 0) {
-      sections.push({ type: 'reading', label: 'Reading', score: attempt.readingScore });
+      sections.push({ type: 'reading', label: 'Reading Comprehension', score: attempt.readingScore });
     }
   } else {
     if (attempt.listeningBand && attempt.listeningBand > 0) {
@@ -306,7 +306,7 @@ export async function submitSection(attemptId: string, sectionType: SectionType)
   }
 
   // Auto-score objective sections
-  if (sectionType === 'listening' || sectionType === 'reading') {
+  if (sectionType === 'listening' || sectionType === 'reading' || sectionType === 'structure') {
     const test = await testModel.findById(attempt.testId);
     if (!test) {
       throw new NotFoundError('Test not found');
@@ -351,8 +351,10 @@ export async function submitTest(attemptId: string) {
     throw new NotFoundError('Test not found');
   }
 
-  // Auto-score listening and reading if not already scored
-  if (attempt.listeningBand === null) {
+  const isToeflItp = test.testType === 'toefl_itp';
+
+  // Auto-score objective sections if not already scored
+  if ((isToeflItp ? attempt.listeningScore : attempt.listeningBand) === null) {
     try {
       await scoringService.scoreObjectiveSection(attemptId, 'listening', test.testType);
     } catch (err) {
@@ -360,11 +362,19 @@ export async function submitTest(attemptId: string) {
     }
   }
 
-  if (attempt.readingBand === null) {
+  if ((isToeflItp ? attempt.readingScore : attempt.readingBand) === null) {
     try {
       await scoringService.scoreObjectiveSection(attemptId, 'reading', test.testType);
     } catch (err) {
       console.error('Error auto-scoring reading:', err);
+    }
+  }
+
+  if (isToeflItp && attempt.structureScore === null) {
+    try {
+      await scoringService.scoreObjectiveSection(attemptId, 'structure', test.testType);
+    } catch (err) {
+      console.error('Error auto-scoring structure:', err);
     }
   }
 
