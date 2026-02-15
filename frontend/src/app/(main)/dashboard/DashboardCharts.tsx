@@ -80,7 +80,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
     // Prepare data for Progress Chart (reverse recentAttempts to show oldest to newest)
     const progressData = [...recentAttempts].reverse().slice(-10).map((attempt, index) => ({
         name: `Test ${index + 1}`,
-        score: attempt.overallBand || 0,
+        score: attempt.overallBand ?? attempt.overallScore ?? 0,
         date: new Date(attempt.completedAt).toLocaleDateString(),
         title: attempt.testTitle,
     }));

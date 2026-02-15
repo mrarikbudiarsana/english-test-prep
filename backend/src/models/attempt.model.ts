@@ -321,11 +321,15 @@ export async function getStatsForUser(userId: string, examType?: string) {
       a.section_started_at AS "sectionStartedAt",
       a.listening_raw AS "listeningRaw",
       a.listening_band AS "listeningBand",
+      a.listening_score AS "listeningScore",
       a.reading_raw AS "readingRaw",
       a.reading_band AS "readingBand",
+      a.reading_score AS "readingScore",
+      a.structure_score AS "structureScore",
       a.writing_band AS "writingBand",
       a.speaking_band AS "speakingBand",
       a.overall_band AS "overallBand",
+      a.overall_score AS "overallScore",
       a.writing_feedback AS "writingFeedback",
       a.speaking_feedback AS "speakingFeedback",
       a.created_at AS "createdAt",
@@ -359,21 +363,23 @@ export async function getStatsForUser(userId: string, examType?: string) {
   }
 
   // Calculate averages
-  const validAttempts = completedAttempts.filter((a: any) => a.overallBand !== null);
+  const validAttempts = completedAttempts.filter((a: any) => a.overallBand !== null || a.overallScore !== null);
   const avgBand = validAttempts.length > 0
-    ? validAttempts.reduce((sum: number, a: any) => sum + a.overallBand, 0) / validAttempts.length
+    ? validAttempts.reduce((sum: number, a: any) => sum + (a.overallBand ?? a.overallScore ?? 0), 0) / validAttempts.length
     : null;
 
   const bestBand = validAttempts.length > 0
-    ? Math.max(...validAttempts.map((a: any) => a.overallBand))
+    ? Math.max(...validAttempts.map((a: any) => a.overallBand ?? a.overallScore ?? 0))
     : null;
 
   // Calculate section averages
+  // For TOEFL ITP, we use _score fields. For others, _band fields.
   const sectionAverages = {
-    listening: calculateSectionAverage(completedAttempts, 'listeningBand'),
-    reading: calculateSectionAverage(completedAttempts, 'readingBand'),
+    listening: calculateSectionAverage(completedAttempts, 'listeningBand') || calculateSectionAverage(completedAttempts, 'listeningScore'),
+    reading: calculateSectionAverage(completedAttempts, 'readingBand') || calculateSectionAverage(completedAttempts, 'readingScore'),
     writing: calculateSectionAverage(completedAttempts, 'writingBand'),
     speaking: calculateSectionAverage(completedAttempts, 'speakingBand'),
+    structure: calculateSectionAverage(completedAttempts, 'structureScore'),
   };
 
   return {
@@ -384,6 +390,7 @@ export async function getStatsForUser(userId: string, examType?: string) {
       id: a.id,
       testTitle: a.testTitle,
       overallBand: a.overallBand,
+      overallScore: a.overallScore,
       status: a.status,
       completedAt: a.completedAt,
     })),
