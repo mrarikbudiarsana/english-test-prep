@@ -101,39 +101,39 @@ body {
   border-bottom: 1px solid #d1d5db;
 }
 
-/* Passage Content Container */
+/* Passage wrapper - contains line numbers and text */
 .toefl-itp-passage-content {
   position: relative;
-  padding-left: 3rem;
+  padding-left: 3.5rem;
   font-size: 0.9375rem;
-  line-height: 1.85;
+  line-height: 1.6;
   color: #1f2937;
 }
 
-/* Paragraph styling */
-.toefl-itp-passage-content p {
-  margin-bottom: 1.25rem;
-  text-align: justify;
-  text-indent: 0;
-}
-
-/* Line number labels - positioned in left margin like official TOEFL */
-.toefl-itp-passage-content .line-label {
+/* Line numbers container - absolutely positioned in left margin */
+.toefl-itp-passage-content .line-numbers {
   position: absolute;
   left: 0;
-  width: 2.5rem;
-  text-align: left;
+  top: 0;
+  width: 3rem;
   font-size: 0.8125rem;
   font-style: italic;
   color: #6b7280;
   font-family: system-ui, -apple-system, sans-serif;
   user-select: none;
-  margin-top: 0.25rem;
 }
 
-/* Wrapper div for passage (from HTML content) */
+/* Individual line number - positioned by top value */
+.toefl-itp-passage-content .line-numbers .ln {
+  position: absolute;
+  right: 0.5rem;
+  text-align: right;
+}
+
+/* Passage text - preserves manual line breaks */
 .toefl-itp-passage-content .toefl-passage {
-  /* Inherits parent styles */
+  white-space: pre-line;
+  line-height: 1.6;
 }
 
 /* Text selection highlight */

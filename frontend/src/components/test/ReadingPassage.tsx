@@ -11,6 +11,10 @@ interface ReadingPassageProps {
   variant?: 'default' | 'toefl_itp';
 }
 
+const TOEFL_LINE_HEIGHT = 1.6;
+const TOEFL_FONT_SIZE_PX = 15;
+const TOEFL_LINE_HEIGHT_PX = TOEFL_FONT_SIZE_PX * TOEFL_LINE_HEIGHT;
+
 function ReadingPassage({
   title,
   content,
@@ -34,51 +38,41 @@ function ReadingPassage({
       .replace(/'/g, '&#39;');
 
   const processedContent = useMemo(() => {
-    if (!content) return '';
+    if (!content) return { html: '', lineCount: 0 };
 
     // Default variant: simple newline to <br> conversion
     if (variant !== 'toefl_itp') {
-      return content.replace(/\n/g, '<br />');
+      return { html: content.replace(/\n/g, '<br />'), lineCount: 0 };
     }
 
-    // TOEFL ITP variant: Check if content already has HTML tags
+    // TOEFL ITP variant: Check if content already has HTML tags (legacy format)
     if (containsHtmlTags(content)) {
-      // Content has HTML - sanitize and render directly
-      return isMounted ? sanitizeToeflPassage(content) : escapeHtml(content);
+      // Content has HTML - sanitize and render directly (legacy support)
+      const html = isMounted ? sanitizeToeflPassage(content) : escapeHtml(content);
+      return { html, lineCount: 0 };
     }
 
-    // Plain text content - process into structured HTML
+    // Plain text content with manual line breaks - new format
+    // Count lines (excluding empty lines at start/end)
     const lines = content.replace(/\r\n/g, '\n').split('\n');
-    const blocks: string[] = [];
-    let paragraphBuffer: string[] = [];
+    const lineCount = lines.filter(l => l.trim() !== '').length;
 
-    const flushParagraph = () => {
-      if (paragraphBuffer.length === 0) return;
-      blocks.push(`<p>${escapeHtml(paragraphBuffer.join(' '))}</p>`);
-      paragraphBuffer = [];
-    };
+    // Escape and preserve the content structure
+    const html = `<div class="toefl-passage">${escapeHtml(content)}</div>`;
 
-    for (const rawLine of lines) {
-      const trimmed = rawLine.trim();
-
-      if (!trimmed) {
-        flushParagraph();
-        continue;
-      }
-
-      // Detect line markers like "Line 5" or "Line 10"
-      if (/^Line\s+\d+$/i.test(trimmed)) {
-        flushParagraph();
-        blocks.push(`<span class="line-label">${escapeHtml(trimmed)}</span>`);
-        continue;
-      }
-
-      paragraphBuffer.push(trimmed);
-    }
-
-    flushParagraph();
-    return blocks.join('');
+    return { html, lineCount };
   }, [content, variant, isMounted]);
+
+  // Generate line numbers for TOEFL ITP (every 5 lines)
+  const lineNumbers = useMemo(() => {
+    if (variant !== 'toefl_itp' || processedContent.lineCount === 0) return null;
+
+    const numbers: number[] = [];
+    for (let i = 5; i <= processedContent.lineCount; i += 5) {
+      numbers.push(i);
+    }
+    return numbers;
+  }, [variant, processedContent.lineCount]);
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -99,8 +93,24 @@ function ReadingPassage({
               ? "toefl-itp-passage-content"
               : "prose prose-sm max-w-none text-gray-800 leading-relaxed prose-headings:text-gray-900 prose-headings:font-semibold prose-p:mb-4 prose-p:text-gray-700 prose-strong:text-gray-900 prose-em:text-gray-600 selection:bg-blue-100"
             }
-            dangerouslySetInnerHTML={{ __html: processedContent }}
-          />
+          >
+            {/* Line numbers for TOEFL ITP */}
+            {lineNumbers && lineNumbers.length > 0 && (
+              <div className="line-numbers" aria-hidden="true">
+                {lineNumbers.map(num => (
+                  <span
+                    key={num}
+                    className="ln"
+                    style={{ top: `${(num - 0.5) * TOEFL_LINE_HEIGHT_PX}px` }}
+                  >
+                    {num}
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* Passage content */}
+            <div dangerouslySetInnerHTML={{ __html: processedContent.html }} />
+          </div>
         </TextHighlighter>
       </div>
     </div>
