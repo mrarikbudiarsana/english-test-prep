@@ -623,13 +623,13 @@ function TestTakingContent() {
   // Sync activePartIndex with the currently selected question so footer navigation
   // (next/previous/question click) keeps the visible part in sync across sections.
   useEffect(() => {
-    if (currentQuestion) {
+    if (currentQuestion && currentSectionParts.length > 0) {
       const partIndex = currentSectionParts.findIndex(p => p.id === currentQuestion.sectionId);
-      if (partIndex !== -1 && partIndex !== activePartIndex) {
+      if (partIndex !== -1) {
         setActivePartIndex(partIndex);
       }
     }
-  }, [currentQuestion, currentSectionParts, activePartIndex]);
+  }, [currentQuestion, currentSectionParts]);
 
   // Filter questions for the active part
   const activePartQuestions = useMemo(() => {
@@ -1125,10 +1125,10 @@ function TestTakingContent() {
                     {/* Left Pane: Reading Passage */}
                     <div
                       className={cn(
-                        "h-full border-r border-gray-200 bg-white shrink-0",
-                        isToeflItpReading && "shadow-[2px_0_8px_rgba(0,0,0,0.04)]"
+                        "h-full border-r border-gray-200 bg-white",
+                        isToeflItpReading ? "flex-1" : "shrink-0"
                       )}
-                      style={{ width: `${isToeflItpReading ? 55 : leftPaneWidth}%` }}
+                      style={isToeflItpReading ? undefined : { width: `${leftPaneWidth}%` }}
                     >
                       <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
                         {currentSectionPart && (
@@ -1151,24 +1151,24 @@ function TestTakingContent() {
                       </div>
                     )}
 
-                    {/* Right Pane: Questions */}
+                    {/* Middle Pane: Questions */}
                     <div
                       className={cn(
-                        "h-full grow min-w-0 flex",
-                        isToeflItpReading ? "toefl-itp-question-panel" : "bg-white"
+                        "h-full min-w-0 flex flex-col",
+                        isToeflItpReading ? "flex-1 bg-white border-r border-gray-200" : "grow bg-white"
                       )}
                     >
+                      {/* Question content area */}
                       <div
                         className={cn(
                           "flex-1 overflow-y-auto",
-                          isToeflItpReading ? "px-6 py-5" : "px-6 py-6",
-                          isToeflItpReading && activePartQuestions.length === 1 && "flex items-start justify-center pt-8"
+                          isToeflItpReading ? "px-8 py-6" : "px-6 py-6"
                         )}
                       >
                         <div
                           className={cn(
-                            isToeflItpReading && activePartQuestions.length === 1
-                              ? "toefl-itp-question-card w-full max-w-xl space-y-6"
+                            isToeflItpReading
+                              ? ""
                               : "space-y-8 max-w-2xl"
                           )}
                         >
@@ -1453,53 +1453,50 @@ function TestTakingContent() {
                           })()}
 
                           {/* Bottom spacer for footer */}
-                          <div className="h-20" />
+                          {!isToeflItpReading && <div className="h-20" />}
                         </div>
                       </div>
-
-                      {/* Right-side Question Navigator for Reading */}
-                      {testType === 'toefl_itp' && (
-                        <div className="w-[21rem] shrink-0 pl-4 self-start sticky top-4">
-                          <QuestionNavigator
-                            totalQuestions={questions.length}
-                            currentIndex={currentQuestionIndex}
-                            onSelect={(index) => {
-                              // Find the question and switch to its passage if needed
-                              const targetQuestion = questions[index];
-                              if (!targetQuestion) return;
-
-                              // Find which part this question belongs to
-                              const partIdx = currentSectionParts.findIndex(p => p.id === targetQuestion.sectionId);
-                              if (partIdx !== -1 && partIdx !== activePartIndex) {
-                                setActivePartIndex(partIdx);
-                              }
-
-                              selectQuestionIndex(index);
-                            }}
-                            answeredIndices={
-                              new Set(
-                                questions
-                                  .map((q, idx) => state.answers[q.id] ? idx : -1)
-                                  .filter(idx => idx !== -1)
-                              )
-                            }
-                            allowNavigation={true}
-                            startIndex={1}
-                            variant="grid"
-                            onPrevious={handlePreviousQuestion}
-                            onNext={handleNextQuestion}
-                            isFirst={
-                              (isToeflLockedSection && !toeflReviewUnlocked)
-                                ? true
-                                : (isPartBCMode ? true : currentQuestionIndex === 0)
-                            }
-                            isLast={isPartBCMode ? false : (currentQuestionIndex === questions.length - 1 && mode !== 'full')}
-                            previousLabel="Previous"
-                            nextLabel={navigatorActionLabel}
-                          />
-                        </div>
-                      )}
                     </div>
+
+                    {/* Right Pane: Navigator for TOEFL ITP Reading */}
+                    {isToeflItpReading && (
+                      <div className="h-full w-64 shrink-0 bg-slate-50 border-l border-gray-200 p-4 overflow-y-auto">
+                        <QuestionNavigator
+                          totalQuestions={questions.length}
+                          currentIndex={currentQuestionIndex}
+                          onSelect={(index) => {
+                            // Find the question and switch to its passage if needed
+                            const targetQuestion = questions[index];
+                            if (!targetQuestion) return;
+
+                            // Find which part this question belongs to
+                            const partIdx = currentSectionParts.findIndex(p => p.id === targetQuestion.sectionId);
+                            if (partIdx !== -1 && partIdx !== activePartIndex) {
+                              setActivePartIndex(partIdx);
+                            }
+
+                            selectQuestionIndex(index);
+                          }}
+                          answeredIndices={
+                            new Set(
+                              questions
+                                .map((q, idx) => state.answers[q.id] ? idx : -1)
+                                .filter(idx => idx !== -1)
+                            )
+                          }
+                          allowNavigation={true}
+                          startIndex={1}
+                          variant="grid"
+                          pageSize={100}
+                          onPrevious={handlePreviousQuestion}
+                          onNext={handleNextQuestion}
+                          isFirst={currentQuestionIndex === 0}
+                          isLast={currentQuestionIndex === questions.length - 1 && mode !== 'full'}
+                          previousLabel="Previous"
+                          nextLabel={navigatorActionLabel}
+                        />
+                      </div>
+                    )}
                   </div>
                     </>
                   )}

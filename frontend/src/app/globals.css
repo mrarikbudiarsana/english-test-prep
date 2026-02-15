@@ -91,43 +91,44 @@ body {
    TOEFL ITP Reading Passage Styles
    ======================================== */
 
-/* Passage Title */
+/* Passage Title - shows question range like "Questions 1-10" */
 .toefl-itp-passage-title {
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 1.5rem;
-  line-height: 1.3;
-  max-width: 720px;
+  color: #111827;
+  margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 1px solid #d1d5db;
 }
 
 /* Passage Content Container */
 .toefl-itp-passage-content {
-  max-width: 720px;
+  position: relative;
+  padding-left: 3rem;
   font-size: 0.9375rem;
-  line-height: 1.9;
-  color: #374151;
-  font-family: Georgia, 'Times New Roman', Times, serif;
-  letter-spacing: 0.01em;
+  line-height: 1.85;
+  color: #1f2937;
 }
 
 /* Paragraph styling */
 .toefl-itp-passage-content p {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   text-align: justify;
+  text-indent: 0;
 }
 
-/* Line number labels */
+/* Line number labels - positioned in left margin like official TOEFL */
 .toefl-itp-passage-content .line-label {
-  display: block;
-  margin: 0.75rem 0 0.25rem 0;
-  font-size: 0.75rem;
+  position: absolute;
+  left: 0;
+  width: 2.5rem;
+  text-align: left;
+  font-size: 0.8125rem;
   font-style: italic;
   color: #6b7280;
   font-family: system-ui, -apple-system, sans-serif;
   user-select: none;
+  margin-top: 0.25rem;
 }
 
 /* Wrapper div for passage (from HTML content) */
@@ -137,7 +138,7 @@ body {
 
 /* Text selection highlight */
 .toefl-itp-passage-content ::selection {
-  background-color: #dbeafe;
+  background-color: #bfdbfe;
 }
 
 /* User highlight marks */
@@ -159,10 +160,10 @@ body {
 /* Question card container */
 .toefl-itp-question-card {
   background: white;
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   border: 1px solid #e2e8f0;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 /* Question number badge */
@@ -170,12 +171,67 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.75rem;
-  height: 1.75rem;
+  min-width: 2rem;
+  height: 2rem;
   padding: 0 0.5rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   background-color: #2563eb;
+  color: white;
+}
+
+/* Question text styling */
+.toefl-itp-question-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #1e293b;
+}
+
+/* Question card container */
+.toefl-itp-question-card {
+  /* Uses default sans-serif font to match other sections */
+}
+
+/* MCQ option styling for TOEFL ITP */
+.toefl-itp-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: #fafafa;
+}
+
+.toefl-itp-option:hover {
+  border-color: #94a3b8;
+  background: white;
+}
+
+.toefl-itp-option.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.toefl-itp-option-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.toefl-itp-option.selected .toefl-itp-option-letter {
+  background: #2563eb;
+  border-color: #2563eb;
   color: white;
 }
