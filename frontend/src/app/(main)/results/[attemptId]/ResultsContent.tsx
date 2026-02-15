@@ -332,8 +332,13 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                         <div className="pointer-events-none absolute -bottom-16 -right-10 h-40 w-40 rounded-full bg-indigo-200/30 blur-2xl" />
                     </>
                 )}
-                <p className={`mb-2 text-sm font-medium ${isToeflItp ? 'text-violet-800' : 'text-gray-600'}`}>{displayLabel}</p>
-                <div className={`text-6xl font-bold ${toeflScoreClass}`}>
+                {isToeflItp && (
+                    <div className="mb-4 inline-flex items-center rounded-full border border-violet-300 bg-violet-100/70 px-3 py-1 text-xs font-semibold tracking-wide text-violet-800">
+                        Practice Test Result (Unofficial)
+                    </div>
+                )}
+                <p className={`mb-2 font-medium ${isToeflItp ? 'text-4xl leading-tight text-violet-800' : 'text-sm text-gray-600'}`}>{displayLabel}</p>
+                <div className={`font-bold ${isToeflItp ? 'text-7xl md:text-8xl' : 'text-6xl'} ${toeflScoreClass}`}>
                     {isToeflItp && !isPartialTest ? displayScore : formatBand(displayScore)}
                 </div>
                 {attempt.completedAt && (
@@ -372,7 +377,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
             )}
             {isToeflItp && !isPartialTest && (
                 <p className="text-center text-sm text-violet-700/80">
-                    TOEFL ITP reports one total score and three section scores.
+                    This practice test is designed to help you evaluate your TOEFL ITP readiness. It is not an official score report, and your results on the actual exam may vary.
                 </p>
             )}
 
