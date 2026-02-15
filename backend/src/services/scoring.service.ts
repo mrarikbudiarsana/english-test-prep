@@ -167,6 +167,23 @@ export function normalizeAnswer(text: string): string {
 }
 
 function unwrapAnswer(value: any): any {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    // Handle double-encoded JSON values such as "\"D\"" or "{\"answer\":\"D\"}"
+    if (
+      (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))
+    ) {
+      try {
+        return unwrapAnswer(JSON.parse(trimmed));
+      } catch {
+        // Keep original string when it is not valid JSON
+      }
+    }
+    return value;
+  }
+
   if (value && typeof value === 'object') {
     if ('answer' in value) return unwrapAnswer((value as { answer: any }).answer);
     if ('key' in value) return (value as { key: any }).key;
