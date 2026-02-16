@@ -45,6 +45,7 @@ export interface ExamConfig {
   description: string;
   scoreLabel: string;
   scoreRange: { min: number; max: number };
+  sectionScoreRange: { min: number; max: number };
   scorePrecision: number;
   sections: SectionConfig[];
   theme: ExamTheme;
@@ -60,6 +61,7 @@ export const examConfigs: Record<ExamType, ExamConfig> = {
     description: 'International English Language Testing System',
     scoreLabel: 'Band Score',
     scoreRange: { min: 0, max: 9 },
+    sectionScoreRange: { min: 0, max: 9 },
     scorePrecision: 0.5,
     sections: [
       { key: 'listening', label: 'Listening', icon: HiOutlineVolumeUp },
@@ -90,6 +92,7 @@ export const examConfigs: Record<ExamType, ExamConfig> = {
     description: 'Test of English as a Foreign Language — Internet Based',
     scoreLabel: 'Score',
     scoreRange: { min: 0, max: 120 },
+    sectionScoreRange: { min: 0, max: 30 },
     scorePrecision: 1,
     sections: [
       { key: 'reading', label: 'Reading', icon: HiOutlineBookOpen },
@@ -121,6 +124,7 @@ export const examConfigs: Record<ExamType, ExamConfig> = {
     description: 'Test of English as a Foreign Language — Institutional Testing Program',
     scoreLabel: 'Score',
     scoreRange: { min: 310, max: 677 },
+    sectionScoreRange: { min: 31, max: 68 },
     scorePrecision: 1,
     sections: [
       { key: 'listening', label: 'Listening Comprehension', icon: HiOutlineVolumeUp },
@@ -151,6 +155,7 @@ export const examConfigs: Record<ExamType, ExamConfig> = {
     description: 'Pearson Test of English Academic',
     scoreLabel: 'Score',
     scoreRange: { min: 10, max: 90 },
+    sectionScoreRange: { min: 10, max: 90 },
     scorePrecision: 1,
     sections: [
       { key: 'speaking', label: 'Speaking & Writing', icon: HiOutlineMicrophone },

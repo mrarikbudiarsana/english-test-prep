@@ -23,6 +23,7 @@ export interface DashboardStats {
     id: string;
     testTitle: string;
     overallBand: number | null;
+    overallScore: number | null;
     status: string;
     completedAt: string | null;
   }>;

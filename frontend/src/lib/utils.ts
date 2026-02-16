@@ -11,10 +11,22 @@ export function formatTime(seconds: number): string {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function formatBand(band: number | null): string {
-  if (band === null) return '-';
-  return band % 1 === 0 ? `${band}.0` : `${band}`;
+export function formatScore(score: number | null, precision: number = 0.5): string {
+  if (score === null || score === undefined) return '-';
+
+  // If precision is 1 (integer), return without decimals
+  if (precision === 1) {
+    return Math.round(score).toString();
+  }
+
+  // For 0.5 precision (IELTS), ensure 1 decimal place
+  // Round to nearest 0.5
+  const rounded = Math.round(score * 2) / 2;
+  return rounded % 1 === 0 ? `${rounded}.0` : `${rounded}`;
 }
+
+/** @deprecated Use formatScore instead */
+export const formatBand = (band: number | null) => formatScore(band, 0.5);
 
 export function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-US', {

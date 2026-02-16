@@ -5,7 +5,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardStats } from '@/types/api';
-import { formatBand, formatDate } from '@/lib/utils';
+import { formatBand, formatDate, formatScore, getBandColor, getBandBgColor } from '@/lib/utils';
 import {
   HiClipboardList,
   HiStar,
@@ -259,11 +259,8 @@ export default function DashboardPage() {
                     }}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg transition-all ${attempt.overallBand
-                          ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-200'
-                          : 'bg-slate-100 text-slate-400 border border-slate-200'
-                        }`}>
-                        {displayScore(attempt.overallBand)}
+                      <div className={`px-3 py-1 rounded-full text-sm font-bold ${getBandBgColor(attempt.overallBand ?? attempt.overallScore ?? 0)} ${getBandColor(attempt.overallBand ?? attempt.overallScore ?? 0)}`}>
+                        {displayScore(attempt.overallBand ?? attempt.overallScore, examConfig.scorePrecision)}
                       </div>
                       <div>
                         <p className="font-semibold text-[#2c3e50] transition-colors">
@@ -424,8 +421,8 @@ function TipCard({
   );
 }
 
-function displayScore(score: any) {
+function displayScore(score: any, precision: number) {
   if (score === null || score === undefined) return '-';
   const numScore = Number(score);
-  return numScore % 1 === 0 ? numScore : numScore.toFixed(1);
+  return formatScore(numScore, precision);
 }

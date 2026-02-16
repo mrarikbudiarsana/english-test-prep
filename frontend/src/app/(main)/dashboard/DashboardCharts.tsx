@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { ExamType } from '@/types/user';
 import { getExamConfig } from '@/config/examConfig';
+import { formatScore } from '@/lib/utils';
 
 interface DashboardChartsProps {
     recentAttempts: any[];
@@ -89,7 +90,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
     const skillsData = examSections.map((section) => ({
         subject: section.label,
         score: sectionAverages[section.key] || 0,
-        fullMark: scoreRange.max,
+        fullMark: examConfig.sectionScoreRange.max,
     }));
     const scoredSections = skillsData.filter(s => s.score > 0);
     const useRadar = scoredSections.length >= 3;
@@ -123,6 +124,12 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
     const showWritingTab = !!writingCriteria;
     const showSpeakingTab = !!speakingCriteria;
 
+    const formatScoreValue = (val: number | string | undefined) => {
+        if (val === undefined || val === null) return '-';
+        if (typeof val !== 'number') return val;
+        return formatScore(val, examConfig.scorePrecision);
+    };
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Progress Chart - 2/3 width */}
@@ -135,6 +142,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                     {progressData.length > 1 ? (
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={progressData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                                {/* ... (defs unchanged) ... */}
                                 <defs>
                                     <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
                                         <stop offset="0%" stopColor={chartColor} />
@@ -159,6 +167,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                                     tickLine={false}
                                 />
                                 <Tooltip
+                                    formatter={(value: number | undefined) => [formatScoreValue(value), scoreLabel]}
                                     contentStyle={{
                                         borderRadius: '12px',
                                         border: '1px solid #e2e8f0',
@@ -181,6 +190,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                             </LineChart>
                         </ResponsiveContainer>
                     ) : (
+                        // ... (empty state unchanged) ...
                         <div className="h-full flex flex-col items-center justify-center text-slate-400">
                             <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
                                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -255,7 +265,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                                 />
                                 <PolarRadiusAxis
                                     angle={30}
-                                    domain={[scoreRange.min, scoreRange.max]}
+                                    domain={[examConfig.sectionScoreRange.min, examConfig.sectionScoreRange.max]}
                                     tick={{ fill: '#94a3b8', fontSize: 11 }}
                                     axisLine={false}
                                 />
@@ -268,14 +278,16 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                                     fillOpacity={0.25}
                                 />
                                 <Tooltip
+                                    formatter={(value: number | undefined) => [formatScoreValue(value), scoreLabel]}
                                     contentStyle={{
                                         borderRadius: '12px',
                                         border: '1px solid #e2e8f0',
                                         boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                                         backgroundColor: 'white',
-                                        padding: '8px 12px'
+                                        padding: '12px'
                                     }}
-                                    labelStyle={{ fontWeight: 600, color: '#1e293b' }}
+                                    labelStyle={{ fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}
+                                    cursor={{ stroke: `${chartColor}40`, strokeWidth: 2 }}
                                 />
                             </RadarChart>
                         </ResponsiveContainer>
@@ -290,7 +302,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                                 <CartesianGrid horizontal={false} stroke="#e2e8f0" />
                                 <XAxis
                                     type="number"
-                                    domain={[0, scoreRange.max]}
+                                    domain={[0, examConfig.sectionScoreRange.max]}
                                     tick={{ fill: '#94a3b8', fontSize: 11 }}
                                     axisLine={false}
                                     tickLine={false}
@@ -304,7 +316,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                                     width={64}
                                 />
                                 <Tooltip
-                                    formatter={(value: any) => [typeof value === 'number' ? value.toFixed(1) : value, scoreLabel]}
+                                    formatter={(value: any) => [formatScoreValue(value), scoreLabel]}
                                     contentStyle={{
                                         borderRadius: '12px',
                                         border: '1px solid #e2e8f0',
