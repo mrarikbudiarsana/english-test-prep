@@ -60,29 +60,57 @@ function testTypeToExamType(testType: string): string {
   return 'ielts';
 }
 
+export type AccessCheckResult = {
+  canAccess: boolean;
+  reason: 'free_test' | 'has_subscription' | 'has_free_tests' | 'no_access' | 'test_not_found';
+  freeTestsRemaining?: number;
+  requiredExamType?: string;
+};
+
 /**
  * Check whether a user has access to take a test.
  * Access is granted if:
  *  - The test is free, OR
  *  - The user has an active subscription for the test's exam type, OR
  *  - The user has free tests remaining
+ * Returns detailed info about access status for frontend display.
  */
-export async function checkTestAccess(userId: string, testId: string): Promise<boolean> {
-  // Check if the test is free
+export async function checkTestAccess(userId: string, testId: string): Promise<AccessCheckResult> {
+  // Check if the test exists
   const test = await testModel.findById(testId);
-  if (!test) return false;
-  if (test.isFree) return true;
+  if (!test) {
+    return { canAccess: false, reason: 'test_not_found' };
+  }
+
+  // Check if the test is free
+  if (test.isFree) {
+    return { canAccess: true, reason: 'free_test' };
+  }
+
+  const examType = testTypeToExamType(test.testType);
 
   // Check for an active subscription covering this exam type
-  const examType = testTypeToExamType(test.testType);
   const activeSub = await subscriptionModel.findActiveByUserIdAndExam(userId, examType);
-  if (activeSub) return true;
+  if (activeSub) {
+    return { canAccess: true, reason: 'has_subscription' };
+  }
 
   // Check for remaining free tests
   const user = await userModel.findById(userId);
-  if (user && user.freeTestsRemaining > 0) return true;
+  if (user && user.freeTestsRemaining > 0) {
+    return {
+      canAccess: true,
+      reason: 'has_free_tests',
+      freeTestsRemaining: user.freeTestsRemaining,
+    };
+  }
 
-  return false;
+  return {
+    canAccess: false,
+    reason: 'no_access',
+    freeTestsRemaining: user?.freeTestsRemaining ?? 0,
+    requiredExamType: examType,
+  };
 }
 
 /**
@@ -111,8 +139,8 @@ export async function startAttempt(
   }
 
   // Check test access
-  const hasAccess = await checkTestAccess(userId, testId);
-  if (!hasAccess) {
+  const accessResult = await checkTestAccess(userId, testId);
+  if (!accessResult.canAccess) {
     throw new ForbiddenError(
       'You do not have access to this test. Please subscribe or use your free tests.',
     );

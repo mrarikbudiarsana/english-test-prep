@@ -15,9 +15,17 @@ import {
   HiChevronLeft,
   HiSparkles,
   HiLockOpen,
+  HiLockClosed,
   HiAcademicCap,
 } from 'react-icons/hi';
 import Link from 'next/link';
+
+type AccessCheckResult = {
+  canAccess: boolean;
+  reason: 'free_test' | 'has_subscription' | 'has_free_tests' | 'no_access' | 'test_not_found';
+  freeTestsRemaining?: number;
+  requiredExamType?: string;
+};
 
 const sectionIcons: Record<string, React.ElementType> = {
   listening: HiVolumeUp,
@@ -72,6 +80,7 @@ export default function TestOverviewPage() {
 
   const [test, setTest] = useState<Test | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
+  const [access, setAccess] = useState<AccessCheckResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
@@ -88,12 +97,14 @@ export default function TestOverviewPage() {
   useEffect(() => {
     async function fetchTest() {
       try {
-        const [testRes, sectionsRes] = await Promise.all([
+        const [testRes, sectionsRes, accessRes] = await Promise.all([
           api.get(`/tests/${testId}`),
           api.get(`/tests/${testId}/sections`),
+          api.get(`/tests/${testId}/access`),
         ]);
         setTest(testRes.data);
         setSections(sectionsRes.data);
+        setAccess(accessRes.data?.data || accessRes.data);
       } catch {
         setError('Failed to load test');
       } finally {
@@ -231,9 +242,13 @@ export default function TestOverviewPage() {
         <div className="flex items-start gap-4 mb-6">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg"
-            style={{ backgroundColor: brandColor, boxShadow: `0 10px 25px ${brandColor}33` }}
+            style={{ backgroundColor: access?.canAccess ? brandColor : '#94a3b8', boxShadow: `0 10px 25px ${access?.canAccess ? brandColor : '#94a3b8'}33` }}
           >
-            <HiPlay className="w-7 h-7 text-white" />
+            {access?.canAccess ? (
+              <HiPlay className="w-7 h-7 text-white" />
+            ) : (
+              <HiLockClosed className="w-7 h-7 text-white" />
+            )}
           </div>
           <div>
             <h2 className="text-2xl font-bold text-[#2c3e50] mb-2">Full Test</h2>
@@ -242,15 +257,48 @@ export default function TestOverviewPage() {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => handleStartTest('full')}
-          disabled={starting}
-          className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all shadow-lg hover:shadow-xl"
-          style={{ backgroundColor: brandColor, boxShadow: `0 10px 25px ${brandColor}33` }}
-        >
-          <HiPlay className="w-6 h-6 group-hover:scale-110 transition-transform" />
-          {starting ? 'Starting...' : 'Start Full Test'}
-        </button>
+
+        {access?.canAccess ? (
+          <>
+            {access.reason === 'has_free_tests' && (
+              <p className="text-sm text-amber-600 mb-4 flex items-center gap-2">
+                <HiSparkles className="w-4 h-4" />
+                This will use 1 of your {access.freeTestsRemaining} free tests remaining
+              </p>
+            )}
+            <button
+              onClick={() => handleStartTest('full')}
+              disabled={starting}
+              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all shadow-lg hover:shadow-xl"
+              style={{ backgroundColor: brandColor, boxShadow: `0 10px 25px ${brandColor}33` }}
+            >
+              <HiPlay className="w-6 h-6 group-hover:scale-110 transition-transform" />
+              {starting ? 'Starting...' : 'Start Full Test'}
+            </button>
+          </>
+        ) : (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <HiLockClosed className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-amber-800 mb-1">Premium Test</h3>
+                <p className="text-sm text-amber-700">
+                  Subscribe to access this test or use your free tests.
+                  {access?.freeTestsRemaining === 0 && ' You have no free tests remaining.'}
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg hover:shadow-xl"
+            >
+              <HiSparkles className="w-5 h-5" />
+              View Subscription Plans
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Section Practice */}
@@ -313,16 +361,26 @@ export default function TestOverviewPage() {
                     {questionCount && ` • ${questionCount} questions`}
                   </p>
 
-                  <button
-                    onClick={() => handleStartTest('section_practice', type)}
-                    disabled={starting || !isAvailable}
-                    className={`w-full px-5 py-2.5 rounded-xl font-semibold transition-all ${isAvailable
-                      ? `${colors.text} ${colors.light} hover:bg-gradient-to-r hover:${colors.bg} hover:text-white border-2 ${colors.border}`
-                      : 'bg-slate-100 text-slate-400 border-2 border-slate-200 cursor-not-allowed'
-                      }`}
-                  >
-                    {isAvailable ? 'Practice' : 'Not Available'}
-                  </button>
+                  {access?.canAccess ? (
+                    <button
+                      onClick={() => handleStartTest('section_practice', type)}
+                      disabled={starting || !isAvailable}
+                      className={`w-full px-5 py-2.5 rounded-xl font-semibold transition-all ${isAvailable
+                        ? `${colors.text} ${colors.light} hover:bg-gradient-to-r hover:${colors.bg} hover:text-white border-2 ${colors.border}`
+                        : 'bg-slate-100 text-slate-400 border-2 border-slate-200 cursor-not-allowed'
+                        }`}
+                    >
+                      {isAvailable ? 'Practice' : 'Not Available'}
+                    </button>
+                  ) : (
+                    <Link
+                      href="/pricing"
+                      className="w-full px-5 py-2.5 rounded-xl font-semibold transition-all bg-slate-100 text-slate-500 border-2 border-slate-200 flex items-center justify-center gap-2 hover:bg-slate-200"
+                    >
+                      <HiLockClosed className="w-4 h-4" />
+                      Upgrade to Practice
+                    </Link>
+                  )}
                 </div>
               );
             });

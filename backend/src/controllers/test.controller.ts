@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as testService from '../services/test.service';
 import * as questionService from '../services/question.service';
+import * as attemptService from '../services/attempt.service';
 
 export async function getTests(
   req: Request,
@@ -58,6 +59,21 @@ export async function getSectionQuestions(
     const sectionId = req.params.sectionId as string;
     const questions = await questionService.getQuestionsBySectionId(sectionId);
     res.json({ data: questions });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function checkTestAccess(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const testId = req.params.testId as string;
+    const userId = req.user!.id;
+    const result = await attemptService.checkTestAccess(userId, testId);
+    res.json({ data: result });
   } catch (error) {
     next(error);
   }

@@ -6,6 +6,7 @@ const router = Router();
 
 router.get('/', authMiddleware, testController.getTests);
 router.get('/:testId', authMiddleware, testController.getTestById);
+router.get('/:testId/access', authMiddleware, testController.checkTestAccess);
 router.get('/:testId/sections', authMiddleware, testController.getTestSections);
 router.get('/:testId/sections/:sectionId/questions', authMiddleware, testController.getSectionQuestions);
 
