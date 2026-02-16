@@ -164,7 +164,7 @@ export default function DashboardPage() {
 
         <StatCard
           title="Average Score"
-          value={avgBand ? formatBand(avgBand) : '-'}
+          value={avgBand ? displayScore(avgBand, examConfig.scorePrecision) : '-'}
           subtitle={avgBand ? examConfig.scoreLabel : 'No data'}
           icon={<HiChartBar className="w-6 h-6" />}
           gradient="from-[#3b82f6] to-[#2563eb]"
@@ -174,7 +174,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Best Score"
-          value={bestBand ? formatBand(bestBand) : '-'}
+          value={bestBand ? displayScore(bestBand, examConfig.scorePrecision) : '-'}
           subtitle={bestBand ? examConfig.scoreLabel : 'No data'}
           icon={<HiStar className="w-6 h-6" />}
           gradient="from-amber-500 to-yellow-500"

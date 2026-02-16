@@ -209,30 +209,32 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                 <div className="mb-4">
                     <h3 className="text-lg font-bold text-slate-800 mb-3">Skills Breakdown</h3>
                     {/* Tabs */}
-                    <div className="flex gap-1 bg-slate-100 rounded-lg p-1 text-xs font-semibold">
-                        <button
-                            onClick={() => setSkillsTab('sections')}
-                            className={`flex-1 py-1.5 rounded-md transition-all ${skillsTab === 'sections' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                            Sections
-                        </button>
-                        {showWritingTab && (
+                    {(showWritingTab || showSpeakingTab) && (
+                        <div className="flex gap-1 bg-slate-100 rounded-lg p-1 text-xs font-semibold">
                             <button
-                                onClick={() => setSkillsTab('writing')}
-                                className={`flex-1 py-1.5 rounded-md transition-all ${skillsTab === 'writing' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                                onClick={() => setSkillsTab('sections')}
+                                className={`flex-1 py-1.5 rounded-md transition-all ${skillsTab === 'sections' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
                             >
-                                Writing
+                                Sections
                             </button>
-                        )}
-                        {showSpeakingTab && (
-                            <button
-                                onClick={() => setSkillsTab('speaking')}
-                                className={`flex-1 py-1.5 rounded-md transition-all ${skillsTab === 'speaking' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                Speaking
-                            </button>
-                        )}
-                    </div>
+                            {showWritingTab && (
+                                <button
+                                    onClick={() => setSkillsTab('writing')}
+                                    className={`flex-1 py-1.5 rounded-md transition-all ${skillsTab === 'writing' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Writing
+                                </button>
+                            )}
+                            {showSpeakingTab && (
+                                <button
+                                    onClick={() => setSkillsTab('speaking')}
+                                    className={`flex-1 py-1.5 rounded-md transition-all ${skillsTab === 'speaking' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Speaking
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
                 <div className="h-[300px] w-full overflow-y-auto">
                     {skillsTab === 'writing' && writingCriteria ? (
@@ -251,7 +253,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                         </div>
                     ) : useRadar ? (
                         <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={skillsData}>
+                            <RadarChart cx="50%" cy="50%" outerRadius="60%" data={skillsData}>
                                 <defs>
                                     <linearGradient id="radarGradient" x1="0" y1="0" x2="1" y2="1">
                                         <stop offset="0%" stopColor={chartColor} />
@@ -287,6 +289,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                                         padding: '12px'
                                     }}
                                     labelStyle={{ fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}
+                                    itemStyle={{ color: '#334155', fontWeight: 500 }}
                                     cursor={{ stroke: `${chartColor}40`, strokeWidth: 2 }}
                                 />
                             </RadarChart>
@@ -333,7 +336,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                                     <LabelList
                                         dataKey="score"
                                         position="right"
-                                        formatter={(v: any) => typeof v === 'number' ? v.toFixed(1) : v}
+                                        formatter={(v: any) => formatScoreValue(v)}
                                         style={{ fill: '#475569', fontSize: 13, fontWeight: 700 }}
                                     />
                                 </Bar>
