@@ -144,6 +144,7 @@ export default function AdminSectionQuestionsPage() {
       options: { key: string; text: string }[];
       correctAnswer: string;
       explanation?: string;
+      questionNumber?: number;
     }>
   ) => {
     const response = await api.post(`/admin/sections/${sectionId}/questions/bulk`, {

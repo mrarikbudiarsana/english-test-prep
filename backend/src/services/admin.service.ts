@@ -196,6 +196,7 @@ export async function bulkCreateQuestions(
     options: { key: string; text: string }[];
     correctAnswer: string;
     explanation?: string;
+    questionNumber?: number;
   }>
 ) {
   // 1. Verify section exists
@@ -225,9 +226,10 @@ export async function bulkCreateQuestions(
   questions.forEach((q, index) => {
     const errors: string[] = [];
 
-    if (!q.questionText?.trim()) {
-      errors.push('Question text is required');
-    }
+    // Question text is optional for listening sections (questions can be audio-only)
+    // but required for other section types - this validation happens in the admin editor
+    // so we allow empty text here for flexibility
+
     if (!q.options || q.options.length !== 4) {
       errors.push('Exactly 4 options (A-D) are required');
     }
@@ -267,6 +269,12 @@ export async function bulkCreateQuestions(
         multiSelect: false,
       };
 
+      // Use custom question number if provided, otherwise auto-assign
+      const questionNumber = q.questionNumber && q.questionNumber > 0 ? q.questionNumber : nextNumber;
+      if (!q.questionNumber || q.questionNumber <= 0) {
+        nextNumber++;
+      }
+
       const result = await client.query(
         `INSERT INTO questions (
           section_id, question_number, question_type,
@@ -286,9 +294,9 @@ export async function bulkCreateQuestions(
           explanation`,
         [
           sectionId,
-          nextNumber++,
+          questionNumber,
           'multiple_choice',
-          q.questionText.trim(),
+          q.questionText?.trim() || '',
           JSON.stringify(questionData),
           JSON.stringify(q.correctAnswer.toUpperCase()),
           1,

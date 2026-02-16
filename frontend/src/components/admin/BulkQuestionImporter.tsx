@@ -10,6 +10,7 @@ interface ParsedQuestion {
   options: { key: string; text: string }[];
   correctAnswer: string;
   explanation?: string;
+  questionNumber?: number;
   parseErrors?: string[];
 }
 
@@ -42,7 +43,8 @@ function parseQuestions(input: string): ParsedQuestion[] {
       const trimmed = line.trim();
 
       // Check if this line starts a new field
-      const fieldMatch = trimmed.match(/^(Q|A|B|C|D|ANSWER|EXPLANATION):\s*(.*)/i);
+      // Support both "Q:" and "Q1:", "Q2:" etc. for custom numbering
+      const fieldMatch = trimmed.match(/^(Q\d*|A|B|C|D|ANSWER|EXPLANATION):\s*(.*)/i);
 
       if (fieldMatch) {
         // Save previous field
@@ -63,9 +65,7 @@ function parseQuestions(input: string): ParsedQuestion[] {
     }
 
     // Validate
-    if (!q.questionText) {
-      q.parseErrors!.push('Missing question text (Q:)');
-    }
+    // Question text is optional (for audio-only questions in listening)
     if (q.options.length !== 4) {
       q.parseErrors!.push(`Expected 4 options (A-D), found ${q.options.length}`);
     }
@@ -82,22 +82,31 @@ function parseQuestions(input: string): ParsedQuestion[] {
 }
 
 function assignField(q: ParsedQuestion, field: string, value: string) {
-  switch (field) {
-    case 'Q':
-      q.questionText = value;
-      break;
-    case 'A':
-    case 'B':
-    case 'C':
-    case 'D':
-      q.options.push({ key: field, text: value });
-      break;
-    case 'ANSWER':
-      q.correctAnswer = value.toUpperCase();
-      break;
-    case 'EXPLANATION':
-      q.explanation = value;
-      break;
+  // Handle Q, Q1, Q2, Q3, etc. for custom question numbers
+  if (field.startsWith('Q')) {
+    const numberPart = field.substring(1);
+    if (numberPart) {
+      const num = parseInt(numberPart, 10);
+      if (!isNaN(num) && num > 0) {
+        q.questionNumber = num;
+      }
+    }
+    q.questionText = value;
+  } else {
+    switch (field) {
+      case 'A':
+      case 'B':
+      case 'C':
+      case 'D':
+        q.options.push({ key: field, text: value });
+        break;
+      case 'ANSWER':
+        q.correctAnswer = value.toUpperCase();
+        break;
+      case 'EXPLANATION':
+        q.explanation = value;
+        break;
+    }
   }
 }
 
@@ -153,7 +162,7 @@ export default function BulkQuestionImporter({
         <h4 className="text-sm font-semibold text-blue-900 mb-2">Format Guide</h4>
         <pre className="text-xs text-blue-800 whitespace-pre-wrap font-mono">
 {`---
-Q: Question text here
+Q31: Question text here (optional - can be empty for audio-only)
 A: Option A text
 B: Option B text
 C: Option C text
@@ -163,8 +172,10 @@ EXPLANATION: Optional explanation
 ---`}
         </pre>
         <p className="text-xs text-blue-700 mt-2">
-          Use <code className="bg-blue-100 px-1 rounded">&lt;u&gt;text&lt;/u&gt;</code> to
-          underline words for Written Expression questions.
+          <strong>Q31:</strong> Use number for custom question numbers (continues from last question in section).
+          Leave as <strong>Q:</strong> to auto-assign from the next available number.
+          Use <code className="bg-blue-100 px-1 rounded">&lt;u&gt;text&lt;/u&gt;</code> to underline.
+          Question text can be empty for listening audio-only questions.
         </p>
       </div>
 
@@ -217,7 +228,7 @@ EXPLANATION: Optional explanation
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-700 line-clamp-2">
-                      {q.questionText || '(no text)'}
+                      {q.questionText ? q.questionText : <span className="italic text-gray-400">(audio-only)</span>}
                     </p>
                     {q.parseErrors?.length ? (
                       <ul className="text-xs text-red-600 mt-1">
