@@ -63,13 +63,13 @@ export async function createSection(
 
   let finalDuration = data.durationMinutes;
 
-  // For TOEFL ITP reading sections: only first section gets duration, others get 0
-  if (test.testType === 'toefl_itp' && data.sectionType === 'reading') {
-    const existingReadingSections = await sectionModel.findByTestId(testId);
-    const hasReadingSection = existingReadingSections.some((s) => s.sectionType === 'reading');
+  // For TOEFL ITP: only the first section of each type (listening/structure/reading) gets duration
+  if (test.testType === 'toefl_itp' && ['listening', 'structure', 'reading'].includes(data.sectionType)) {
+    const allSections = await sectionModel.findByTestId(testId);
+    const hasSectionOfType = allSections.some((s) => s.sectionType === data.sectionType);
 
-    // If reading section already exists, this is not the first one - set to 0
-    if (hasReadingSection) {
+    // If a section of this type already exists, this is not the first one - set to 0
+    if (hasSectionOfType) {
       finalDuration = 0;
     }
   }
@@ -129,25 +129,25 @@ export async function updateSection(
 
   const updateData = { ...data };
 
-  // For TOEFL ITP reading sections: manage duration automatically
+  // For TOEFL ITP: manage duration automatically for listening/structure/reading
   if (data.durationMinutes !== undefined) {
     // Get the test to check if it's TOEFL ITP
     const test = await testModel.findById(existing.testId);
 
     if (test && test.testType === 'toefl_itp') {
-      // Check if we're updating a reading section or if the section is already reading type
+      // Check the section type (use updated value if provided, otherwise use existing)
       const sectionType = data.sectionType || existing.sectionType;
 
-      if (sectionType === 'reading') {
-        // Get all reading sections for this test
+      if (['listening', 'structure', 'reading'].includes(sectionType)) {
+        // Get all sections of this type for this test
         const allSections = await sectionModel.findByTestId(existing.testId);
-        const readingSections = allSections.filter((s) => s.sectionType === 'reading');
+        const sectionsOfType = allSections.filter((s) => s.sectionType === sectionType);
 
-        // Find which reading section this is (in order)
-        const readingSectionIndex = readingSections.findIndex((s) => s.id === id);
+        // Find which section of this type this is (in order)
+        const sectionIndex = sectionsOfType.findIndex((s) => s.id === id);
 
-        // Only the first reading section (index 0) can have non-zero duration
-        if (readingSectionIndex > 0) {
+        // Only the first section of each type (index 0) can have non-zero duration
+        if (sectionIndex > 0) {
           updateData.durationMinutes = 0;
         }
       }
