@@ -29,6 +29,7 @@ export async function getSectionById(id: string) {
 /**
  * Create a new section for a test.
  * Automatically assigns the next section_order value.
+ * For TOEFL ITP reading sections, only the first section gets the full duration.
  */
 export async function createSection(
   testId: string,
@@ -60,13 +61,26 @@ export async function createSection(
   const maxOrder = await sectionModel.getMaxOrder(testId);
   const sectionOrder = maxOrder + 1;
 
+  let finalDuration = data.durationMinutes;
+
+  // For TOEFL ITP reading sections: only first section gets duration, others get 0
+  if (test.testType === 'toefl_itp' && data.sectionType === 'reading') {
+    const existingReadingSections = await sectionModel.findByTestId(testId);
+    const hasReadingSection = existingReadingSections.some((s) => s.sectionType === 'reading');
+
+    // If reading section already exists, this is not the first one - set to 0
+    if (hasReadingSection) {
+      finalDuration = 0;
+    }
+  }
+
   return sectionModel.create({
     testId,
     sectionOrder,
     sectionType: data.sectionType,
     title: data.title,
     instructions: data.instructions,
-    durationMinutes: data.durationMinutes,
+    durationMinutes: finalDuration,
     audioUrl: data.audioUrl,
     passageText: data.passageText,
     passageTitle: data.passageTitle,
@@ -83,6 +97,9 @@ export async function createSection(
 
 /**
  * Update an existing section.
+ * For TOEFL ITP reading sections, automatically manages duration:
+ * - First reading section gets the specified duration
+ * - All other reading sections get 0 duration
  */
 export async function updateSection(
   id: string,
@@ -110,7 +127,34 @@ export async function updateSection(
     throw new NotFoundError('Section not found');
   }
 
-  return sectionModel.update(id, data);
+  const updateData = { ...data };
+
+  // For TOEFL ITP reading sections: manage duration automatically
+  if (data.durationMinutes !== undefined) {
+    // Get the test to check if it's TOEFL ITP
+    const test = await testModel.findById(existing.testId);
+
+    if (test && test.testType === 'toefl_itp') {
+      // Check if we're updating a reading section or if the section is already reading type
+      const sectionType = data.sectionType || existing.sectionType;
+
+      if (sectionType === 'reading') {
+        // Get all reading sections for this test
+        const allSections = await sectionModel.findByTestId(existing.testId);
+        const readingSections = allSections.filter((s) => s.sectionType === 'reading');
+
+        // Find which reading section this is (in order)
+        const readingSectionIndex = readingSections.findIndex((s) => s.id === id);
+
+        // Only the first reading section (index 0) can have non-zero duration
+        if (readingSectionIndex > 0) {
+          updateData.durationMinutes = 0;
+        }
+      }
+    }
+  }
+
+  return sectionModel.update(id, updateData);
 }
 
 /**
