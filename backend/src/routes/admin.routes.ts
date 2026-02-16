@@ -26,6 +26,9 @@ router.get('/tests/:testId/sections/:sectionId/questions', adminController.getQu
 router.get('/sections/:sectionId/questions', adminController.getQuestionsBySection);
 router.post('/tests/:testId/sections/:sectionId/questions', adminController.createQuestion);
 router.post('/sections/:sectionId/questions', adminController.createQuestion);
+
+// Bulk question creation (TOEFL ITP only)
+router.post('/sections/:sectionId/questions/bulk', adminController.bulkCreateQuestions);
 router.put('/tests/:testId/sections/:sectionId/questions/:questionId', adminController.updateQuestion);
 router.put('/questions/:questionId', adminController.updateQuestion);
 router.delete('/tests/:testId/sections/:sectionId/questions/:questionId', adminController.deleteQuestion);

@@ -4,6 +4,9 @@ import * as questionService from './question.service';
 import * as userModel from '../models/user.model';
 import * as testModel from '../models/test.model';
 import * as attemptModel from '../models/attempt.model';
+import * as sectionModel from '../models/section.model';
+import * as questionModel from '../models/question.model';
+import { getClient } from '../config/database';
 
 /**
  * Admin: Create a new test.
@@ -181,6 +184,134 @@ export async function updateQuestion(
  */
 export async function deleteQuestion(id: string) {
   return questionService.deleteQuestion(id);
+}
+
+/**
+ * Admin: Bulk create questions for a TOEFL ITP section.
+ */
+export async function bulkCreateQuestions(
+  sectionId: string,
+  questions: Array<{
+    questionText: string;
+    options: { key: string; text: string }[];
+    correctAnswer: string;
+    explanation?: string;
+  }>
+) {
+  // 1. Verify section exists
+  const section = await sectionModel.findById(sectionId);
+  if (!section) {
+    const error = new Error('Section not found') as any;
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // 2. Verify it's a TOEFL ITP test
+  const test = await testModel.findById(section.testId);
+  if (!test || test.testType !== 'toefl_itp') {
+    const error = new Error('Bulk creation is only supported for TOEFL ITP tests') as any;
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 3. Validate all questions
+  if (!questions || questions.length === 0) {
+    const error = new Error('No questions provided') as any;
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const validationErrors: Array<{ index: number; errors: string[] }> = [];
+  questions.forEach((q, index) => {
+    const errors: string[] = [];
+
+    if (!q.questionText?.trim()) {
+      errors.push('Question text is required');
+    }
+    if (!q.options || q.options.length !== 4) {
+      errors.push('Exactly 4 options (A-D) are required');
+    }
+    if (!['A', 'B', 'C', 'D'].includes(q.correctAnswer?.toUpperCase())) {
+      errors.push('Correct answer must be A, B, C, or D');
+    }
+
+    if (errors.length > 0) {
+      validationErrors.push({ index: index + 1, errors });
+    }
+  });
+
+  if (validationErrors.length > 0) {
+    const error = new Error(
+      `Validation failed for ${validationErrors.length} question(s): ` +
+        validationErrors.map((e) => `Q${e.index}: ${e.errors.join(', ')}`).join('; ')
+    ) as any;
+    error.statusCode = 400;
+    error.details = { errors: validationErrors };
+    throw error;
+  }
+
+  // 4. Get starting question number
+  const maxQuestionNumber = await questionModel.getMaxQuestionNumber(sectionId);
+  let nextNumber = maxQuestionNumber + 1;
+
+  // 5. Insert all questions in a transaction
+  const client = await getClient();
+  const createdQuestions: any[] = [];
+
+  try {
+    await client.query('BEGIN');
+
+    for (const q of questions) {
+      const questionData = {
+        options: q.options,
+        multiSelect: false,
+      };
+
+      const result = await client.query(
+        `INSERT INTO questions (
+          section_id, question_number, question_type,
+          question_text, question_data, correct_answer,
+          points, explanation
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING
+          id,
+          section_id AS "sectionId",
+          question_number AS "questionNumber",
+          question_type AS "questionType",
+          question_text AS "questionText",
+          question_data AS "questionData",
+          correct_answer AS "correctAnswer",
+          points,
+          explanation`,
+        [
+          sectionId,
+          nextNumber++,
+          'multiple_choice',
+          q.questionText.trim(),
+          JSON.stringify(questionData),
+          JSON.stringify(q.correctAnswer.toUpperCase()),
+          1,
+          q.explanation?.trim() || null,
+        ]
+      );
+
+      createdQuestions.push(result.rows[0]);
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  return {
+    success: true,
+    created: createdQuestions.length,
+    questions: createdQuestions,
+  };
 }
 
 /**

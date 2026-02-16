@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Modal } from '@/components/ui/Modal';
 import QuestionEditor from '@/components/admin/QuestionEditor';
+import BulkQuestionImporter from '@/components/admin/BulkQuestionImporter';
 import { sectionTypeLabel, questionTypeLabel } from '@/lib/utils';
 import type { Test, Section, Question } from '@/types/test';
 
@@ -28,6 +29,7 @@ export default function AdminSectionQuestionsPage() {
   const [showQuestionEditor, setShowQuestionEditor] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null);
+  const [showBulkImporter, setShowBulkImporter] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -136,6 +138,27 @@ export default function AdminSectionQuestionsPage() {
     setShowQuestionEditor(true);
   };
 
+  const handleBulkImport = async (
+    bulkQuestions: Array<{
+      questionText: string;
+      options: { key: string; text: string }[];
+      correctAnswer: string;
+      explanation?: string;
+    }>
+  ) => {
+    const response = await api.post(`/admin/sections/${sectionId}/questions/bulk`, {
+      questions: bulkQuestions,
+    });
+    const result = response.data.data || response.data;
+    const created = result.questions || [];
+    setQuestions((prev) =>
+      [...prev, ...created].sort((a: Question, b: Question) => a.questionNumber - b.questionNumber)
+    );
+    setShowBulkImporter(false);
+  };
+
+  const isToeflItp = test?.testType === 'toefl_itp';
+
   const getQuestionTypeColor = (type: string): string => {
     const colors: Record<string, string> = {
       multiple_choice: 'info',
@@ -236,12 +259,22 @@ export default function AdminSectionQuestionsPage() {
               <p className="text-sm text-gray-600 max-w-2xl">{section.instructions}</p>
             )}
           </div>
-          <Button onClick={openNewQuestion}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Add Question
-          </Button>
+          <div className="flex gap-2">
+            {isToeflItp && (
+              <Button variant="outline" onClick={() => setShowBulkImporter(true)}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Bulk Import
+              </Button>
+            )}
+            <Button onClick={openNewQuestion}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add Question
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -369,6 +402,22 @@ export default function AdminSectionQuestionsPage() {
           }}
         />
       </Modal>
+
+      {/* Bulk Import Modal (TOEFL ITP only) */}
+      {isToeflItp && (
+        <Modal
+          isOpen={showBulkImporter}
+          onClose={() => setShowBulkImporter(false)}
+          title="Bulk Import Questions (TOEFL ITP)"
+          size="lg"
+        >
+          <BulkQuestionImporter
+            startingQuestionNumber={nextQuestionNumber}
+            onSubmit={handleBulkImport}
+            onCancel={() => setShowBulkImporter(false)}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
