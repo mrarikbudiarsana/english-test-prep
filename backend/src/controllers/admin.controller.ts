@@ -204,6 +204,21 @@ export async function bulkCreateQuestions(
   }
 }
 
+export async function bulkCreateIELTSQuestions(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const sectionId = req.params.sectionId as string;
+    const { questions } = req.body;
+    const result = await adminService.bulkCreateIELTSQuestions(sectionId, questions);
+    res.status(201).json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ---------- Users ----------
 
 export async function getUsers(

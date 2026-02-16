@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Modal } from '@/components/ui/Modal';
 import QuestionEditor from '@/components/admin/QuestionEditor';
 import BulkQuestionImporter from '@/components/admin/BulkQuestionImporter';
+import IELTSBulkQuestionImporter from '@/components/admin/IELTSBulkQuestionImporter';
 import { sectionTypeLabel, questionTypeLabel } from '@/lib/utils';
 import type { Test, Section, Question } from '@/types/test';
 
@@ -30,6 +31,7 @@ export default function AdminSectionQuestionsPage() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null);
   const [showBulkImporter, setShowBulkImporter] = useState(false);
+  const [showIELTSBulkImporter, setShowIELTSBulkImporter] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -158,7 +160,31 @@ export default function AdminSectionQuestionsPage() {
     setShowBulkImporter(false);
   };
 
+  const handleIELTSBulkImport = async (
+    bulkQuestions: Array<{
+      questionType: string;
+      questionText: string;
+      questionData: any;
+      correctAnswer: any;
+      explanation?: string;
+      questionNumber?: number;
+      groupLabel?: string;
+      groupInstructions?: string;
+    }>
+  ) => {
+    const response = await api.post(`/admin/sections/${sectionId}/questions/bulk-ielts`, {
+      questions: bulkQuestions,
+    });
+    const result = response.data.data || response.data;
+    const created = result.questions || [];
+    setQuestions((prev) =>
+      [...prev, ...created].sort((a: Question, b: Question) => a.questionNumber - b.questionNumber)
+    );
+    setShowIELTSBulkImporter(false);
+  };
+
   const isToeflItp = test?.testType === 'toefl_itp';
+  const isIelts = test?.testType === 'academic' || test?.testType === 'general_training';
 
   const getQuestionTypeColor = (type: string): string => {
     const colors: Record<string, string> = {
@@ -263,6 +289,14 @@ export default function AdminSectionQuestionsPage() {
           <div className="flex gap-2">
             {isToeflItp && (
               <Button variant="outline" onClick={() => setShowBulkImporter(true)}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Bulk Import
+              </Button>
+            )}
+            {isIelts && (section?.sectionType === 'listening' || section?.sectionType === 'reading') && (
+              <Button variant="outline" onClick={() => setShowIELTSBulkImporter(true)}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
@@ -416,6 +450,23 @@ export default function AdminSectionQuestionsPage() {
             startingQuestionNumber={nextQuestionNumber}
             onSubmit={handleBulkImport}
             onCancel={() => setShowBulkImporter(false)}
+          />
+        </Modal>
+      )}
+
+      {/* Bulk Import Modal (IELTS only) */}
+      {isIelts && section && (
+        <Modal
+          isOpen={showIELTSBulkImporter}
+          onClose={() => setShowIELTSBulkImporter(false)}
+          title="Bulk Import Questions (IELTS)"
+          size="lg"
+        >
+          <IELTSBulkQuestionImporter
+            sectionType={section.sectionType}
+            startingQuestionNumber={nextQuestionNumber}
+            onSubmit={handleIELTSBulkImport}
+            onCancel={() => setShowIELTSBulkImporter(false)}
           />
         </Modal>
       )}
