@@ -7,8 +7,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
   sendPasswordResetEmail,
   updateProfile,
@@ -40,33 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Handle Google redirect result on page load
-    getRedirectResult(auth).then(async (result) => {
-      if (result?.user) {
-        try {
-          await api.post('/auth/login', { firebaseUid: result.user.uid });
-          toast.success('Successfully signed in!');
-        } catch (loginError) {
-          // If login fails (likely user doesn't exist), try to register
-          try {
-            await api.post('/auth/register', {
-              firebaseUid: result.user.uid,
-              email: result.user.email,
-              displayName: result.user.displayName,
-              photoUrl: result.user.photoURL,
-            });
-            toast.success('Account created successfully!');
-          } catch (registerError: any) {
-            console.error('Google registration failed:', registerError);
-            toast.error(registerError.response?.data?.error || 'Failed to create account with Google');
-          }
-        }
-      }
-    }).catch((error) => {
-      console.error('Google redirect error:', error);
-      toast.error(error.message || 'Google sign-in failed');
-    });
-
+    // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
       if (fbUser) {
@@ -106,8 +79,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginWithGoogle = async () => {
-    await signInWithRedirect(auth, googleProvider);
-    // Page will redirect to Google and come back — result handled in useEffect above
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+
+      if (result?.user) {
+        try {
+          await api.post('/auth/login', { firebaseUid: result.user.uid });
+          toast.success('Successfully signed in!');
+        } catch (loginError) {
+          // If login fails (likely user doesn't exist), try to register
+          try {
+            await api.post('/auth/register', {
+              firebaseUid: result.user.uid,
+              email: result.user.email,
+              displayName: result.user.displayName,
+              photoUrl: result.user.photoURL,
+            });
+            toast.success('Account created successfully!');
+          } catch (registerError: any) {
+            console.error('Google registration failed:', registerError);
+            toast.error(registerError.response?.data?.error || 'Failed to create account with Google');
+            // If backend registration fails, we might want to sign out from firebase to keep states in sync?
+            // But for now, let's just show the error.
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
+      toast.error(error.message || 'Google sign-in failed');
+    }
   };
 
   const logout = async () => {
