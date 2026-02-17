@@ -16,7 +16,10 @@ import {
   HiCheckCircle,
   HiArrowRight,
   HiBadgeCheck,
+  HiChatAlt2,
+  HiMail,
 } from 'react-icons/hi';
+import { FaWhatsapp } from 'react-icons/fa';
 import { DashboardCharts } from './DashboardCharts';
 import { getExamConfig } from '@/config/examConfig';
 
@@ -24,7 +27,15 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [subscription, setSubscription] = useState<{ planType: string; expiresAt: string } | null>(null);
+  const [subscription, setSubscription] = useState<{ planType: string; status: string; expiresAt: string } | null>(null);
+
+  // Calculate tier
+  const tier = (() => {
+    if (!subscription || subscription.status !== 'active') return 'free';
+    if (subscription.planType === 'monthly') return 'starter';
+    if (subscription.planType === 'yearly' || subscription.planType === 'quarterly') return 'pro';
+    return 'free';
+  })();
 
   // Get exam config based on user's preference
   const examType = user?.preferredExamType || 'ielts';
@@ -163,7 +174,7 @@ export default function DashboardPage() {
         </div>
 
         <StatCard
-          title="Average Score"
+          title="Average Estimated Score"
           value={avgBand ? displayScore(avgBand, examConfig.scorePrecision) : '-'}
           subtitle={avgBand ? examConfig.scoreLabel : 'No data'}
           icon={<HiChartBar className="w-6 h-6" />}
@@ -173,7 +184,7 @@ export default function DashboardPage() {
           iconColor="text-blue-600"
         />
         <StatCard
-          title="Best Score"
+          title="Best Estimated Score"
           value={bestBand ? displayScore(bestBand, examConfig.scorePrecision) : '-'}
           subtitle={bestBand ? examConfig.scoreLabel : 'No data'}
           icon={<HiStar className="w-6 h-6" />}
@@ -223,6 +234,7 @@ export default function DashboardPage() {
           recentAttempts={stats?.recentAttempts || []}
           sectionAverages={stats?.sectionAverages || {}}
           examType={examType}
+          tier={tier}
         />
       </div>
 
@@ -304,52 +316,120 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Study Tips */}
-        <div className="bg-white rounded-2xl border border-[#e8ecef] p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-[#2c3e50] mb-5 flex items-center gap-2">
-            <HiLightBulb className="w-5 h-5 text-amber-500" />
-            Study Tips
-          </h3>
-          <div className="space-y-4">
-            <TipCard
-              title="Practice Reading Daily"
-              description="Consistency is key. Even 20 minutes a day can significantly improve your score."
-              color="from-blue-500 to-blue-600"
-              bgColor="bg-blue-50/50"
-            />
-            <TipCard
-              title="Time Management"
-              description="Practice under timed conditions to build speed and confidence."
-              color="from-amber-500 to-orange-500"
-              bgColor="bg-amber-50/50"
-            />
-            <TipCard
-              title="Review Mistakes"
-              description="Learn from your errors. Each mistake is a learning opportunity."
-              color="from-emerald-500 to-teal-500"
-              bgColor="bg-emerald-50/50"
-            />
+        {/* Right Column: Tips & Support */}
+        <div className="space-y-6">
+          {/* Study Tips */}
+          <div className="bg-white rounded-2xl border border-[#e8ecef] p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-[#2c3e50] mb-5 flex items-center gap-2">
+              <HiLightBulb className="w-5 h-5 text-amber-500" />
+              Study Tips
+            </h3>
+            <div className="space-y-4">
+              <TipCard
+                title="Practice Reading Daily"
+                description="Consistency is key. Even 20 minutes a day can significantly improve your score."
+                color="from-blue-500 to-blue-600"
+                bgColor="bg-blue-50/50"
+              />
+              <TipCard
+                title="Time Management"
+                description="Practice under timed conditions to build speed and confidence."
+                color="from-amber-500 to-orange-500"
+                bgColor="bg-amber-50/50"
+              />
+              <TipCard
+                title="Review Mistakes"
+                description="Learn from your errors. Each mistake is a learning opportunity."
+                color="from-emerald-500 to-teal-500"
+                bgColor="bg-emerald-50/50"
+              />
 
-            {/* Quick Action */}
-            <div className="pt-4 mt-4 border-t border-[#e8ecef]">
-              <Link
-                href="/tests"
-                className="block p-4 rounded-xl border transition-all group bg-gradient-to-br from-[#f8f9fa] to-white hover:opacity-90"
-                style={{ borderColor: t.border }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${t.secondary}40`; e.currentTarget.style.borderColor = `${t.primary}50`; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.borderColor = t.border; }}
-              >
-                <p className="font-semibold text-[#2c3e50] mb-1">
-                  Try a Full Mock Test
-                </p>
-                <p className="text-sm text-[#5a6c7d] mb-3">
-                  Simulate real exam conditions with a complete {examConfig.name} test.
-                </p>
-                <div className="flex items-center text-sm font-semibold" style={{ color: t.primary }}>
-                  Start Now <HiArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </Link>
+              {/* Quick Action */}
+              <div className="pt-4 mt-4 border-t border-[#e8ecef]">
+                <Link
+                  href="/tests"
+                  className="block p-4 rounded-xl border transition-all group bg-gradient-to-br from-[#f8f9fa] to-white hover:opacity-90"
+                  style={{ borderColor: t.border }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${t.secondary}40`; e.currentTarget.style.borderColor = `${t.primary}50`; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.borderColor = t.border; }}
+                >
+                  <p className="font-semibold text-[#2c3e50] mb-1">
+                    Try a Full Mock Test
+                  </p>
+                  <p className="text-sm text-[#5a6c7d] mb-3">
+                    Simulate real exam conditions with a complete {examConfig.name} test.
+                  </p>
+                  <div className="flex items-center text-sm font-semibold" style={{ color: t.primary }}>
+                    Start Now <HiArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              </div>
             </div>
+          </div>
+
+          {/* Support Widget */}
+          <div className="bg-white rounded-2xl border border-[#e8ecef] p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-[#2c3e50] mb-4 flex items-center gap-2">
+              <HiChatAlt2 className="w-5 h-5 text-emerald-500" />
+              Expert Support
+            </h3>
+
+            {tier === 'free' ? (
+              <div className="text-center py-2">
+                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <HiMail className="w-6 h-6" />
+                </div>
+                <p className="text-[#2c3e50] font-semibold mb-1">Need help?</p>
+                <p className="text-sm text-[#5a6c7d] mb-4">Upgrade to Starter or Pro for personalized email and priority support.</p>
+                <Link
+                  href="/pricing"
+                  className="block w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 shadow-sm"
+                  style={{ backgroundColor: t.primary }}
+                >
+                  View Plans
+                </Link>
+              </div>
+            ) : tier === 'starter' ? (
+              <div>
+                <p className="text-sm text-[#5a6c7d] mb-4">
+                  Connect with other students and share tips in our exclusive group.
+                </p>
+                <a
+                  href="https://chat.whatsapp.com/starter-group-link"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 shadow-sm"
+                  style={{ backgroundColor: '#25D366' }}
+                >
+                  <FaWhatsapp className="w-5 h-5" />
+                  Join WhatsApp Group
+                </a>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-[#5a6c7d] mb-4">
+                  As a Pro member, you get priority access to our expert tutors.
+                </p>
+                <div className="space-y-3">
+                  <a
+                    href="https://wa.me/6281234567890"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-[#25D366] hover:bg-[#20bd5a] transition-all shadow-sm"
+                  >
+                    <FaWhatsapp className="w-5 h-5" />
+                    WhatsApp Priority
+                  </a>
+                  <a
+                    href="mailto:priority@englishtests.com"
+                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+                  >
+                    <HiMail className="w-5 h-5 text-slate-500" />
+                    Email Support
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

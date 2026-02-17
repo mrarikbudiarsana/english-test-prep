@@ -18,6 +18,7 @@ import {
     Cell,
     LabelList,
 } from 'recharts';
+import { HiLockClosed } from 'react-icons/hi';
 import { ExamType } from '@/types/user';
 import { getExamConfig } from '@/config/examConfig';
 import { formatScore } from '@/lib/utils';
@@ -26,6 +27,7 @@ interface DashboardChartsProps {
     recentAttempts: any[];
     sectionAverages: Record<string, number | null>;
     examType?: ExamType;
+    tier?: string;
 }
 
 type SkillsTab = 'sections' | 'writing' | 'speaking';
@@ -72,7 +74,7 @@ function CriteriaPanel({ criteria, color, radarId }: {
     );
 }
 
-export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'ielts' }: DashboardChartsProps) {
+export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'ielts', tier = 'free' }: DashboardChartsProps) {
     const examConfig = getExamConfig(examType);
     const { scoreRange, scoreLabel, sections: examSections, theme } = examConfig;
     const chartColor = theme.chartColor;
@@ -93,7 +95,8 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
         fullMark: examConfig.sectionScoreRange.max,
     }));
     const scoredSections = skillsData.filter(s => s.score > 0);
-    const useRadar = scoredSections.length >= 3;
+    // Radar chart is a Pro feature
+    const useRadar = tier === 'pro' && scoredSections.length >= 3;
 
     // Extract most recent writing/speaking criteria from recentAttempts
     const recentWriting = recentAttempts.find(a => a.writingFeedback?.tasks?.length > 0);
@@ -105,19 +108,20 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
         const avg = (key: string) => Math.round(tasks.reduce((s: number, t: any) => s + (t[key]?.band ?? 0), 0) / tasks.length);
         const hasTA = tasks.some((t: any) => t.taskAchievement);
         const hasTR = tasks.some((t: any) => t.taskResponse);
+        const isPTE = examType === 'pte';
         return [
-            ...(hasTA ? [{ label: 'Task Achievement', short: 'TA', band: avg('taskAchievement') }] : []),
-            ...(hasTR ? [{ label: 'Task Response', short: 'TR', band: avg('taskResponse') }] : []),
-            { label: 'Coherence & Cohesion', short: 'CC', band: avg('coherenceCohesion') },
-            { label: 'Lexical Resource', short: 'LR', band: avg('lexicalResource') },
-            { label: 'Grammar & Accuracy', short: 'GRA', band: avg('grammaticalRangeAccuracy') },
+            ...(hasTA ? [{ label: isPTE ? 'Content' : 'Task Achievement', short: isPTE ? 'Cont' : 'TA', band: avg('taskAchievement') }] : []),
+            ...(hasTR ? [{ label: isPTE ? 'Form' : 'Task Response', short: isPTE ? 'Form' : 'TR', band: avg('taskResponse') }] : []),
+            { label: isPTE ? 'Written Discourse' : 'Coherence & Cohesion', short: isPTE ? 'WD' : 'CC', band: avg('coherenceCohesion') },
+            { label: isPTE ? 'Vocabulary' : 'Lexical Resource', short: isPTE ? 'Vocab' : 'LR', band: avg('lexicalResource') },
+            { label: isPTE ? 'Grammar' : 'Grammar & Accuracy', short: isPTE ? 'Gram' : 'GRA', band: avg('grammaticalRangeAccuracy') },
         ];
     })() : null;
 
     const speakingCriteria = recentSpeaking ? [
-        { label: 'Fluency & Coherence', short: 'FC', band: recentSpeaking.speakingFeedback.fluencyCoherence.band },
-        { label: 'Lexical Resource', short: 'LR', band: recentSpeaking.speakingFeedback.lexicalResource.band },
-        { label: 'Grammar & Accuracy', short: 'GRA', band: recentSpeaking.speakingFeedback.grammaticalRangeAccuracy.band },
+        { label: examType === 'pte' ? 'Oral Fluency' : 'Fluency & Coherence', short: examType === 'pte' ? 'OF' : 'FC', band: recentSpeaking.speakingFeedback.fluencyCoherence.band },
+        { label: examType === 'pte' ? 'Vocabulary' : 'Lexical Resource', short: examType === 'pte' ? 'Vocab' : 'LR', band: recentSpeaking.speakingFeedback.lexicalResource.band },
+        { label: examType === 'pte' ? 'Grammar' : 'Grammar & Accuracy', short: examType === 'pte' ? 'Gram' : 'GRA', band: recentSpeaking.speakingFeedback.grammaticalRangeAccuracy.band },
         { label: 'Pronunciation', short: 'Pron', band: recentSpeaking.speakingFeedback.pronunciation.band },
     ] : null;
 
@@ -139,7 +143,15 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                     <p className="text-sm text-slate-500">Track your improvement over time</p>
                 </div>
                 <div className="h-[300px] w-full">
-                    {progressData.length > 1 ? (
+                    {tier === 'free' ? (
+                        <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-8 text-center">
+                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                                <HiLockClosed className="w-5 h-5 text-gray-400" />
+                            </div>
+                            <h4 className="font-semibold text-gray-700 mb-1">Score History Locked</h4>
+                            <p className="text-sm text-gray-500 max-w-xs">Upgrade to Starter to track your progress over time and identify trends.</p>
+                        </div>
+                    ) : progressData.length > 1 ? (
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={progressData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
                                 {/* ... (defs unchanged) ... */}
@@ -237,7 +249,15 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                     )}
                 </div>
                 <div className="h-[300px] w-full overflow-y-auto">
-                    {skillsTab === 'writing' && writingCriteria ? (
+                    {tier === 'free' ? (
+                        <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-8 text-center">
+                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                                <HiLockClosed className="w-5 h-5 text-gray-400" />
+                            </div>
+                            <h4 className="font-semibold text-gray-700 mb-1">Skills Analysis Locked</h4>
+                            <p className="text-sm text-gray-500 max-w-xs">Upgrade to Starter to see your detailed skill breakdown.</p>
+                        </div>
+                    ) : skillsTab === 'writing' && writingCriteria ? (
                         <CriteriaPanel criteria={writingCriteria} color="#3b82f6" radarId="dashWritingRadar" />
                     ) : skillsTab === 'speaking' && speakingCriteria ? (
                         <CriteriaPanel criteria={speakingCriteria} color="#8b5cf6" radarId="dashSpeakingRadar" />
@@ -253,7 +273,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                         </div>
                     ) : useRadar ? (
                         <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart cx="50%" cy="50%" outerRadius="60%" data={skillsData}>
+                            <RadarChart cx="50%" cy="50%" outerRadius="50%" data={skillsData}>
                                 <defs>
                                     <linearGradient id="radarGradient" x1="0" y1="0" x2="1" y2="1">
                                         <stop offset="0%" stopColor={chartColor} />
@@ -263,7 +283,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                                 <PolarGrid stroke="#e2e8f0" strokeWidth={1.5} />
                                 <PolarAngleAxis
                                     dataKey="subject"
-                                    tick={{ fill: '#475569', fontSize: 13, fontWeight: 600 }}
+                                    tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }}
                                 />
                                 <PolarRadiusAxis
                                     angle={30}

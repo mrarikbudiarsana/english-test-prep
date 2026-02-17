@@ -23,30 +23,30 @@ interface PricingPlan {
 const examPlanOverrides: Record<ExamType, { name: string; description: string; perks: string[] }[][]> = {
     ielts: [
         [
-            { name: 'Free', description: 'Start your IELTS journey', perks: ['2 free IELTS practice tests/month', 'Basic score feedback', 'Band score estimation', 'Community access'] },
-            { name: 'IELTS Starter', description: 'Perfect for early preparation', perks: ['10 IELTS practice tests/month', 'Listening & Reading sections', 'Detailed band score breakdown', 'Progress tracking', 'Email support'] },
-            { name: 'IELTS Pro', description: 'Full exam preparation suite', perks: ['Unlimited IELTS practice tests', 'All 4 sections (L/R/W/S)', 'AI Writing & Speaking scoring', 'Official band score scale', 'Priority support', 'Performance analytics'] },
+            { name: 'Free', description: 'Start your IELTS journey', perks: ['2 free full IELTS tests/month', 'Basic score feedback (Overall & Section)', 'Correct/Incorrect list', 'Community access'] },
+            { name: 'IELTS Starter', description: 'Understand your performance', perks: ['10 full IELTS tests/month', 'Detailed band score breakdown', 'Relative performance charts', 'Correct answer key', 'WhatsApp Peer Group'] },
+            { name: 'IELTS Pro', description: 'Master every skill', perks: ['Unlimited full IELTS tests', 'AI-powered answer explanations', 'Speaking & Writing AI feedback', 'Skill weakness analytics', 'Priority WhatsApp & Email support'] },
         ],
     ],
     toefl_ibt: [
         [
-            { name: 'Free', description: 'Explore TOEFL iBT practice', perks: ['2 free TOEFL iBT tests/month', 'Basic score feedback', 'Score out of 120 estimation', 'Community access'] },
-            { name: 'iBT Starter', description: 'Build your TOEFL foundation', perks: ['10 TOEFL iBT tests/month', 'Reading & Listening sections', 'Detailed section score breakdown', 'Progress tracking', 'Email support'] },
-            { name: 'iBT Pro', description: 'Complete TOEFL iBT preparation', perks: ['Unlimited TOEFL iBT tests', 'All 4 sections (R/L/S/W)', 'AI Speaking & Writing scoring', 'Official 0–120 score scale', 'Priority support', 'Performance analytics'] },
+            { name: 'Free', description: 'Explore TOEFL iBT practice', perks: ['2 free full TOEFL iBT tests/month', 'Basic score feedback (0-120)', 'Correct/Incorrect list', 'Community access'] },
+            { name: 'iBT Starter', description: 'Build your TOEFL foundation', perks: ['10 full TOEFL iBT tests/month', 'Detailed section score breakdown', 'Score history & trends', 'Correct answer key', 'WhatsApp Peer Group'] },
+            { name: 'iBT Pro', description: 'Complete TOEFL iBT preparation', perks: ['Unlimited full TOEFL iBT tests', 'AI-powered answer explanations', 'Speaking & Writing AI scoring', 'Time management analytics', 'Priority WhatsApp & Email support'] },
         ],
     ],
     toefl_itp: [
         [
-            { name: 'Free', description: 'Get started with TOEFL ITP', perks: ['2 free TOEFL ITP tests/month', 'Basic score feedback', 'Score 310–677 estimation', 'Community access'] },
-            { name: 'ITP Starter', description: 'Targeted ITP preparation', perks: ['10 TOEFL ITP tests/month', 'Listening & Structure sections', 'Detailed score breakdown', 'Progress tracking', 'Email support'] },
-            { name: 'ITP Pro', description: 'Master all ITP sections', perks: ['Unlimited TOEFL ITP tests', 'All 3 sections (L/S/R)', 'AI-powered answer analysis', 'Official 310–677 scale', 'Priority support', 'Performance analytics'] },
+            { name: 'Free', description: 'Get started with TOEFL ITP', perks: ['2 free full TOEFL ITP tests/month', 'Basic score feedback (310-677)', 'Correct/Incorrect list', 'Community access'] },
+            { name: 'ITP Starter', description: 'Analyze your performance', perks: ['10 full TOEFL ITP tests/month', 'Detailed structure & written exp. breakdown', 'Score progression charts', 'Correct answer key', 'WhatsApp Peer Group'] },
+            { name: 'ITP Pro', description: 'Master all ITP sections', perks: ['Unlimited full TOEFL ITP tests', 'AI-powered answer explanations', 'Grammar & Vocab deep dive', 'Skill weakness radar charts', 'Priority WhatsApp & Email support'] },
         ],
     ],
     pte: [
         [
-            { name: 'Free', description: 'Begin your PTE journey', perks: ['2 free PTE Academic tests/month', 'Basic score feedback', 'Score 10–90 estimation', 'Community access'] },
-            { name: 'PTE Starter', description: 'Essential PTE preparation', perks: ['10 PTE Academic tests/month', 'Reading & Listening sections', 'Detailed score breakdown', 'Progress tracking', 'Email support'] },
-            { name: 'PTE Pro', description: 'Complete PTE Academic prep', perks: ['Unlimited PTE Academic tests', 'All 3 sections (S&W/R/L)', 'AI Speaking & Writing scoring', 'Official 10–90 score scale', 'Priority support', 'Performance analytics'] },
+            { name: 'Free', description: 'Begin your PTE journey', perks: ['2 free full PTE Academic tests/month', 'Basic score feedback (10-90)', 'Correct/Incorrect list', 'Community access'] },
+            { name: 'PTE Starter', description: 'Essential PTE preparation', perks: ['10 full PTE Academic tests/month', 'Communicative skills breakdown', 'Detailed Skills Profile', 'Correct answer key', 'WhatsApp Peer Group'] },
+            { name: 'PTE Pro', description: 'Complete PTE Academic prep', perks: ['Unlimited full PTE Academic tests', 'AI Speaking & Writing feedback', 'Pronunciation & Fluency analytics', 'Score history', 'Priority WhatsApp & Email support'] },
         ],
     ],
 };
@@ -306,8 +306,8 @@ export default function PricingPage() {
                                     {checkingOut === plan.id
                                         ? 'Loading...'
                                         : plan.priceMonthly === 0
-                                        ? 'Get Started'
-                                        : 'Subscribe Now'}
+                                            ? 'Get Started'
+                                            : 'Subscribe Now'}
                                 </button>
                             </div>
                         );
