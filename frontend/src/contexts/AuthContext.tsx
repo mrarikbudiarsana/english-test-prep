@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import {
   User as FirebaseUser,
   onAuthStateChanged,
@@ -44,16 +45,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (result?.user) {
         try {
           await api.post('/auth/login', { firebaseUid: result.user.uid });
-        } catch {
-          await api.post('/auth/register', {
-            firebaseUid: result.user.uid,
-            email: result.user.email,
-            displayName: result.user.displayName,
-            photoUrl: result.user.photoURL,
-          });
+          toast.success('Successfully signed in!');
+        } catch (loginError) {
+          // If login fails (likely user doesn't exist), try to register
+          try {
+            await api.post('/auth/register', {
+              firebaseUid: result.user.uid,
+              email: result.user.email,
+              displayName: result.user.displayName,
+              photoUrl: result.user.photoURL,
+            });
+            toast.success('Account created successfully!');
+          } catch (registerError: any) {
+            console.error('Google registration failed:', registerError);
+            toast.error(registerError.response?.data?.error || 'Failed to create account with Google');
+          }
         }
       }
-    }).catch(() => {});
+    }).catch((error) => {
+      console.error('Google redirect error:', error);
+      toast.error(error.message || 'Google sign-in failed');
+    });
 
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
@@ -61,7 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const response = await api.get('/auth/me');
           setUser(response.data);
-        } catch {
+        } catch (error) {
+          console.error('Failed to fetch user profile:', error);
           setUser(null);
         }
       } else {
