@@ -49,6 +49,9 @@ export async function createSection(
     speakingPrompts?: any;
     preparationTime?: number;
     responseTime?: number;
+    moduleStage?: number;
+    modulePath?: string;
+    taskType?: string;
   },
 ) {
   // Verify the test exists
@@ -92,6 +95,9 @@ export async function createSection(
     speakingPrompts: data.speakingPrompts,
     preparationTime: data.preparationTime,
     responseTime: data.responseTime,
+    moduleStage: data.moduleStage,
+    modulePath: data.modulePath,
+    taskType: data.taskType,
   });
 }
 
@@ -120,6 +126,9 @@ export async function updateSection(
     speakingPrompts: any;
     preparationTime: number;
     responseTime: number;
+    moduleStage: number;
+    modulePath: string;
+    taskType: string;
   }>,
 ) {
   const existing = await sectionModel.findById(id);

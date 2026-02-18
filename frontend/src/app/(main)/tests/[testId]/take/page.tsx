@@ -22,6 +22,7 @@ import { sectionTypeLabel } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import CongratulationsModal from '@/components/test/CongratulationsModal';
 import QuestionNavigator from '@/components/test/QuestionNavigator';
+import ToeflIbtTestSession from '@/components/test/toefl-ibt/ToeflIbtTestSession';
 
 const SECTION_ORDER: SectionType[] = ['listening', 'reading', 'writing', 'speaking', 'structure'];
 const SECTION_ORDER_TOEFL: SectionType[] = ['listening', 'structure', 'reading'];
@@ -1799,10 +1800,46 @@ function TestTakingContent() {
   );
 }
 
-export default function TestTakingPage() {
+/**
+ * Delivery-model router: detects TOEFL iBT 2026 tests and renders
+ * ToeflIbtTestSession; all other tests fall through to the standard session.
+ */
+function TestDeliveryRouter() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const testId = params.testId as string;
+  const attemptId = searchParams.get('attemptId') || '';
+
+  const [deliveryModel, setDeliveryModel] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.get(`/tests/${testId}`)
+      .then((res) => {
+        const t = res.data?.data || res.data;
+        setDeliveryModel(t?.deliveryModel || 'legacy');
+      })
+      .catch(() => setDeliveryModel('legacy'));
+  }, [testId]);
+
+  if (deliveryModel === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (deliveryModel === 'toefl_ibt_2026') {
+    return <ToeflIbtTestSession testId={testId} attemptId={attemptId} />;
+  }
+
   return (
     <TestSessionProvider>
       <TestTakingContent />
     </TestSessionProvider>
   );
+}
+
+export default function TestTakingPage() {
+  return <TestDeliveryRouter />;
 }

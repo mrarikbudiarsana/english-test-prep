@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Modal } from '@/components/ui/Modal';
+import { Textarea } from '@/components/ui/Textarea';
 import TestForm from '@/components/admin/TestForm';
 import SectionEditor from '@/components/admin/SectionEditor';
 import { sectionTypeLabel } from '@/lib/utils';
@@ -24,6 +25,15 @@ export default function AdminEditTestPage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [publishLoading, setPublishLoading] = useState(false);
+  const [blueprintText, setBlueprintText] = useState('');
+  const [blueprintSaving, setBlueprintSaving] = useState(false);
+  const [blueprintValidating, setBlueprintValidating] = useState(false);
+  const [blueprintError, setBlueprintError] = useState<string | null>(null);
+  const [blueprintValidation, setBlueprintValidation] = useState<{
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
+  } | null>(null);
 
   // Section editor state
   const [showSectionEditor, setShowSectionEditor] = useState(false);
@@ -38,7 +48,16 @@ export default function AdminEditTestPage() {
         api.get(`/admin/tests/${testId}`),
         api.get(`/tests/${testId}/sections`),
       ]);
-      setTest(testRes.data.data || testRes.data);
+      const fetchedTest = testRes.data.data || testRes.data;
+      setTest(fetchedTest);
+      if (fetchedTest?.deliveryModel === 'toefl_ibt_2026') {
+        const formatted = JSON.stringify(fetchedTest.blueprintJson || {}, null, 2);
+        setBlueprintText(formatted);
+      } else {
+        setBlueprintText('');
+      }
+      setBlueprintValidation(null);
+      setBlueprintError(null);
       const fetchedSections = sectionsRes.data.data || sectionsRes.data;
       setSections(
         Array.isArray(fetchedSections)
@@ -77,12 +96,78 @@ export default function AdminEditTestPage() {
     if (!test) return;
     setPublishLoading(true);
     try {
+      if (!test.isPublished && test.deliveryModel === 'toefl_ibt_2026') {
+        const validateRes = await api.get(`/admin/tests/${testId}/blueprint/validate`);
+        const validateData = validateRes.data.data || validateRes.data;
+        setBlueprintValidation(validateData);
+        if (!validateData.valid) {
+          const firstErrors = (validateData.errors || []).slice(0, 3).join('\n- ');
+          alert(`Cannot publish. Fix blueprint issues first:\n- ${firstErrors}`);
+          return;
+        }
+      }
       const response = await api.post(`/admin/tests/${testId}/publish`);
       setTest(response.data.data || response.data);
     } catch (err: any) {
       alert(err.response?.data?.error || 'Failed to update publish status');
     } finally {
       setPublishLoading(false);
+    }
+  };
+
+  const handleBlueprintSave = async () => {
+    if (!test || test.deliveryModel !== 'toefl_ibt_2026') return;
+
+    setBlueprintError(null);
+    setBlueprintSaving(true);
+    try {
+      let parsed: any = {};
+      try {
+        parsed = JSON.parse(blueprintText || '{}');
+      } catch {
+        setBlueprintError('Blueprint JSON is invalid.');
+        return;
+      }
+
+      const response = await api.post(`/admin/tests/${testId}/blueprint`, {
+        blueprint: parsed,
+      });
+      const updated = response.data.data || response.data;
+      setTest(updated);
+      setBlueprintText(JSON.stringify(updated.blueprintJson || parsed, null, 2));
+      setBlueprintError(null);
+      alert('Blueprint saved.');
+    } catch (err: any) {
+      setBlueprintError(err.response?.data?.error || 'Failed to save blueprint.');
+    } finally {
+      setBlueprintSaving(false);
+    }
+  };
+
+  const handleBlueprintValidate = async () => {
+    if (!test || test.deliveryModel !== 'toefl_ibt_2026') return;
+
+    setBlueprintError(null);
+    setBlueprintValidating(true);
+    try {
+      let parsed: any = {};
+      try {
+        parsed = JSON.parse(blueprintText || '{}');
+      } catch {
+        setBlueprintError('Blueprint JSON is invalid.');
+        return;
+      }
+
+      // Save draft before validation so backend validates current blueprint version.
+      await api.post(`/admin/tests/${testId}/blueprint`, { blueprint: parsed });
+
+      const response = await api.get(`/admin/tests/${testId}/blueprint/validate`);
+      const result = response.data.data || response.data;
+      setBlueprintValidation(result);
+    } catch (err: any) {
+      setBlueprintError(err.response?.data?.error || 'Failed to validate blueprint.');
+    } finally {
+      setBlueprintValidating(false);
     }
   };
 
@@ -203,6 +288,11 @@ export default function AdminEditTestPage() {
           <Badge variant={test.isPublished ? 'success' : 'default'}>
             {test.isPublished ? 'Published' : 'Draft'}
           </Badge>
+          {test.deliveryModel === 'toefl_ibt_2026' && (
+            <Badge variant="default" className="bg-cyan-100 text-cyan-800 border-cyan-200">
+              2026 Adaptive Model
+            </Badge>
+          )}
         </div>
         <Button
           variant={test.isPublished ? 'outline' : 'primary'}
@@ -227,6 +317,78 @@ export default function AdminEditTestPage() {
           loading={saving}
         />
       </Card>
+
+      {test.deliveryModel === 'toefl_ibt_2026' && (
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">TOEFL iBT Blueprint</h2>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleBlueprintValidate}
+                loading={blueprintValidating}
+              >
+                Validate Blueprint
+              </Button>
+              <Button onClick={handleBlueprintSave} loading={blueprintSaving}>
+                Save Blueprint
+              </Button>
+            </div>
+          </div>
+
+          <Textarea
+            value={blueprintText}
+            onChange={(e) => setBlueprintText(e.target.value)}
+            rows={18}
+            className="font-mono text-xs"
+            placeholder="{}"
+          />
+
+          {blueprintError && (
+            <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {blueprintError}
+            </div>
+          )}
+
+          {blueprintValidation && (
+            <div className="mt-4 space-y-3">
+              <div
+                className={`rounded-md border p-3 text-sm ${
+                  blueprintValidation.valid
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                    : 'border-amber-200 bg-amber-50 text-amber-800'
+                }`}
+              >
+                {blueprintValidation.valid
+                  ? 'Validation passed. Blueprint and authored structure are publish-ready.'
+                  : 'Validation failed. Fix errors below before publishing.'}
+              </div>
+
+              {blueprintValidation.errors.length > 0 && (
+                <div className="rounded-md border border-red-200 bg-red-50 p-3">
+                  <h3 className="text-sm font-semibold text-red-800 mb-2">Errors</h3>
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-red-700">
+                    {blueprintValidation.errors.map((msg, idx) => (
+                      <li key={`blueprint-error-${idx}`}>{msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {blueprintValidation.warnings.length > 0 && (
+                <div className="rounded-md border border-yellow-200 bg-yellow-50 p-3">
+                  <h3 className="text-sm font-semibold text-yellow-800 mb-2">Warnings</h3>
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-yellow-700">
+                    {blueprintValidation.warnings.map((msg, idx) => (
+                      <li key={`blueprint-warning-${idx}`}>{msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Sections */}
       <Card>

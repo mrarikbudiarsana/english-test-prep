@@ -7,6 +7,10 @@ import { generalLimiter } from './middleware/rateLimiter';
 import routes from './routes';
 
 const app = express();
+const allowedOrigins = env.corsOrigin
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 // Trust Vercel/proxy X-Forwarded-For headers for rate limiting
 app.set('trust proxy', 1);
@@ -17,7 +21,20 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 app.use(cors({
-  origin: env.corsOrigin.split(',').map(o => o.trim()),
+  origin: (origin, callback) => {
+    // Allow server-to-server, curl, and same-origin requests without Origin header.
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS origin not allowed: ${origin}`));
+  },
   credentials: true,
 }));
 

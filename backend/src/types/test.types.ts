@@ -1,4 +1,5 @@
 export type TestType = 'academic' | 'general_training' | 'toefl_ibt' | 'toefl_itp' | 'pte_academic';
+export type DeliveryModel = 'legacy' | 'toefl_ibt_2026';
 export type SectionType = 'listening' | 'reading' | 'writing' | 'speaking' | 'structure';
 export type QuestionType =
   | 'multiple_choice'
@@ -16,6 +17,8 @@ export interface Test {
   title: string;
   description: string | null;
   testType: TestType;
+  deliveryModel?: DeliveryModel;
+  blueprintJson?: any | null;
   isPublished: boolean;
   isFree: boolean;
   durationMinutes: number;
@@ -74,11 +77,26 @@ export interface Attempt {
   sectionStartedAt: Date | null;
   listeningRaw: number | null;
   listeningBand: number | null;
+  listeningScore: number | null;
   readingRaw: number | null;
   readingBand: number | null;
+  readingScore: number | null;
+  writingRaw: number | null;
+  speakingRaw: number | null;
+  structureScore: number | null;
   writingBand: number | null;
   speakingBand: number | null;
   overallBand: number | null;
+  overallScore: number | null;
+  readingScore30: number | null;
+  listeningScore30: number | null;
+  writingScore30: number | null;
+  speakingScore30: number | null;
+  overallScore120: number | null;
+  scoreMappingVersion: string | null;
+  cefrLevel: string | null;
+  scoreReportable: boolean | null;
+  validUntil: string | null;
   writingFeedback: any | null;
   speakingFeedback: any | null;
   createdAt: Date;

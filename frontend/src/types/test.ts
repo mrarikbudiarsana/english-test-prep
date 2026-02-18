@@ -16,6 +16,8 @@ export interface Test {
   title: string;
   description: string | null;
   testType: TestType;
+  deliveryModel?: 'legacy' | 'toefl_ibt_2026';
+  blueprintJson?: any | null;
   isPublished: boolean;
   isFree: boolean;
   durationMinutes: number;
@@ -42,6 +44,9 @@ export interface Section {
   speakingPrompts: SpeakingPrompt[] | null;
   preparationTime: number | null;
   responseTime: number | null;
+  moduleStage?: number | null;
+  modulePath?: string | null;
+  taskType?: string | null;
 }
 
 export interface SpeakingPrompt {
@@ -65,6 +70,7 @@ export interface Question {
   groupLabel?: string | null; // e.g., "Questions 1-7"
   groupInstructions?: string | null; // Shared instructions for the group
   audioUrl?: string | null; // Question-level audio (TOEFL Part A)
+  itemPayload?: any | null; // TOEFL iBT rich item data
 }
 
 // Question data types for each question type
@@ -126,13 +132,26 @@ export interface Attempt {
   readingRaw: number | null;
   readingBand: number | null;
   readingScore: number | null; // TOEFL
+  writingRaw?: number | null;
+  speakingRaw?: number | null;
   structureScore: number | null; // TOEFL
   writingBand: number | null;
   speakingBand: number | null;
   overallBand: number | null;
   overallScore: number | null; // TOEFL
+  readingScore30?: number | null;
+  listeningScore30?: number | null;
+  writingScore30?: number | null;
+  speakingScore30?: number | null;
+  overallScore120?: number | null;
+  scoreMappingVersion?: string | null;
+  cefrLevel?: string | null;
+  scoreReportable?: boolean | null;
+  validUntil?: string | null;
   writingFeedback: WritingFeedback | null;
   speakingFeedback: SpeakingFeedback | null;
+  readingPath?: string | null;
+  listeningPath?: string | null;
   test?: Test;
 }
 

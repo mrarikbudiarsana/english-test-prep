@@ -5,6 +5,13 @@ import * as sectionModel from '../models/section.model';
 import * as responseModel from '../models/response.model';
 import * as userModel from '../models/user.model';
 import { calculateOverallBand, scoreObjectiveSection } from './scoring.service';
+import {
+  TOEFL_IBT_MAPPING_VERSION,
+  bandToScore30,
+  computeOverallBand as computeToeflOverallBand,
+  overallBandToCefr,
+  rawToScore30,
+} from '../config/toeflIbtScoreMappings';
 import * as emailService from './email.service';
 import { NotFoundError } from '../middleware/errorHandler';
 
@@ -574,6 +581,7 @@ export async function finalizeScoring(attemptId: string) {
   // 1. Get attempt to see test type
   const attemptResult = await query(
     `SELECT a.*, t.test_type
+            , t.delivery_model
      FROM attempts a
      JOIN tests t ON t.id = a.test_id
      WHERE a.id = $1`,
@@ -583,6 +591,7 @@ export async function finalizeScoring(attemptId: string) {
   if (!attempt) throw new Error('Attempt not found');
 
   const testType = attempt.test_type;
+  const deliveryModel = attempt.delivery_model;
 
   // 2. Calculate overall score based on test type
   let overall = 0;
@@ -616,6 +625,82 @@ export async function finalizeScoring(attemptId: string) {
       structureScore,
       testType
     );
+  } else if (testType === 'toefl_ibt' && deliveryModel === 'toefl_ibt_2026') {
+    const parseNum = (v: any): number | null => (v !== null && v !== undefined ? parseFloat(v) : null);
+
+    const readingBand = parseNum(attempt.reading_band);
+    const listeningBand = parseNum(attempt.listening_band);
+    const writingBand = parseNum(attempt.writing_band);
+    const speakingBand = parseNum(attempt.speaking_band);
+    const readingRaw = parseNum(attempt.reading_raw);
+    const listeningRaw = parseNum(attempt.listening_raw);
+    const writingRaw = parseNum(attempt.writing_raw);
+    const speakingRaw = parseNum(attempt.speaking_raw);
+
+    const hasAllBands = [readingBand, listeningBand, writingBand, speakingBand].every((v) => v !== null);
+    overall = hasAllBands
+      ? computeToeflOverallBand([readingBand as number, listeningBand as number, writingBand as number, speakingBand as number])
+      : 0;
+
+    const readingScore30 = readingRaw !== null
+      ? rawToScore30(readingRaw)
+      : (readingBand !== null ? bandToScore30(readingBand) : null);
+    const listeningScore30 = listeningRaw !== null
+      ? rawToScore30(listeningRaw)
+      : (listeningBand !== null ? bandToScore30(listeningBand) : null);
+    const writingScore30 = writingRaw !== null
+      ? rawToScore30(writingRaw)
+      : (writingBand !== null ? bandToScore30(writingBand) : null);
+    const speakingScore30 = speakingRaw !== null
+      ? rawToScore30(speakingRaw)
+      : (speakingBand !== null ? bandToScore30(speakingBand) : null);
+
+    const overallScore120 = [readingScore30, listeningScore30, writingScore30, speakingScore30].every((v) => v !== null)
+      ? (readingScore30 as number) + (listeningScore30 as number) + (writingScore30 as number) + (speakingScore30 as number)
+      : null;
+    const cefrLevel = hasAllBands ? overallBandToCefr(overall) : null;
+    const scoreReportable = hasAllBands && overallScore120 !== null;
+
+    await query(
+      `UPDATE attempts
+       SET overall_band = $1,
+           reading_score_30 = $2,
+           listening_score_30 = $3,
+           writing_score_30 = $4,
+           speaking_score_30 = $5,
+           overall_score_120 = $6,
+           score_mapping_version = $7,
+           cefr_level = $8,
+           score_reportable = $9,
+           valid_until = (CURRENT_DATE + INTERVAL '2 years')::date,
+           status = 'completed'
+       WHERE id = $10`,
+      [
+        hasAllBands ? overall : null,
+        readingScore30,
+        listeningScore30,
+        writingScore30,
+        speakingScore30,
+        overallScore120,
+        TOEFL_IBT_MAPPING_VERSION,
+        cefrLevel,
+        scoreReportable,
+        attemptId,
+      ],
+    );
+
+    await attemptModel.updateScores(attemptId, {
+      overallBand: hasAllBands ? overall : undefined,
+      readingScore30: readingScore30 ?? undefined,
+      listeningScore30: listeningScore30 ?? undefined,
+      writingScore30: writingScore30 ?? undefined,
+      speakingScore30: speakingScore30 ?? undefined,
+      overallScore120: overallScore120 ?? undefined,
+      scoreMappingVersion: TOEFL_IBT_MAPPING_VERSION,
+      cefrLevel: cefrLevel ?? undefined,
+      scoreReportable,
+      validUntil: new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+    } as any);
   } else {
     // IELTS default
     // Parse band values as numbers since pg returns NUMERIC columns as strings
@@ -637,7 +722,7 @@ export async function finalizeScoring(attemptId: string) {
       [overall, attemptId]
     );
     await attemptModel.updateScores(attemptId, { overallScore: overall });
-  } else {
+  } else if (!(testType === 'toefl_ibt' && deliveryModel === 'toefl_ibt_2026')) {
     await query(
       `UPDATE attempts SET overall_band = $1, status = 'completed' WHERE id = $2`,
       [overall, attemptId]

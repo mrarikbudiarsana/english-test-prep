@@ -22,6 +22,9 @@ const fieldMap: Record<string, string> = {
   speakingPrompts: 'speaking_prompts',
   preparationTime: 'preparation_time',
   responseTime: 'response_time',
+  moduleStage: 'module_stage',
+  modulePath: 'module_path',
+  taskType: 'task_type',
 };
 
 const SELECT_COLUMNS = `
@@ -43,6 +46,9 @@ const SELECT_COLUMNS = `
   speaking_prompts  AS "speakingPrompts",
   preparation_time  AS "preparationTime",
   response_time     AS "responseTime",
+  module_stage      AS "moduleStage",
+  module_path       AS "modulePath",
+  task_type         AS "taskType",
   created_at        AS "createdAt",
   updated_at        AS "updatedAt"
 `;
@@ -97,15 +103,19 @@ export async function create(data: {
   speakingPrompts?: any;
   preparationTime?: number;
   responseTime?: number;
+  moduleStage?: number;
+  modulePath?: string;
+  taskType?: string;
 }) {
   const result = await query(
     `INSERT INTO sections (
        test_id, section_type, section_order, title, instructions,
        duration_minutes, audio_url, passage_text, passage_title,
        task_description, task_number, min_words, image_url,
-       part_number, speaking_prompts, preparation_time, response_time
+       part_number, speaking_prompts, preparation_time, response_time,
+       module_stage, module_path, task_type
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.testId,
@@ -125,6 +135,9 @@ export async function create(data: {
       data.speakingPrompts ? JSON.stringify(data.speakingPrompts) : null,
       data.preparationTime ?? null,
       data.responseTime ?? null,
+      data.moduleStage ?? null,
+      data.modulePath ?? null,
+      data.taskType ?? null,
     ],
   );
   return result.rows[0];
@@ -149,6 +162,9 @@ export async function update(
     speakingPrompts: any;
     preparationTime: number;
     responseTime: number;
+    moduleStage: number;
+    modulePath: string;
+    taskType: string;
   }>,
 ) {
   const entries = Object.entries(data).filter(([, v]) => v !== undefined);

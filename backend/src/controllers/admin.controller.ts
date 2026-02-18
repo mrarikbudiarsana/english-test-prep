@@ -87,6 +87,35 @@ export async function publishTest(
   }
 }
 
+export async function setToeflIbtBlueprint(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const testId = req.params.testId as string;
+    const blueprint = req.body?.blueprint ?? req.body;
+    const test = await adminService.setToeflIbtBlueprint(testId, blueprint);
+    res.json({ data: test });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function validateToeflIbtBlueprint(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const testId = req.params.testId as string;
+    const result = await adminService.validateToeflIbtBlueprint(testId);
+    res.json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ---------- Section CRUD ----------
 
 export async function createSection(
@@ -213,6 +242,21 @@ export async function bulkCreateIELTSQuestions(
     const sectionId = req.params.sectionId as string;
     const { questions } = req.body;
     const result = await adminService.bulkCreateIELTSQuestions(sectionId, questions);
+    res.status(201).json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function bulkCreateToeflIbtQuestions(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const sectionId = req.params.sectionId as string;
+    const { questions } = req.body;
+    const result = await adminService.bulkCreateToeflIbtQuestions(sectionId, questions);
     res.status(201).json({ data: result });
   } catch (error) {
     next(error);

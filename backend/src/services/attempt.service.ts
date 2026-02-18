@@ -4,6 +4,15 @@ import * as userModel from '../models/user.model';
 import * as subscriptionModel from '../models/subscription.model';
 import * as scoringService from './scoring.service';
 import * as aiScoringService from './ai-scoring.service';
+import * as toeflIbtScoringService from './toefl-ibt-scoring.service';
+import { logToeflIbtAuditEvent } from './toefl-ibt-audit.service';
+import {
+  TOEFL_IBT_MAPPING_VERSION,
+  bandToScore30,
+  computeOverallBand as computeToeflOverallBand,
+  overallBandToCefr,
+  rawToScore30,
+} from '../config/toeflIbtScoreMappings';
 import { NotFoundError, ForbiddenError, ValidationError } from '../middleware/errorHandler';
 import { AttemptMode, SectionType } from '../types/test.types';
 
@@ -58,6 +67,100 @@ function testTypeToExamType(testType: string): string {
   if (testType === 'toefl_itp') return 'toefl_itp';
   if (testType === 'pte_academic') return 'pte';
   return 'ielts';
+}
+
+function parseNullableNumber(value: any): number | null {
+  if (value === null || value === undefined) return null;
+  const num = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function addYears(dateValue: Date | string, years: number): string {
+  const dt = new Date(dateValue);
+  dt.setUTCFullYear(dt.getUTCFullYear() + years);
+  return dt.toISOString().slice(0, 10);
+}
+
+async function hydrateToeflIbt2026Reporting(attemptId: string) {
+  const latest = await attemptModel.findById(attemptId);
+  if (!latest) throw new NotFoundError('Attempt not found');
+  if (latest.test?.testType !== 'toefl_ibt' || latest.test?.deliveryModel !== 'toefl_ibt_2026') {
+    throw new ValidationError('TOEFL iBT 2026 reporting is only available for TOEFL iBT 2026 attempts');
+  }
+
+  const readingRaw = parseNullableNumber(latest.readingRaw);
+  const listeningRaw = parseNullableNumber(latest.listeningRaw);
+  const writingRaw = parseNullableNumber((latest as any).writingRaw);
+  const speakingRaw = parseNullableNumber((latest as any).speakingRaw);
+
+  const readingBand = parseNullableNumber(latest.readingBand);
+  const listeningBand = parseNullableNumber(latest.listeningBand);
+  const writingBand = parseNullableNumber(latest.writingBand);
+  const speakingBand = parseNullableNumber(latest.speakingBand);
+
+  const readingScore30 = parseNullableNumber((latest as any).readingScore30)
+    ?? (readingRaw !== null ? rawToScore30(readingRaw) : (readingBand !== null ? bandToScore30(readingBand) : null));
+  const listeningScore30 = parseNullableNumber((latest as any).listeningScore30)
+    ?? (listeningRaw !== null ? rawToScore30(listeningRaw) : (listeningBand !== null ? bandToScore30(listeningBand) : null));
+  const writingScore30 = parseNullableNumber((latest as any).writingScore30)
+    ?? (writingRaw !== null ? rawToScore30(writingRaw) : (writingBand !== null ? bandToScore30(writingBand) : null));
+  const speakingScore30 = parseNullableNumber((latest as any).speakingScore30)
+    ?? (speakingRaw !== null ? rawToScore30(speakingRaw) : (speakingBand !== null ? bandToScore30(speakingBand) : null));
+
+  const sectionBands = [readingBand, listeningBand, writingBand, speakingBand];
+  const hasAllBands = sectionBands.every((b) => b !== null);
+  const computedOverallBand = hasAllBands
+    ? computeToeflOverallBand(sectionBands as number[])
+    : parseNullableNumber(latest.overallBand);
+  const overallScore120 = [readingScore30, listeningScore30, writingScore30, speakingScore30].every((s) => s !== null)
+    ? (readingScore30 as number) + (listeningScore30 as number) + (writingScore30 as number) + (speakingScore30 as number)
+    : null;
+  const scoreReportable = hasAllBands && overallScore120 !== null;
+  const scoreMappingVersion = (latest as any).scoreMappingVersion || TOEFL_IBT_MAPPING_VERSION;
+  const cefrLevel = computedOverallBand !== null ? overallBandToCefr(computedOverallBand) : null;
+  const validUntil = latest.completedAt ? addYears(latest.completedAt, 2) : null;
+
+  await attemptModel.updateScores(attemptId, {
+    readingScore30: readingScore30 ?? undefined,
+    listeningScore30: listeningScore30 ?? undefined,
+    writingScore30: writingScore30 ?? undefined,
+    speakingScore30: speakingScore30 ?? undefined,
+    overallScore120: overallScore120 ?? undefined,
+    scoreMappingVersion,
+    cefrLevel: cefrLevel ?? undefined,
+    scoreReportable,
+    validUntil: validUntil ?? undefined,
+    overallBand: computedOverallBand ?? undefined,
+  });
+
+  logToeflIbtAuditEvent('toefl_ibt_scores_hydrated', {
+    attemptId,
+    scoreMappingVersion,
+    overallBand: computedOverallBand,
+    overallScore120,
+    cefrLevel,
+    scoreReportable,
+    validUntil,
+  });
+
+  const refreshed = await attemptModel.findById(attemptId);
+  if (!refreshed) throw new NotFoundError('Attempt not found');
+
+  return {
+    attempt: refreshed,
+    scores: {
+      reading: { raw: readingRaw, band: parseNullableNumber(refreshed.readingBand), score30: parseNullableNumber((refreshed as any).readingScore30) },
+      listening: { raw: listeningRaw, band: parseNullableNumber(refreshed.listeningBand), score30: parseNullableNumber((refreshed as any).listeningScore30) },
+      writing: { raw: writingRaw, band: parseNullableNumber(refreshed.writingBand), score30: parseNullableNumber((refreshed as any).writingScore30) },
+      speaking: { raw: speakingRaw, band: parseNullableNumber(refreshed.speakingBand), score30: parseNullableNumber((refreshed as any).speakingScore30) },
+      overallBand: parseNullableNumber(refreshed.overallBand),
+      overallScore120: parseNullableNumber((refreshed as any).overallScore120),
+      scoreMappingVersion: (refreshed as any).scoreMappingVersion || TOEFL_IBT_MAPPING_VERSION,
+      cefrLevel: (refreshed as any).cefrLevel || null,
+      scoreReportable: (refreshed as any).scoreReportable ?? false,
+      validUntil: (refreshed as any).validUntil || null,
+    },
+  };
 }
 
 export type AccessCheckResult = {
@@ -380,9 +483,10 @@ export async function submitTest(attemptId: string) {
   }
 
   const isToeflItp = test.testType === 'toefl_itp';
+  const isToeflIbt2026 = test.testType === 'toefl_ibt' && test.deliveryModel === 'toefl_ibt_2026';
 
   // Auto-score objective sections if not already scored
-  if ((isToeflItp ? attempt.listeningScore : attempt.listeningBand) === null) {
+  if (!isToeflIbt2026 && (isToeflItp ? attempt.listeningScore : attempt.listeningBand) === null) {
     try {
       await scoringService.scoreObjectiveSection(attemptId, 'listening', test.testType);
     } catch (err) {
@@ -390,7 +494,7 @@ export async function submitTest(attemptId: string) {
     }
   }
 
-  if ((isToeflItp ? attempt.readingScore : attempt.readingBand) === null) {
+  if (!isToeflIbt2026 && (isToeflItp ? attempt.readingScore : attempt.readingBand) === null) {
     try {
       await scoringService.scoreObjectiveSection(attemptId, 'reading', test.testType);
     } catch (err) {
@@ -412,6 +516,48 @@ export async function submitTest(attemptId: string) {
   });
 
   return attemptModel.findById(attemptId);
+}
+
+export async function getToeflIbtScores(attemptId: string, userId: string) {
+  const attempt = await getAttempt(attemptId, userId);
+  if (attempt.test?.testType !== 'toefl_ibt' || attempt.test?.deliveryModel !== 'toefl_ibt_2026') {
+    throw new ValidationError('Scores endpoint is only available for TOEFL iBT 2026 attempts');
+  }
+  return hydrateToeflIbt2026Reporting(attemptId);
+}
+
+export async function getToeflIbtReport(attemptId: string, userId: string) {
+  const { attempt, scores } = await getToeflIbtScores(attemptId, userId);
+  logToeflIbtAuditEvent('toefl_ibt_report_generated', {
+    attemptId,
+    userId,
+    scoreMappingVersion: scores.scoreMappingVersion,
+    overallBand: scores.overallBand,
+    overallScore120: scores.overallScore120,
+    cefrLevel: scores.cefrLevel,
+    scoreReportable: scores.scoreReportable,
+  });
+  return {
+    attemptId: attempt.id,
+    testId: attempt.testId,
+    testTitle: attempt.test?.title || null,
+    testType: attempt.test?.testType || null,
+    deliveryModel: attempt.test?.deliveryModel || null,
+    generatedAt: new Date().toISOString(),
+    completedAt: attempt.completedAt,
+    scoreMappingVersion: scores.scoreMappingVersion,
+    scoreReportable: scores.scoreReportable,
+    validUntil: scores.validUntil,
+    cefrLevel: scores.cefrLevel,
+    sections: {
+      reading: scores.reading,
+      listening: scores.listening,
+      writing: scores.writing,
+      speaking: scores.speaking,
+    },
+    overallBand: scores.overallBand,
+    overallScore120: scores.overallScore120,
+  };
 }
 
 /**
@@ -438,10 +584,25 @@ export async function deleteAttempt(attemptId: string, userId: string) {
  * This runs asynchronously after the test is submitted.
  */
 async function triggerAIScoring(attemptId: string): Promise<void> {
+  const attempt = await attemptModel.findById(attemptId);
+  if (!attempt) throw new NotFoundError('Attempt not found');
+  const isToeflIbt2026 =
+    attempt.test?.testType === 'toefl_ibt' && attempt.test?.deliveryModel === 'toefl_ibt_2026';
+
+  if (isToeflIbt2026) {
+    logToeflIbtAuditEvent('toefl_ibt_scoring_pipeline_start', {
+      attemptId,
+      testId: attempt.testId,
+      deliveryModel: attempt.test?.deliveryModel || null,
+    });
+  }
+
   try {
     // Score writing section
     await withTimeout(
-      aiScoringService.scoreWriting(attemptId),
+      isToeflIbt2026
+        ? toeflIbtScoringService.scoreWriting(attemptId)
+        : aiScoringService.scoreWriting(attemptId),
       WRITING_TIMEOUT_MS,
       'Writing scoring',
     );
@@ -452,7 +613,9 @@ async function triggerAIScoring(attemptId: string): Promise<void> {
   try {
     // Score speaking section
     await withTimeout(
-      aiScoringService.scoreSpeaking(attemptId),
+      isToeflIbt2026
+        ? toeflIbtScoringService.scoreSpeaking(attemptId)
+        : aiScoringService.scoreSpeaking(attemptId),
       SPEAKING_TIMEOUT_MS,
       'Speaking scoring',
     );
@@ -480,5 +643,16 @@ async function triggerAIScoring(attemptId: string): Promise<void> {
     } catch (err) {
       console.error('Error forcing attempt completion:', err);
     }
+  }
+
+  if (isToeflIbt2026) {
+    const refreshed = await attemptModel.findById(attemptId);
+    logToeflIbtAuditEvent('toefl_ibt_scoring_pipeline_end', {
+      attemptId,
+      status: refreshed?.status || null,
+      overallBand: refreshed?.overallBand ?? null,
+      overallScore120: (refreshed as any)?.overallScore120 ?? null,
+      scoreMappingVersion: (refreshed as any)?.scoreMappingVersion ?? null,
+    });
   }
 }

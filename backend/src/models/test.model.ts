@@ -11,19 +11,23 @@ const fieldMap: Record<string, string> = {
   isPublished: 'is_published',
   isFree: 'is_free',
   durationMinutes: 'duration_minutes',
+  deliveryModel: 'delivery_model',
+  blueprintJson: 'blueprint_json',
 };
 
 const SELECT_COLUMNS = `
   id,
   title,
   description,
-  test_type       AS "testType",
-  is_published    AS "isPublished",
-  is_free         AS "isFree",
+  test_type        AS "testType",
+  delivery_model   AS "deliveryModel",
+  blueprint_json   AS "blueprintJson",
+  is_published     AS "isPublished",
+  is_free          AS "isFree",
   duration_minutes AS "durationMinutes",
-  created_by      AS "createdBy",
-  created_at      AS "createdAt",
-  updated_at      AS "updatedAt"
+  created_by       AS "createdBy",
+  created_at       AS "createdAt",
+  updated_at       AS "updatedAt"
 `;
 
 // ---------- queries ----------
@@ -109,17 +113,22 @@ export async function create(data: {
   title: string;
   description?: string;
   testType: string;
+  deliveryModel?: string;
+  blueprintJson?: any;
   isFree?: boolean;
   createdBy?: string;
 }) {
+  const deliveryModel = data.deliveryModel ?? 'legacy';
   const result = await query(
-    `INSERT INTO tests (title, description, test_type, is_free, created_by)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO tests (title, description, test_type, delivery_model, blueprint_json, is_free, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.title,
       data.description ?? null,
       data.testType,
+      deliveryModel,
+      data.blueprintJson != null ? JSON.stringify(data.blueprintJson) : null,
       data.isFree ?? false,
       data.createdBy ?? null,
     ],
@@ -136,6 +145,7 @@ export async function update(
     isPublished: boolean;
     isFree: boolean;
     durationMinutes: number;
+    blueprintJson: any;
   }>,
 ) {
   const entries = Object.entries(data).filter(([, v]) => v !== undefined);
@@ -148,8 +158,11 @@ export async function update(
   for (const [key, value] of entries) {
     const column = fieldMap[key];
     if (!column) continue;
+    const finalValue = key === 'blueprintJson' && value !== null
+      ? JSON.stringify(value)
+      : value;
     setClauses.push(`${column} = $${paramIndex}`);
-    values.push(value);
+    values.push(finalValue);
     paramIndex++;
   }
 

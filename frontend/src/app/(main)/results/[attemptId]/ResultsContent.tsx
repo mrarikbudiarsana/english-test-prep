@@ -66,6 +66,20 @@ interface SpeakingFeedback {
     summary: string;
 }
 
+interface ToeflIbtReport {
+    scoreMappingVersion: string;
+    cefrLevel: string | null;
+    overallBand: number | null;
+    overallScore120: number | null;
+    scoreReportable: boolean;
+    sections: {
+        reading: { score30: number | null };
+        listening: { score30: number | null };
+        writing: { score30: number | null };
+        speaking: { score30: number | null };
+    };
+}
+
 function CriterionCard({ label, data, showFeedback = false }: { label: string; data: BandFeedback; showFeedback?: boolean }) {
     return (
         <div className="bg-gray-50 rounded-lg p-4">
@@ -146,6 +160,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'overview' | 'analysis'>('overview');
     const [subscription, setSubscription] = useState<Subscription | null>(null);
+    const [toeflIbtReport, setToeflIbtReport] = useState<ToeflIbtReport | null>(null);
     const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pollingDelayRef = useRef(5000);
     const MAX_POLLING_DELAY_MS = 20000;
@@ -183,6 +198,18 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
             }
             const res = await api.get(`/attempts/${resolvedAttemptId}/results`);
             setAttempt(res.data);
+            const testType = res.data?.test?.testType;
+            const deliveryModel = res.data?.test?.deliveryModel;
+            if (testType === 'toefl_ibt' && deliveryModel === 'toefl_ibt_2026') {
+                try {
+                    const reportRes = await api.get(`/attempts/${resolvedAttemptId}/report`);
+                    setToeflIbtReport(reportRes.data as ToeflIbtReport);
+                } catch {
+                    setToeflIbtReport(null);
+                }
+            } else {
+                setToeflIbtReport(null);
+            }
 
             clearPollTimeout();
             if (res.data.status === 'scoring') {
@@ -293,6 +320,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
     const testType = attempt.test?.testType || 'academic';
     const isToeflItp = testType === 'toefl_itp';
+    const isToeflIbt2026 = testType === 'toefl_ibt' && attempt.test?.deliveryModel === 'toefl_ibt_2026';
     const isBandScale = usesBandScale(testType);
     const examName = examNameFromTestType(testType);
 
@@ -425,6 +453,52 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                                     )}
                                 </div>
                             ))}
+                        </div>
+                    )}
+
+                    {isToeflIbt2026 && toeflIbtReport && (
+                        <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6">
+                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                                <h3 className="text-lg font-semibold text-cyan-900">Companion TOEFL iBT Scores</h3>
+                                <p className="text-xs font-medium text-cyan-700">
+                                    Mapping: {toeflIbtReport.scoreMappingVersion}
+                                </p>
+                            </div>
+                            <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                {[
+                                    { label: 'Reading', value: toeflIbtReport.sections.reading.score30 },
+                                    { label: 'Listening', value: toeflIbtReport.sections.listening.score30 },
+                                    { label: 'Writing', value: toeflIbtReport.sections.writing.score30 },
+                                    { label: 'Speaking', value: toeflIbtReport.sections.speaking.score30 },
+                                ].map((section) => (
+                                    <div key={section.label} className="rounded-xl border border-cyan-100 bg-white p-4 text-center">
+                                        <p className="text-xs font-semibold text-cyan-700 uppercase tracking-wide">{section.label}</p>
+                                        <p className="mt-1 text-2xl font-bold text-cyan-900">
+                                            {section.value === null || section.value === undefined ? '-' : `${section.value}/30`}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div className="rounded-xl border border-cyan-100 bg-white p-4">
+                                    <p className="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Overall (0-120)</p>
+                                    <p className="mt-1 text-xl font-bold text-cyan-900">
+                                        {toeflIbtReport.overallScore120 === null || toeflIbtReport.overallScore120 === undefined
+                                            ? '-'
+                                            : `${toeflIbtReport.overallScore120}/120`}
+                                    </p>
+                                </div>
+                                <div className="rounded-xl border border-cyan-100 bg-white p-4">
+                                    <p className="text-xs font-semibold text-cyan-700 uppercase tracking-wide">CEFR</p>
+                                    <p className="mt-1 text-xl font-bold text-cyan-900">{toeflIbtReport.cefrLevel || '-'}</p>
+                                </div>
+                                <div className="rounded-xl border border-cyan-100 bg-white p-4">
+                                    <p className="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Reportable</p>
+                                    <p className="mt-1 text-xl font-bold text-cyan-900">
+                                        {toeflIbtReport.scoreReportable ? 'Yes' : 'No'}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     )}
 

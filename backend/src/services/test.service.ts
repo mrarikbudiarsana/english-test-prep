@@ -1,6 +1,12 @@
 import * as testModel from '../models/test.model';
 import * as sectionModel from '../models/section.model';
-import { NotFoundError } from '../middleware/errorHandler';
+import { NotFoundError, ValidationError } from '../middleware/errorHandler';
+import { env } from '../config/env';
+import { DEFAULT_TOEFL_IBT_BLUEPRINT } from '../types/toeflBlueprint.types';
+import {
+  upsertToeflIbtBlueprint,
+  validateToeflIbtBlueprint,
+} from './toefl-ibt-blueprint.service';
 
 /**
  * Get all published tests with pagination.
@@ -47,6 +53,8 @@ export async function getTestWithSections(id: string) {
 
 /**
  * Admin: Create a new test.
+ * TOEFL iBT tests are gated behind the ENABLE_TOEFL_IBT_2026 feature flag
+ * and always use the 'toefl_ibt_2026' delivery model.
  */
 export async function createTest(
   data: {
@@ -57,10 +65,21 @@ export async function createTest(
   },
   createdBy: string,
 ) {
+  let deliveryModel = 'legacy';
+
+  if (data.testType === 'toefl_ibt') {
+    if (!env.enableToeflIbt2026) {
+      throw new ValidationError('TOEFL iBT is not yet enabled on this platform');
+    }
+    deliveryModel = 'toefl_ibt_2026';
+  }
+
   return testModel.create({
     title: data.title,
     description: data.description,
     testType: data.testType,
+    deliveryModel,
+    blueprintJson: data.testType === 'toefl_ibt' ? DEFAULT_TOEFL_IBT_BLUEPRINT : null,
     isFree: data.isFree,
     createdBy,
   });
@@ -114,5 +133,26 @@ export async function publishTest(id: string, publish: boolean) {
     throw new NotFoundError('Test not found');
   }
 
+  if (
+    publish &&
+    existing.testType === 'toefl_ibt' &&
+    existing.deliveryModel === 'toefl_ibt_2026'
+  ) {
+    const validation = await validateToeflIbtBlueprint(id);
+    if (!validation.valid) {
+      throw new ValidationError(
+        `Cannot publish TOEFL iBT 2026 test: ${validation.errors.join(' | ')}`
+      );
+    }
+  }
+
   return testModel.publish(id, publish);
+}
+
+export async function setToeflIbtBlueprint(testId: string, blueprint: unknown) {
+  return upsertToeflIbtBlueprint(testId, blueprint);
+}
+
+export async function validateToeflIbtBlueprintForTest(testId: string) {
+  return validateToeflIbtBlueprint(testId);
 }

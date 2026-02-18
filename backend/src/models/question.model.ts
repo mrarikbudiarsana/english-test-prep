@@ -39,6 +39,7 @@ const fieldMap: Record<string, string> = {
   groupLabel: 'group_label',
   groupInstructions: 'group_instructions',
   audioUrl: 'audio_url',
+  itemPayload: 'item_payload',
 };
 
 const SELECT_COLUMNS = `
@@ -54,6 +55,7 @@ const SELECT_COLUMNS = `
   group_label      AS "groupLabel",
   group_instructions AS "groupInstructions",
   audio_url        AS "audioUrl",
+  item_payload     AS "itemPayload",
   created_at       AS "createdAt",
   updated_at       AS "updatedAt"
 `;
@@ -118,14 +120,16 @@ export async function create(data: {
   groupLabel?: string;
   groupInstructions?: string;
   audioUrl?: string;
+  itemPayload?: any;
 }) {
   const result = await query(
     `INSERT INTO questions (
        section_id, question_number, question_type,
        question_text, question_data, correct_answer,
-       points, explanation, group_label, group_instructions, audio_url
+       points, explanation, group_label, group_instructions, audio_url,
+       item_payload
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.sectionId,
@@ -139,6 +143,7 @@ export async function create(data: {
       data.groupLabel ?? null,
       data.groupInstructions ?? null,
       data.audioUrl ?? null,
+      data.itemPayload != null ? JSON.stringify(data.itemPayload) : null,
     ],
   );
   return result.rows[0];
@@ -157,6 +162,7 @@ export async function update(
     groupLabel: string;
     groupInstructions: string;
     audioUrl: string;
+    itemPayload: any;
   }>,
 ) {
   const entries = Object.entries(data).filter(([, v]) => v !== undefined);
@@ -170,7 +176,7 @@ export async function update(
     const column = fieldMap[key];
     if (!column) continue;
     const finalValue =
-      (key === 'questionData' || key === 'correctAnswer') && value !== null
+      (key === 'questionData' || key === 'correctAnswer' || key === 'itemPayload') && value !== null
         ? JSON.stringify(value)
         : value;
     setClauses.push(`${column} = $${paramIndex}`);

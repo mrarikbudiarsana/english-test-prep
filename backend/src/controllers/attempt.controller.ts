@@ -146,6 +146,40 @@ export async function getResults(
   }
 }
 
+export async function getToeflIbtScores(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const scores = await attemptService.getToeflIbtScores(attemptId, req.user!.id);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.json({ data: scores });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getToeflIbtReport(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const report = await attemptService.getToeflIbtReport(attemptId, req.user!.id);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.json({ data: report });
+  } catch (error) {
+    next(error);
+  }
+}
+
 /**
  * Public endpoint for sharing - returns only basic info for OG image generation
  */

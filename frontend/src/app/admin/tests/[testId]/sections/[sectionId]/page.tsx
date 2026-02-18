@@ -12,6 +12,8 @@ import { Modal } from '@/components/ui/Modal';
 import QuestionEditor from '@/components/admin/QuestionEditor';
 import BulkQuestionImporter from '@/components/admin/BulkQuestionImporter';
 import IELTSBulkQuestionImporter from '@/components/admin/IELTSBulkQuestionImporter';
+import ToeflIbtItemEditor from '@/components/admin/ToeflIbtItemEditor';
+import ToeflIbtBulkItemImporter from '@/components/admin/ToeflIbtBulkItemImporter';
 import { sectionTypeLabel, questionTypeLabel } from '@/lib/utils';
 import type { Test, Section, Question } from '@/types/test';
 
@@ -32,6 +34,8 @@ export default function AdminSectionQuestionsPage() {
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null);
   const [showBulkImporter, setShowBulkImporter] = useState(false);
   const [showIELTSBulkImporter, setShowIELTSBulkImporter] = useState(false);
+  const [showToeflIbtItemEditor, setShowToeflIbtItemEditor] = useState(false);
+  const [showToeflIbtBulkImporter, setShowToeflIbtBulkImporter] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -124,10 +128,20 @@ export default function AdminSectionQuestionsPage() {
 
   const openEditQuestion = (question: Question) => {
     setEditingQuestion(question);
+    if (isToeflIbt) {
+      setShowToeflIbtItemEditor(true);
+      return;
+    }
     setShowQuestionEditor(true);
   };
 
   const openNewQuestion = () => {
+    if (isToeflIbt) {
+      setEditingQuestion(null);
+      setShowToeflIbtItemEditor(true);
+      return;
+    }
+
     // Auto-fill group info from the last question (if any) for easier IELTS-style grouping
     const lastQuestion = questions.length > 0 ? questions[questions.length - 1] : null;
     const prefillData = lastQuestion?.groupLabel ? {
@@ -183,7 +197,72 @@ export default function AdminSectionQuestionsPage() {
     setShowIELTSBulkImporter(false);
   };
 
+  const handleToeflIbtItemSubmit = async (payload: any) => {
+    try {
+      const requestBody = {
+        questionNumber: editingQuestion?.questionNumber || nextQuestionNumber,
+        questionType: payload.questionType,
+        questionText: payload.questionText,
+        questionData: payload.questionData,
+        correctAnswer: payload.correctAnswer,
+        points: payload.points,
+        itemPayload: payload.itemPayload,
+      };
+
+      if (editingQuestion?.id) {
+        const response = await api.put(
+          `/admin/tests/${testId}/sections/${sectionId}/questions/${editingQuestion.id}`,
+          requestBody
+        );
+        const updated = response.data.data || response.data;
+        setQuestions((prev) =>
+          prev
+            .map((q) => (q.id === editingQuestion.id ? updated : q))
+            .sort((a, b) => a.questionNumber - b.questionNumber)
+        );
+      } else {
+        const response = await api.post(
+          `/admin/tests/${testId}/sections/${sectionId}/questions`,
+          requestBody
+        );
+        const created = response.data.data || response.data;
+        setQuestions((prev) =>
+          [...prev, created].sort((a: Question, b: Question) => a.questionNumber - b.questionNumber)
+        );
+      }
+
+      setShowToeflIbtItemEditor(false);
+      setEditingQuestion(null);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to save item');
+      throw err;
+    }
+  };
+
+  const handleToeflIbtBulkImport = async (
+    bulkQuestions: Array<{
+      questionType: string;
+      questionText: string;
+      questionData: any;
+      correctAnswer: any;
+      points?: number;
+      questionNumber?: number;
+      itemPayload: any;
+    }>
+  ) => {
+    const response = await api.post(`/admin/sections/${sectionId}/questions/bulk-toefl-ibt`, {
+      questions: bulkQuestions,
+    });
+    const result = response.data.data || response.data;
+    const created = result.questions || [];
+    setQuestions((prev) =>
+      [...prev, ...created].sort((a: Question, b: Question) => a.questionNumber - b.questionNumber)
+    );
+    setShowToeflIbtBulkImporter(false);
+  };
+
   const isToeflItp = test?.testType === 'toefl_itp';
+  const isToeflIbt = test?.testType === 'toefl_ibt';
   const isIelts = test?.testType === 'academic' || test?.testType === 'general_training';
 
   const getQuestionTypeColor = (type: string): string => {
@@ -303,12 +382,36 @@ export default function AdminSectionQuestionsPage() {
                 Bulk Import
               </Button>
             )}
-            <Button onClick={openNewQuestion}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Add Question
-            </Button>
+            {isToeflIbt && (
+              <>
+                <Button variant="outline" onClick={() => setShowToeflIbtBulkImporter(true)}>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  Bulk Import
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditingQuestion(null);
+                    setShowToeflIbtItemEditor(true);
+                  }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Add TOEFL iBT Item
+                </Button>
+              </>
+            )}
+            {!isToeflIbt && (
+              <Button onClick={openNewQuestion}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add Question
+              </Button>
+            )}
           </div>
         </div>
       </Card>
@@ -467,6 +570,64 @@ export default function AdminSectionQuestionsPage() {
             startingQuestionNumber={nextQuestionNumber}
             onSubmit={handleIELTSBulkImport}
             onCancel={() => setShowIELTSBulkImporter(false)}
+          />
+        </Modal>
+      )}
+
+      {/* TOEFL iBT Item Editor Modal */}
+      {isToeflIbt && section && (
+        <Modal
+          isOpen={showToeflIbtItemEditor}
+          onClose={() => {
+            setShowToeflIbtItemEditor(false);
+            setEditingQuestion(null);
+          }}
+          title={
+            editingQuestion?.id
+              ? `Edit TOEFL iBT Item - Q${editingQuestion.questionNumber}`
+              : `Add TOEFL iBT Item - Q${nextQuestionNumber}`
+          }
+          size="lg"
+        >
+          <ToeflIbtItemEditor
+            taskType={section.taskType}
+            nextQuestionNumber={nextQuestionNumber}
+            initialData={
+              editingQuestion?.id
+                ? {
+                  id: editingQuestion.id,
+                  questionNumber: editingQuestion.questionNumber,
+                  questionType: editingQuestion.questionType as any,
+                  questionText: editingQuestion.questionText,
+                  questionData: editingQuestion.questionData,
+                  correctAnswer: editingQuestion.correctAnswer,
+                  audioUrl: editingQuestion.audioUrl || null,
+                  itemPayload: editingQuestion.itemPayload || null,
+                }
+                : undefined
+            }
+            onSubmit={handleToeflIbtItemSubmit}
+            onCancel={() => {
+              setShowToeflIbtItemEditor(false);
+              setEditingQuestion(null);
+            }}
+          />
+        </Modal>
+      )}
+
+      {/* TOEFL iBT Bulk Import Modal */}
+      {isToeflIbt && section && (
+        <Modal
+          isOpen={showToeflIbtBulkImporter}
+          onClose={() => setShowToeflIbtBulkImporter(false)}
+          title="Bulk Import Items (TOEFL iBT)"
+          size="lg"
+        >
+          <ToeflIbtBulkItemImporter
+            taskType={section.taskType}
+            startingQuestionNumber={nextQuestionNumber}
+            onSubmit={handleToeflIbtBulkImport}
+            onCancel={() => setShowToeflIbtBulkImporter(false)}
           />
         </Modal>
       )}

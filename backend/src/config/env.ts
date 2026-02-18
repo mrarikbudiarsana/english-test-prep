@@ -28,4 +28,5 @@ export const env = {
     pass: process.env.EMAIL_PASS || '',
     from: process.env.EMAIL_FROM || 'noreply@ielts-prep.com',
   },
+  enableToeflIbt2026: process.env.ENABLE_TOEFL_IBT_2026 === 'true',
 };

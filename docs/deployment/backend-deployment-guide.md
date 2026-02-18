@@ -25,7 +25,7 @@ You need to add these to your Project Settings > Environment Variables.
 | **`NODE_ENV`** | `production` |
 | **`PORT`** | `3001` (Or default provided by host) |
 | **`DATABASE_URL`** | Your Cloud Postgres Connection String (from Step 1) |
-| **`CORS_ORIGIN`** | `https://www.englishwitharik.com` (Your live frontend) |
+| **`CORS_ORIGIN`** | `https://tests.englishwitharik.com,https://www.englishwitharik.com` (Comma-separated allowlist; primary frontend first) |
 | **`FIREBASE_SERVICE_ACCOUNT_JSON`** | **Paste the content of your JSON file here** (See Step 2) |
 | **`FIREBASE_STORAGE_BUCKET`** | `english-tests-8ee46.firebasestorage.app` |
 | **`OPENAI_API_KEY`** | (Copy from your local `.env`) |

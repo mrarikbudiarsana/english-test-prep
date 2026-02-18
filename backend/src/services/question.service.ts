@@ -159,6 +159,7 @@ export async function createQuestion(
     explanation?: string;
     groupLabel?: string;
     groupInstructions?: string;
+    itemPayload?: any;
   },
 ) {
   // Verify the section exists
@@ -187,6 +188,7 @@ export async function createQuestion(
     explanation: data.explanation,
     groupLabel: data.groupLabel,
     groupInstructions: data.groupInstructions,
+    itemPayload: data.itemPayload,
   });
 }
 
@@ -206,6 +208,7 @@ export async function updateQuestion(
     explanation: string;
     groupLabel: string;
     groupInstructions: string;
+    itemPayload: any;
   }>,
 ) {
   const existing = await questionModel.findById(id);

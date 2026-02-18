@@ -30,6 +30,10 @@ interface SectionFormData {
   speakingPrompts: SpeakingPrompt[] | null;
   preparationTime: number | null;
   responseTime: number | null;
+  // TOEFL iBT MST
+  moduleStage?: number | null;
+  modulePath?: string | null;
+  taskType?: string | null;
 }
 
 interface SectionEditorProps {
@@ -58,11 +62,15 @@ function getSectionTypeOptions(testType: string) {
     );
   }
 
+  if (testType === 'toefl_ibt') {
+    // TOEFL iBT: Reading, Listening, Writing, Speaking (no Structure)
+    return allSectionTypeOptions.filter(o =>
+      ['reading', 'listening', 'writing', 'speaking'].includes(o.value)
+    );
+  }
+
   // IELTS and others: all except Structure
-  return allSectionTypeOptions.filter(o => {
-    if (o.value === 'structure') return testType === 'toefl_itp';
-    return true;
-  });
+  return allSectionTypeOptions.filter(o => o.value !== 'structure');
 }
 
 // ---------- Smart defaults ----------
@@ -83,6 +91,15 @@ function getDefaultDuration(testType: string, sectionType: SectionType): number 
       case 'listening': return 35;
       case 'structure': return 25;
       case 'reading': return 55;
+      default: return 30;
+    }
+  }
+  if (testType === 'toefl_ibt') {
+    switch (sectionType) {
+      case 'reading': return 36;
+      case 'listening': return 41;
+      case 'writing': return 29;
+      case 'speaking': return 20;
       default: return 30;
     }
   }
@@ -122,6 +139,22 @@ function getStructureGuide(testType: string): { title: string; lines: string[] }
     };
   }
 
+  if (testType === 'toefl_ibt') {
+    return {
+      title: 'TOEFL iBT 2026 Structure (Adaptive)',
+      lines: [
+        'Reading — Stage 1 (20 items) → Stage 2 upper/lower (15 items), ~36 min',
+        '    Task types: Complete the Words, Read in Daily Life, Academic Passage',
+        'Listening — Stage 1 (20 items) → Stage 2 upper/lower (15 items), ~41 min',
+        '    Task types: Choose a Response, Conversation, Announcement, Academic Talk',
+        'Writing — 3 task types, ~29 min total',
+        '    Build a Sentence (10 items) + Write an Email (1) + Academic Discussion (1)',
+        'Speaking — 2 task types, ~20 min total',
+        '    Listen and Repeat (7 prompts, 5 pts each) + Take an Interview (4 prompts, 5 pts each)',
+      ],
+    };
+  }
+
   return null;
 }
 
@@ -153,11 +186,18 @@ export default function SectionEditor({ testType, existingSections = [], initial
   );
   const [preparationTime, setPreparationTime] = useState(initialData?.preparationTime || 60);
   const [responseTime, setResponseTime] = useState(initialData?.responseTime || 120);
+  const [moduleStage, setModuleStage] = useState<number>(initialData?.moduleStage ?? 1);
+  const [modulePath, setModulePath] = useState<string>(initialData?.modulePath ?? '');
+  const [taskType, setTaskType] = useState<string>(initialData?.taskType ?? '');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Logic to determine if this is the first section of its type
+  // For TOEFL ITP: only the first section of each type shows the duration field
+  // (subsequent sections auto-get duration=0 from the backend).
+  // For all other exam types (IELTS, TOEFL iBT, PTE): every section has its own duration.
   const isFirstSectionOfType = () => {
+    if (testType !== 'toefl_itp') return true;
+
     const sectionsOfType = existingSections.filter(s => s.sectionType === sectionType);
     if (sectionsOfType.length === 0) return true;
 
@@ -222,6 +262,9 @@ export default function SectionEditor({ testType, existingSections = [], initial
         speakingPrompts: sectionType === 'speaking' ? speakingPrompts : null,
         preparationTime: sectionType === 'speaking' ? preparationTime : null,
         responseTime: sectionType === 'speaking' ? responseTime : null,
+        moduleStage: testType === 'toefl_ibt' ? moduleStage : null,
+        modulePath: testType === 'toefl_ibt' && moduleStage === 2 ? (modulePath || null) : null,
+        taskType: testType === 'toefl_ibt' ? (taskType || null) : null,
       });
     } finally {
       setLoading(false);
@@ -313,6 +356,76 @@ export default function SectionEditor({ testType, existingSections = [], initial
           />
         )}
       </div>
+
+      {/* TOEFL iBT MST stage fields */}
+      {testType === 'toefl_ibt' && (
+        <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-200 space-y-4">
+          <h4 className="text-sm font-semibold text-cyan-800">TOEFL iBT 2026 — Adaptive Stage Settings</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Select
+              label="Module Stage"
+              value={String(moduleStage)}
+              onChange={(e) => {
+                const stage = parseInt(e.target.value);
+                setModuleStage(stage);
+                if (stage === 1) setModulePath('');
+              }}
+              options={[
+                { value: '1', label: '1 — Stage 1 (all candidates)' },
+                { value: '2', label: '2 — Stage 2 (adaptive)' },
+              ]}
+            />
+            {moduleStage === 2 && (
+              <Select
+                label="Module Path"
+                value={modulePath}
+                onChange={(e) => setModulePath(e.target.value)}
+                options={[
+                  { value: '', label: '— Select path —' },
+                  { value: 'upper', label: 'Upper (higher difficulty)' },
+                  { value: 'lower', label: 'Lower (standard difficulty)' },
+                ]}
+              />
+            )}
+            <Select
+              label="Task Type (optional)"
+              value={taskType}
+              onChange={(e) => setTaskType(e.target.value)}
+              options={
+                sectionType === 'reading'
+                  ? [
+                    { value: '', label: '— Mixed / not set —' },
+                    { value: 'complete_words', label: 'Complete the Words' },
+                    { value: 'read_daily_life', label: 'Read in Daily Life' },
+                    { value: 'read_academic_passage', label: 'Academic Passage' },
+                  ]
+                  : sectionType === 'listening'
+                  ? [
+                    { value: '', label: '— Mixed / not set —' },
+                    { value: 'listen_choose_response', label: 'Choose a Response' },
+                    { value: 'listen_conversation', label: 'Conversation' },
+                    { value: 'listen_announcement', label: 'Announcement' },
+                    { value: 'listen_academic_talk', label: 'Academic Talk' },
+                  ]
+                  : sectionType === 'writing'
+                  ? [
+                    { value: '', label: '— Select writing task —' },
+                    { value: 'build_sentence', label: 'Build a Sentence' },
+                    { value: 'write_email', label: 'Write an Email' },
+                    { value: 'academic_discussion', label: 'Academic Discussion' },
+                  ]
+                  : sectionType === 'speaking'
+                  ? [
+                    { value: '', label: '— Select speaking task —' },
+                    { value: 'listen_repeat', label: 'Listen and Repeat' },
+                    { value: 'take_interview', label: 'Take an Interview' },
+                  ]
+                  : [{ value: '', label: '— N/A for this section type —' }]
+              }
+            />
+          </div>
+        </div>
+      )}
 
       <Input
         label="Section Title"

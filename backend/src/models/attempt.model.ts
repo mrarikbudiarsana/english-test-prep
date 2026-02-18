@@ -19,13 +19,26 @@ const SELECT_COLUMNS = `
   reading_raw          AS "readingRaw",
   reading_band         AS "readingBand",
   reading_score        AS "readingScore",
+  writing_raw          AS "writingRaw",
+  speaking_raw         AS "speakingRaw",
   structure_score      AS "structureScore",
   writing_band         AS "writingBand",
   speaking_band        AS "speakingBand",
   overall_band         AS "overallBand",
   overall_score        AS "overallScore",
+  reading_score_30     AS "readingScore30",
+  listening_score_30   AS "listeningScore30",
+  writing_score_30     AS "writingScore30",
+  speaking_score_30    AS "speakingScore30",
+  overall_score_120    AS "overallScore120",
+  score_mapping_version AS "scoreMappingVersion",
+  cefr_level           AS "cefrLevel",
+  score_reportable     AS "scoreReportable",
+  valid_until          AS "validUntil",
   writing_feedback     AS "writingFeedback",
   speaking_feedback    AS "speakingFeedback",
+  reading_path         AS "readingPath",
+  listening_path       AS "listeningPath",
   created_at           AS "createdAt",
   updated_at           AS "updatedAt"
 `;
@@ -37,13 +50,26 @@ const scoreFieldMap: Record<string, string> = {
   readingRaw: 'reading_raw',
   readingBand: 'reading_band',
   readingScore: 'reading_score',
+  writingRaw: 'writing_raw',
+  speakingRaw: 'speaking_raw',
   structureScore: 'structure_score',
   writingBand: 'writing_band',
   speakingBand: 'speaking_band',
   overallBand: 'overall_band',
   overallScore: 'overall_score',
+  readingScore30: 'reading_score_30',
+  listeningScore30: 'listening_score_30',
+  writingScore30: 'writing_score_30',
+  speakingScore30: 'speaking_score_30',
+  overallScore120: 'overall_score_120',
+  scoreMappingVersion: 'score_mapping_version',
+  cefrLevel: 'cefr_level',
+  scoreReportable: 'score_reportable',
+  validUntil: 'valid_until',
   writingFeedback: 'writing_feedback',
   speakingFeedback: 'speaking_feedback',
+  readingPath: 'reading_path',
+  listeningPath: 'listening_path',
 };
 
 // ---------- queries ----------
@@ -66,13 +92,26 @@ function transformAttemptRow(row: any) {
     readingRaw: row.reading_raw,
     readingBand: row.reading_band,
     readingScore: row.reading_score,
+    writingRaw: row.writing_raw,
+    speakingRaw: row.speaking_raw,
     structureScore: row.structure_score,
     writingBand: row.writing_band,
     speakingBand: row.speaking_band,
     overallBand: row.overall_band,
     overallScore: row.overall_score,
+    readingScore30: row.reading_score_30,
+    listeningScore30: row.listening_score_30,
+    writingScore30: row.writing_score_30,
+    speakingScore30: row.speaking_score_30,
+    overallScore120: row.overall_score_120,
+    scoreMappingVersion: row.score_mapping_version,
+    cefrLevel: row.cefr_level,
+    scoreReportable: row.score_reportable,
+    validUntil: row.valid_until,
     writingFeedback: row.writing_feedback,
     speakingFeedback: row.speaking_feedback,
+    readingPath: row.reading_path,
+    listeningPath: row.listening_path,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     test: row.test || null,
@@ -86,6 +125,7 @@ export async function findById(id: string) {
               'id', t.id,
               'title', t.title,
               'testType', t.test_type,
+              'deliveryModel', t.delivery_model,
               'isPublished', t.is_published,
               'isFree', t.is_free
             ) as test
@@ -116,6 +156,7 @@ export async function findByUserId(
               'id', t.id,
               'title', t.title,
               'testType', t.test_type,
+              'deliveryModel', t.delivery_model,
               'isPublished', t.is_published,
               'isFree', t.is_free
             ) as test
@@ -211,13 +252,26 @@ export async function updateScores(
     readingRaw: number;
     readingBand: number;
     readingScore: number;
+    writingRaw: number;
+    speakingRaw: number;
     structureScore: number;
     writingBand: number;
     speakingBand: number;
     overallBand: number;
     overallScore: number;
+    readingScore30: number;
+    listeningScore30: number;
+    writingScore30: number;
+    speakingScore30: number;
+    overallScore120: number;
+    scoreMappingVersion: string;
+    cefrLevel: string;
+    scoreReportable: boolean;
+    validUntil: string;
     writingFeedback: any;
     speakingFeedback: any;
+    readingPath: string;
+    listeningPath: string;
   }>,
 ) {
   const entries = Object.entries(scores).filter(([, v]) => v !== undefined);

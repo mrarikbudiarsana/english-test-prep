@@ -71,6 +71,20 @@ export async function publishTest(id: string) {
 }
 
 /**
+ * Admin: Set blueprint_json for TOEFL iBT 2026 tests.
+ */
+export async function setToeflIbtBlueprint(testId: string, blueprint: unknown) {
+  return testService.setToeflIbtBlueprint(testId, blueprint);
+}
+
+/**
+ * Admin: Validate a TOEFL iBT 2026 test blueprint + authored content.
+ */
+export async function validateToeflIbtBlueprint(testId: string) {
+  return testService.validateToeflIbtBlueprintForTest(testId);
+}
+
+/**
  * Admin: Create a new section for a test.
  */
 export async function createSection(
@@ -91,6 +105,9 @@ export async function createSection(
     speakingPrompts?: any;
     preparationTime?: number;
     responseTime?: number;
+    moduleStage?: number;
+    modulePath?: string;
+    taskType?: string;
   },
 ) {
   return sectionService.createSection(testId, data);
@@ -118,6 +135,9 @@ export async function updateSection(
     speakingPrompts: any;
     preparationTime: number;
     responseTime: number;
+    moduleStage: number;
+    modulePath: string;
+    taskType: string;
   }>,
 ) {
   return sectionService.updateSection(id, data);
@@ -153,6 +173,7 @@ export async function createQuestion(
     explanation?: string;
     groupLabel?: string;
     groupInstructions?: string;
+    itemPayload?: any;
   },
 ) {
   return questionService.createQuestion(sectionId, data);
@@ -174,6 +195,7 @@ export async function updateQuestion(
     explanation: string;
     groupLabel: string;
     groupInstructions: string;
+    itemPayload: any;
   }>,
 ) {
   return questionService.updateQuestion(id, data);
@@ -491,6 +513,153 @@ export async function bulkCreateIELTSQuestions(
           q.explanation?.trim() || null,
           q.groupLabel?.trim() || null,
           q.groupInstructions?.trim() || null,
+        ]
+      );
+
+      createdQuestions.push(result.rows[0]);
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  return {
+    success: true,
+    created: createdQuestions.length,
+    questions: createdQuestions,
+  };
+}
+
+/**
+ * Admin: Bulk create questions for a TOEFL iBT section.
+ * Supports the same payload as normal question creation, including itemPayload.
+ */
+export async function bulkCreateToeflIbtQuestions(
+  sectionId: string,
+  questions: Array<{
+    questionType: string;
+    questionText: string;
+    questionData: any;
+    correctAnswer: any;
+    points?: number;
+    explanation?: string;
+    questionNumber?: number;
+    itemPayload?: any;
+  }>
+) {
+  const section = await sectionModel.findById(sectionId);
+  if (!section) {
+    const error = new Error('Section not found') as any;
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const test = await testModel.findById(section.testId);
+  if (!test || test.testType !== 'toefl_ibt') {
+    const error = new Error('TOEFL iBT bulk creation is only supported for TOEFL iBT tests') as any;
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!questions || questions.length === 0) {
+    const error = new Error('No questions provided') as any;
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const validQuestionTypes = ['multiple_choice', 'completion'];
+  const validationErrors: Array<{ index: number; errors: string[] }> = [];
+
+  questions.forEach((q, index) => {
+    const errors: string[] = [];
+    if (!validQuestionTypes.includes(q.questionType)) {
+      errors.push(`Invalid question type: ${q.questionType}`);
+    }
+
+    if (q.questionType === 'multiple_choice') {
+      if (!q.questionData?.options || !Array.isArray(q.questionData.options) || q.questionData.options.length < 2) {
+        errors.push('Multiple choice requires at least 2 options in questionData.options');
+      }
+      if (!q.correctAnswer || typeof q.correctAnswer !== 'string') {
+        errors.push('Multiple choice requires a string correctAnswer');
+      }
+    }
+
+    if (q.questionType === 'completion') {
+      if (!q.correctAnswer || typeof q.correctAnswer !== 'object') {
+        errors.push('Completion requires object correctAnswer mapping blank IDs');
+      }
+      if (!q.itemPayload?.prompt?.blanks || !Array.isArray(q.itemPayload.prompt.blanks)) {
+        errors.push('Completion requires itemPayload.prompt.blanks');
+      }
+    }
+
+    if (!q.itemPayload || typeof q.itemPayload !== 'object') {
+      errors.push('itemPayload is required for TOEFL iBT bulk items');
+    }
+
+    if (errors.length > 0) {
+      validationErrors.push({ index: index + 1, errors });
+    }
+  });
+
+  if (validationErrors.length > 0) {
+    const error = new Error(
+      `Validation failed for ${validationErrors.length} question(s): ` +
+      validationErrors.map((e) => `Q${e.index}: ${e.errors.join(', ')}`).join('; ')
+    ) as any;
+    error.statusCode = 400;
+    error.details = { errors: validationErrors };
+    throw error;
+  }
+
+  const maxQuestionNumber = await questionModel.getMaxQuestionNumber(sectionId);
+  let nextNumber = maxQuestionNumber + 1;
+
+  const client = await getClient();
+  const createdQuestions: any[] = [];
+
+  try {
+    await client.query('BEGIN');
+
+    for (const q of questions) {
+      const questionNumber = q.questionNumber && q.questionNumber > 0 ? q.questionNumber : nextNumber;
+      if (!q.questionNumber || q.questionNumber <= 0) {
+        nextNumber++;
+      }
+
+      const result = await client.query(
+        `INSERT INTO questions (
+          section_id, question_number, question_type,
+          question_text, question_data, correct_answer,
+          points, explanation, item_payload
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING
+          id,
+          section_id AS "sectionId",
+          question_number AS "questionNumber",
+          question_type AS "questionType",
+          question_text AS "questionText",
+          question_data AS "questionData",
+          correct_answer AS "correctAnswer",
+          points,
+          explanation,
+          item_payload AS "itemPayload"`,
+        [
+          sectionId,
+          questionNumber,
+          q.questionType,
+          q.questionText?.trim() || '',
+          JSON.stringify(q.questionData || {}),
+          JSON.stringify(q.correctAnswer),
+          q.points ?? 1,
+          q.explanation?.trim() || null,
+          JSON.stringify(q.itemPayload || {}),
         ]
       );
 

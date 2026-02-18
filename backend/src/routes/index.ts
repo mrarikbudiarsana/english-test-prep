@@ -8,11 +8,13 @@ import subscriptionRoutes from './subscription.routes';
 import uploadRoutes from './upload.routes';
 import dashboardRoutes from './dashboard.routes';
 import pricingRoutes from './pricing.routes';
+import toeflIbtRoutes from './toefl-ibt.routes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/tests', testRoutes);
+router.use('/attempts/:attemptId/toefl-ibt', toeflIbtRoutes);
 router.use('/attempts', attemptRoutes);
 router.use('/admin', adminRoutes);
 router.use('/payments', paymentRoutes);
