@@ -12,6 +12,10 @@ import {
   computeOverallBand as computeToeflOverallBand,
   overallBandToCefr,
   rawToScore30,
+  readingRawToScaled,
+  listeningRawToScaled,
+  writingRawToScaled,
+  speakingRawToScaled,
 } from '../config/toeflIbtScoreMappings';
 import { NotFoundError, ForbiddenError, ValidationError } from '../middleware/errorHandler';
 import { AttemptMode, SectionType } from '../types/test.types';
@@ -99,13 +103,13 @@ async function hydrateToeflIbt2026Reporting(attemptId: string) {
   const speakingBand = parseNullableNumber(latest.speakingBand);
 
   const readingScore30 = parseNullableNumber((latest as any).readingScore30)
-    ?? (readingRaw !== null ? rawToScore30(readingRaw) : (readingBand !== null ? bandToScore30(readingBand) : null));
+    ?? (readingRaw !== null ? readingRawToScaled(readingRaw) : (readingBand !== null ? bandToScore30(readingBand) : null));
   const listeningScore30 = parseNullableNumber((latest as any).listeningScore30)
-    ?? (listeningRaw !== null ? rawToScore30(listeningRaw) : (listeningBand !== null ? bandToScore30(listeningBand) : null));
+    ?? (listeningRaw !== null ? listeningRawToScaled(listeningRaw) : (listeningBand !== null ? bandToScore30(listeningBand) : null));
   const writingScore30 = parseNullableNumber((latest as any).writingScore30)
-    ?? (writingRaw !== null ? rawToScore30(writingRaw) : (writingBand !== null ? bandToScore30(writingBand) : null));
+    ?? (writingRaw !== null ? writingRawToScaled(writingRaw) : (writingBand !== null ? bandToScore30(writingBand) : null));
   const speakingScore30 = parseNullableNumber((latest as any).speakingScore30)
-    ?? (speakingRaw !== null ? rawToScore30(speakingRaw) : (speakingBand !== null ? bandToScore30(speakingBand) : null));
+    ?? (speakingRaw !== null ? speakingRawToScaled(speakingRaw) : (speakingBand !== null ? bandToScore30(speakingBand) : null));
 
   const sectionBands = [readingBand, listeningBand, writingBand, speakingBand];
   const hasAllBands = sectionBands.every((b) => b !== null);
@@ -275,12 +279,12 @@ export async function startAttempt(
 /**
  * Get an attempt by ID, ensuring it belongs to the given user.
  */
-export async function getAttempt(id: string, userId: string) {
+export async function getAttempt(id: string, userId?: string) {
   let attempt = await attemptModel.findById(id);
   if (!attempt) {
     throw new NotFoundError('Attempt not found');
   }
-  if (attempt.userId !== userId) {
+  if (userId && attempt.userId !== userId) {
     throw new ForbiddenError('You do not have access to this attempt');
   }
 
@@ -601,7 +605,7 @@ async function triggerAIScoring(attemptId: string): Promise<void> {
     // Score writing section
     await withTimeout(
       isToeflIbt2026
-        ? toeflIbtScoringService.scoreWriting(attemptId)
+        ? toeflIbtScoringService.scoreWriting(attemptId).then(() => { })
         : aiScoringService.scoreWriting(attemptId),
       WRITING_TIMEOUT_MS,
       'Writing scoring',
@@ -614,7 +618,7 @@ async function triggerAIScoring(attemptId: string): Promise<void> {
     // Score speaking section
     await withTimeout(
       isToeflIbt2026
-        ? toeflIbtScoringService.scoreSpeaking(attemptId)
+        ? toeflIbtScoringService.scoreSpeaking(attemptId).then(() => { })
         : aiScoringService.scoreSpeaking(attemptId),
       SPEAKING_TIMEOUT_MS,
       'Speaking scoring',

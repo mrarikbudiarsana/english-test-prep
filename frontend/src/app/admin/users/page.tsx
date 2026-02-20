@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
 import api from '@/lib/api';
 import { Card } from '@/components/ui/Card';
@@ -118,7 +119,7 @@ export default function AdminUsersPage() {
                 {users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
+                      <Link href={`/admin/users/${user.id}`} className="group flex items-center gap-3 hover:opacity-80 transition-opacity">
                         {user.photoUrl ? (
                           <Image
                             src={user.photoUrl}
@@ -129,14 +130,14 @@ export default function AdminUsersPage() {
                             unoptimized
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700 group-hover:bg-blue-200 transition-colors">
                             {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
                           {user.displayName || 'No name'}
                         </span>
-                      </div>
+                      </Link>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-gray-600">{user.email}</span>
@@ -146,11 +147,10 @@ export default function AdminUsersPage() {
                         value={user.role}
                         onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin')}
                         disabled={updatingUserId === user.id}
-                        className={`text-xs font-medium rounded-full px-3 py-1 border cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                          user.role === 'admin'
-                            ? 'bg-purple-100 text-purple-800 border-purple-200'
-                            : 'bg-gray-100 text-gray-700 border-gray-200'
-                        } ${updatingUserId === user.id ? 'opacity-50 cursor-wait' : ''}`}
+                        className={`text-xs font-medium rounded-full px-3 py-1 border cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-200 ${user.role === 'admin'
+                          ? 'bg-purple-100 text-purple-800 border-purple-200'
+                          : 'bg-gray-100 text-gray-700 border-gray-200'
+                          } ${updatingUserId === user.id ? 'opacity-50 cursor-wait' : ''}`}
                       >
                         <option value="user">User</option>
                         <option value="admin">Admin</option>

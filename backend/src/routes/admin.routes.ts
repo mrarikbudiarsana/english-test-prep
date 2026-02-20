@@ -43,7 +43,9 @@ router.delete('/questions/:questionId', adminController.deleteQuestion);
 
 // Users
 router.get('/users', adminController.getUsers);
+router.get('/users/:userId', adminController.getUserById);
 router.put('/users/:userId/role', adminController.updateUserRole);
+router.get('/users/:userId/attempts', adminController.getUserAttempts);
 
 // Dashboard stats
 router.get('/dashboard/stats', adminController.getDashboardStats);

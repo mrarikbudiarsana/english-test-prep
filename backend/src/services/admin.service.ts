@@ -9,6 +9,13 @@ import * as questionModel from '../models/question.model';
 import { getClient } from '../config/database';
 
 /**
+ * Admin: Get user by ID.
+ */
+export async function getUserById(userId: string) {
+  return userModel.findById(userId);
+}
+
+/**
  * Admin: Create a new test.
  */
 export async function createTest(
@@ -267,7 +274,7 @@ export async function bulkCreateQuestions(
   if (validationErrors.length > 0) {
     const error = new Error(
       `Validation failed for ${validationErrors.length} question(s): ` +
-        validationErrors.map((e) => `Q${e.index}: ${e.errors.join(', ')}`).join('; ')
+      validationErrors.map((e) => `Q${e.index}: ${e.errors.join(', ')}`).join('; ')
     ) as any;
     error.statusCode = 400;
     error.details = { errors: validationErrors };
@@ -450,7 +457,7 @@ export async function bulkCreateIELTSQuestions(
   if (validationErrors.length > 0) {
     const error = new Error(
       `Validation failed for ${validationErrors.length} question(s): ` +
-        validationErrors.map((e) => `Q${e.index}: ${e.errors.join(', ')}`).join('; ')
+      validationErrors.map((e) => `Q${e.index}: ${e.errors.join(', ')}`).join('; ')
     ) as any;
     error.statusCode = 400;
     error.details = { errors: validationErrors };

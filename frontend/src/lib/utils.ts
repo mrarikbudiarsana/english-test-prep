@@ -144,5 +144,5 @@ export function sectionCountForTestType(testType: string): number {
 }
 
 export function usesBandScale(testType: string): boolean {
-  return testType === 'academic' || testType === 'general_training';
+  return testType === 'academic' || testType === 'general_training' || testType === 'toefl_ibt';
 }

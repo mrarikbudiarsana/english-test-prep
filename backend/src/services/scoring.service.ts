@@ -2,6 +2,7 @@ import { query } from '../config/database';
 import { SectionType } from '../models/section.model';
 import { Question, QuestionType } from '../models/question.model';
 import { TestType } from '../models/test.model';
+import { rawToBandSpecific } from '../config/toeflIbtScoreMappings';
 
 // IELTS Band conversion tables (approximate)
 const LISTENING_BAND_TABLE = [
@@ -325,6 +326,11 @@ export function convertToBand(
     } else {
       return 0;
     }
+  } else if (testType === 'toefl_ibt') {
+    if (sectionType === 'reading' || sectionType === 'listening' || sectionType === 'writing' || sectionType === 'speaking') {
+      return rawToBandSpecific(rawScore, sectionType);
+    }
+    return 0;
   } else {
     // Default to IELTS
     if (sectionType === 'listening') {

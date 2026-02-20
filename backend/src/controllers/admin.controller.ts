@@ -280,6 +280,24 @@ export async function getUsers(
   }
 }
 
+export async function getUserById(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.params.userId as string;
+    const user = await adminService.getUserById(userId);
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    res.json({ data: user });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function updateUserRole(
   req: Request,
   res: Response,
@@ -290,6 +308,28 @@ export async function updateUserRole(
     const { role } = req.body;
     const user = await adminService.updateUserRole(userId, role);
     res.json({ data: user });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getUserAttempts(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.params.userId as string;
+    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    // We import attemptService directly here since adminService doesn't wrap this yet
+    // and we want to reuse the existing logic.
+    // Ideally this should go through adminService but for now this is efficient.
+    const attemptService = require('../services/attempt.service');
+    const result = await attemptService.getUserAttempts(userId, offset, limit);
+
+    res.json({ data: result.rows, total: result.total, offset, limit });
   } catch (error) {
     next(error);
   }
