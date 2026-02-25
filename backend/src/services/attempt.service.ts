@@ -2,6 +2,7 @@ import * as attemptModel from '../models/attempt.model';
 import * as testModel from '../models/test.model';
 import * as userModel from '../models/user.model';
 import * as subscriptionModel from '../models/subscription.model';
+import { query } from '../config/database';
 import * as scoringService from './scoring.service';
 import * as aiScoringService from './ai-scoring.service';
 import * as toeflIbtScoringService from './toefl-ibt-scoring.service';
@@ -83,6 +84,412 @@ function addYears(dateValue: Date | string, years: number): string {
   const dt = new Date(dateValue);
   dt.setUTCFullYear(dt.getUTCFullYear() + years);
   return dt.toISOString().slice(0, 10);
+}
+
+function clampPteScore(value: number | null | undefined): number | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) return null;
+  return Math.max(10, Math.min(90, Math.round(value)));
+}
+
+type PteWeightBucket = {
+  overall: number;
+  listening: number;
+  reading: number;
+  speaking: number;
+  writing: number;
+};
+
+const PTE_QUESTION_WEIGHTS: Record<string, PteWeightBucket> = {
+  'Read Aloud': { overall: 4, listening: 0, reading: 0, speaking: 9, writing: 0 },
+  'Repeat Sentence': { overall: 7, listening: 17, reading: 0, speaking: 16, writing: 0 },
+  'Describe Image': { overall: 15, listening: 0, reading: 0, speaking: 31, writing: 0 },
+  'Retell Lecture': { overall: 6, listening: 13, reading: 0, speaking: 13, writing: 0 },
+  'Answer Short Question': { overall: 2, listening: 4, reading: 0, speaking: 0, writing: 0 },
+  'Summarize Group Discussion': { overall: 9, listening: 20, reading: 0, speaking: 19, writing: 0 },
+  'Respond to a Situation': { overall: 6, listening: 0, reading: 0, speaking: 13, writing: 0 },
+  'Summarize Written Text': { overall: 7, listening: 0, reading: 23, speaking: 0, writing: 28 },
+  'Write Essay': { overall: 7, listening: 0, reading: 0, speaking: 0, writing: 31 },
+  'Fill in the Blanks (Dropdown)': { overall: 7, listening: 0, reading: 25, speaking: 0, writing: 0 },
+  'Multiple Choice, Multiple Answers (Reading)': { overall: 1, listening: 0, reading: 5, speaking: 0, writing: 0 },
+  'Reorder Paragraph': { overall: 3, listening: 0, reading: 9, speaking: 0, writing: 0 },
+  'Fill in the Blanks (Drag and Drop)': { overall: 6, listening: 0, reading: 20, speaking: 0, writing: 0 },
+  'Multiple Choice, Single Answer (Reading)': { overall: 0.5, listening: 0, reading: 3, speaking: 0, writing: 0 },
+  'Summarize Spoken Text': { overall: 4, listening: 10, reading: 0, speaking: 0, writing: 18 },
+  'Multiple Choice, Multiple Answers (Listening)': { overall: 1, listening: 3, reading: 0, speaking: 0, writing: 0 },
+  'Fill in the Blanks (Type In)': { overall: 3, listening: 8, reading: 0, speaking: 0, writing: 0 },
+  'Highlight Correct Summary': { overall: 0.5, listening: 2, reading: 3, speaking: 0, writing: 0 },
+  'Multiple Choice, Single Answer (Listening)': { overall: 0.5, listening: 2, reading: 0, speaking: 0, writing: 0 },
+  'Select Missing Word': { overall: 1, listening: 1, reading: 0, speaking: 0, writing: 0 },
+  'Highlight Incorrect Words': { overall: 4, listening: 8, reading: 13, speaking: 0, writing: 0 },
+  'Write from Dictation': { overall: 5, listening: 13, reading: 0, speaking: 0, writing: 23 },
+};
+
+const PTE_SKILLS_PROFILE_MAP: Record<string, string[]> = {
+  openResponseSpeakingWriting: [
+    'Describe Image',
+    'Retell Lecture',
+    'Summarize Group Discussion',
+    'Respond to a Situation',
+    'Summarize Written Text',
+    'Write Essay',
+    'Summarize Spoken Text',
+  ],
+  reproducingSpokenWrittenLanguage: [
+    'Read Aloud',
+    'Repeat Sentence',
+    'Write from Dictation',
+  ],
+  extendedWriting: [
+    'Summarize Written Text',
+    'Write Essay',
+    'Summarize Spoken Text',
+  ],
+  shortWriting: [
+    'Write from Dictation',
+  ],
+  extendedSpeaking: [
+    'Describe Image',
+    'Retell Lecture',
+    'Summarize Group Discussion',
+    'Respond to a Situation',
+  ],
+  shortSpeaking: [
+    'Read Aloud',
+    'Repeat Sentence',
+  ],
+  multipleSkillsComprehension: [
+    'Repeat Sentence',
+    'Retell Lecture',
+    'Summarize Group Discussion',
+    'Summarize Written Text',
+    'Summarize Spoken Text',
+    'Highlight Correct Summary',
+    'Highlight Incorrect Words',
+    'Write from Dictation',
+  ],
+  singleSkillComprehension: [
+    'Answer Short Question',
+    'Respond to a Situation',
+    'Fill in the Blanks (Dropdown)',
+    'Multiple Choice, Multiple Answers (Reading)',
+    'Reorder Paragraph',
+    'Fill in the Blanks (Drag and Drop)',
+    'Multiple Choice, Single Answer (Reading)',
+    'Multiple Choice, Multiple Answers (Listening)',
+    'Fill in the Blanks (Type In)',
+    'Multiple Choice, Single Answer (Listening)',
+    'Select Missing Word',
+  ],
+};
+
+function parseMaybeJson(value: any): any {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+  if (!(trimmed.startsWith('{') || trimmed.startsWith('[') || (trimmed.startsWith('"') && trimmed.endsWith('"')))) {
+    return value;
+  }
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+}
+
+function normalizePteTaskType(raw: string): string | null {
+  const text = raw.toLowerCase();
+  if (text.includes('read aloud')) return 'Read Aloud';
+  if (text.includes('repeat sentence')) return 'Repeat Sentence';
+  if (text.includes('describe image')) return 'Describe Image';
+  if (text.includes('retell lecture')) return 'Retell Lecture';
+  if (text.includes('answer short question')) return 'Answer Short Question';
+  if (text.includes('summarize group discussion')) return 'Summarize Group Discussion';
+  if (text.includes('respond to a situation')) return 'Respond to a Situation';
+  if (text.includes('summarize written text') || text.includes('summarise written text')) return 'Summarize Written Text';
+  if (text.includes('write essay')) return 'Write Essay';
+  if (text.includes('summarize spoken text') || text.includes('summarise spoken text')) return 'Summarize Spoken Text';
+  return null;
+}
+
+function inferPteQuestionType(row: any): string | null {
+  const qType = String(row.question_type || '');
+  const sectionType = String(row.section_type || '');
+
+  if (qType === 'pte_reading_fill_blanks_dropdown') return 'Fill in the Blanks (Dropdown)';
+  if (qType === 'pte_reading_fill_blanks_drag_drop') return 'Fill in the Blanks (Drag and Drop)';
+  if (qType === 'pte_reorder_paragraph') return 'Reorder Paragraph';
+  if (qType === 'pte_listening_fill_blanks') return 'Fill in the Blanks (Type In)';
+  if (qType === 'pte_highlight_correct_summary') return 'Highlight Correct Summary';
+  if (qType === 'pte_select_missing_word') return 'Select Missing Word';
+  if (qType === 'pte_highlight_incorrect_words') return 'Highlight Incorrect Words';
+  if (qType === 'pte_write_from_dictation') return 'Write from Dictation';
+  if (qType === 'pte_mcq_multiple') {
+    return sectionType === 'reading'
+      ? 'Multiple Choice, Multiple Answers (Reading)'
+      : 'Multiple Choice, Multiple Answers (Listening)';
+  }
+  if (qType === 'pte_mcq_single') {
+    return sectionType === 'reading'
+      ? 'Multiple Choice, Single Answer (Reading)'
+      : 'Multiple Choice, Single Answer (Listening)';
+  }
+
+  if (qType === 'speaking_response' || qType === 'writing_task') {
+    const hint = `${row.task_type || ''} ${row.section_title || ''} ${row.section_instructions || ''} ${row.task_description || ''}`;
+    return normalizePteTaskType(hint);
+  }
+
+  return null;
+}
+
+function getObjectiveMaxPoints(row: any): number {
+  const qType = String(row.question_type || '');
+  const base = Number(row.question_points);
+  const basePoints = Number.isFinite(base) && base > 0 ? base : 1;
+  const correct = parseMaybeJson(row.correct_answer);
+
+  if (qType === 'pte_mcq_multiple' || qType === 'pte_highlight_incorrect_words') {
+    const derived = Array.isArray(correct) ? correct.length : 1;
+    return Math.max(basePoints, derived);
+  }
+
+  if (
+    qType === 'pte_reading_fill_blanks_dropdown' ||
+    qType === 'pte_reading_fill_blanks_drag_drop' ||
+    qType === 'pte_listening_fill_blanks'
+  ) {
+    const derived = correct && typeof correct === 'object' && !Array.isArray(correct) ? Object.keys(correct).length : 1;
+    return Math.max(basePoints, derived);
+  }
+
+  if (qType === 'pte_reorder_paragraph') {
+    const arr = Array.isArray(correct) ? correct : [];
+    const derived = Math.max(1, arr.length - 1);
+    return Math.max(basePoints, derived);
+  }
+
+  if (qType === 'pte_write_from_dictation') {
+    const sentence = String(correct || '');
+    const derived = Math.max(1, sentence.trim().split(/\s+/).filter(Boolean).length);
+    return Math.max(basePoints, derived);
+  }
+
+  return basePoints;
+}
+
+function mean(values: number[]): number | null {
+  if (!values.length) return null;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+function weightedMeanByBuckets(
+  typeScores: Record<string, number>,
+  questionTypes: string[],
+  buckets: Array<keyof PteWeightBucket>,
+): number | null {
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  for (const type of questionTypes) {
+    const score = typeScores[type];
+    if (typeof score !== 'number' || Number.isNaN(score)) continue;
+    const matrix = PTE_QUESTION_WEIGHTS[type];
+    let weight = 0;
+    if (matrix) {
+      weight = buckets.reduce((sum, bucket) => sum + (matrix[bucket] || 0), 0);
+    }
+    if (weight <= 0) {
+      weight = matrix?.overall ?? 1;
+    }
+    weightedSum += score * weight;
+    totalWeight += weight;
+  }
+
+  if (totalWeight <= 0) return null;
+  return clampPteScore(weightedSum / totalWeight);
+}
+
+function toFixedNumber(value: number, digits = 2): number {
+  return Number(value.toFixed(digits));
+}
+
+function buildWeightedDetails(
+  typeScores: Record<string, number>,
+  questionTypes: string[],
+  buckets: Array<keyof PteWeightBucket>,
+) {
+  const details: Array<{ questionType: string; score: number; weight: number; weighted: number }> = [];
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  for (const type of questionTypes) {
+    const score = typeScores[type];
+    if (typeof score !== 'number' || Number.isNaN(score)) continue;
+    const matrix = PTE_QUESTION_WEIGHTS[type];
+    let weight = 0;
+    if (matrix) {
+      weight = buckets.reduce((sum, bucket) => sum + (matrix[bucket] || 0), 0);
+    }
+    if (weight <= 0) {
+      weight = matrix?.overall ?? 1;
+    }
+    const weighted = score * weight;
+    weightedSum += weighted;
+    totalWeight += weight;
+    details.push({ questionType: type, score, weight, weighted: toFixedNumber(weighted) });
+  }
+
+  const score = totalWeight > 0 ? clampPteScore(weightedSum / totalWeight) : null;
+  return {
+    score,
+    totalWeight: toFixedNumber(totalWeight),
+    weightedSum: toFixedNumber(weightedSum),
+    details,
+  };
+}
+
+async function buildPteAnalyticsWithDebug(attemptId: string, attempt: any) {
+  const listening = clampPteScore(attempt.listeningBand);
+  const reading = clampPteScore(attempt.readingBand);
+  const writing = clampPteScore(attempt.writingBand);
+  const speaking = clampPteScore(attempt.speakingBand);
+  const overall = clampPteScore(attempt.overallBand);
+
+  const responseRows = await query(
+    `SELECT
+      r.score AS response_score,
+      q.question_type,
+      q.points AS question_points,
+      q.correct_answer,
+      s.section_type,
+      s.task_type,
+      s.title AS section_title,
+      s.instructions AS section_instructions,
+      s.task_description
+     FROM responses r
+     JOIN questions q ON q.id = r.question_id
+     JOIN sections s ON s.id = r.section_id
+     WHERE r.attempt_id = $1
+       AND r.score IS NOT NULL`,
+    [attemptId],
+  );
+
+  const byTypeNormalized: Record<string, number[]> = {};
+
+  for (const row of responseRows.rows) {
+    const canonicalType = inferPteQuestionType(row);
+    if (!canonicalType) continue;
+
+    const responseScore = Number(row.response_score);
+    if (!Number.isFinite(responseScore)) continue;
+
+    let normalized = 0;
+    if (row.question_type === 'writing_task' || row.question_type === 'speaking_response') {
+      normalized = Math.max(0, Math.min(1, (responseScore - 10) / 80));
+    } else {
+      const maxPoints = getObjectiveMaxPoints(row);
+      normalized = maxPoints > 0
+        ? Math.max(0, Math.min(1, responseScore / maxPoints))
+        : 0;
+    }
+
+    if (!byTypeNormalized[canonicalType]) byTypeNormalized[canonicalType] = [];
+    byTypeNormalized[canonicalType].push(normalized);
+  }
+
+  const typeScores: Record<string, number> = {};
+  for (const [type, values] of Object.entries(byTypeNormalized)) {
+    const avg = mean(values);
+    if (avg === null) continue;
+    typeScores[type] = Math.max(10, Math.min(90, Math.round(10 + avg * 80)));
+  }
+
+  const allObservedTypes = Object.keys(typeScores);
+  const overallWeighted = buildWeightedDetails(typeScores, allObservedTypes, ['overall']);
+  const listeningWeighted = buildWeightedDetails(typeScores, allObservedTypes, ['listening']);
+  const readingWeighted = buildWeightedDetails(typeScores, allObservedTypes, ['reading']);
+  const speakingWeighted = buildWeightedDetails(typeScores, allObservedTypes, ['speaking']);
+  const writingWeighted = buildWeightedDetails(typeScores, allObservedTypes, ['writing']);
+
+  const profileWeighted = {
+    openResponseSpeakingWriting: buildWeightedDetails(
+      typeScores,
+      PTE_SKILLS_PROFILE_MAP.openResponseSpeakingWriting,
+      ['speaking', 'writing'],
+    ),
+    reproducingSpokenWrittenLanguage: buildWeightedDetails(
+      typeScores,
+      PTE_SKILLS_PROFILE_MAP.reproducingSpokenWrittenLanguage,
+      ['listening', 'speaking', 'writing'],
+    ),
+    extendedWriting: buildWeightedDetails(typeScores, PTE_SKILLS_PROFILE_MAP.extendedWriting, ['writing']),
+    shortWriting: buildWeightedDetails(typeScores, PTE_SKILLS_PROFILE_MAP.shortWriting, ['writing']),
+    extendedSpeaking: buildWeightedDetails(typeScores, PTE_SKILLS_PROFILE_MAP.extendedSpeaking, ['speaking']),
+    shortSpeaking: buildWeightedDetails(typeScores, PTE_SKILLS_PROFILE_MAP.shortSpeaking, ['speaking']),
+    multipleSkillsComprehension: buildWeightedDetails(
+      typeScores,
+      PTE_SKILLS_PROFILE_MAP.multipleSkillsComprehension,
+      ['listening', 'reading', 'writing', 'speaking'],
+    ),
+    singleSkillComprehension: buildWeightedDetails(
+      typeScores,
+      PTE_SKILLS_PROFILE_MAP.singleSkillComprehension,
+      ['listening', 'reading'],
+    ),
+  };
+
+  const communicativeSkills = {
+    overall: overallWeighted.score ?? overall,
+    listening: listeningWeighted.score ?? listening,
+    reading: readingWeighted.score ?? reading,
+    speaking: speakingWeighted.score ?? speaking,
+    writing: writingWeighted.score ?? writing,
+  };
+
+  const skillsProfile = {
+    openResponseSpeakingWriting: profileWeighted.openResponseSpeakingWriting.score,
+    reproducingSpokenWrittenLanguage: profileWeighted.reproducingSpokenWrittenLanguage.score,
+    extendedWriting: profileWeighted.extendedWriting.score,
+    shortWriting: profileWeighted.shortWriting.score,
+    extendedSpeaking: profileWeighted.extendedSpeaking.score,
+    shortSpeaking: profileWeighted.shortSpeaking.score,
+    multipleSkillsComprehension: profileWeighted.multipleSkillsComprehension.score,
+    singleSkillComprehension: profileWeighted.singleSkillComprehension.score,
+  };
+
+  const perQuestionType = Object.keys(typeScores)
+    .sort((a, b) => a.localeCompare(b))
+    .map((type) => ({
+      questionType: type,
+      normalizedAverage: toFixedNumber(mean(byTypeNormalized[type]) ?? 0, 4),
+      scaledScore: typeScores[type],
+      sampleCount: byTypeNormalized[type]?.length || 0,
+      weights: PTE_QUESTION_WEIGHTS[type] || null,
+    }));
+
+  return {
+    analytics: {
+      communicativeSkills,
+      skillsProfile,
+    },
+    debug: {
+      typeScores,
+      perQuestionType,
+      communicativeWeighted: {
+        overall: overallWeighted,
+        listening: listeningWeighted,
+        reading: readingWeighted,
+        speaking: speakingWeighted,
+        writing: writingWeighted,
+      },
+      profileWeighted,
+    },
+  };
+}
+
+async function buildPteAnalytics(attemptId: string, attempt: any) {
+  const { analytics } = await buildPteAnalyticsWithDebug(attemptId, attempt);
+  return analytics;
 }
 
 async function hydrateToeflIbt2026Reporting(attemptId: string) {
@@ -335,6 +742,14 @@ export async function getAttempt(id: string, userId?: string) {
     }
   }
 
+  if (attempt.test?.testType === 'pte_academic') {
+    const pteAnalytics = await buildPteAnalytics(id, attempt);
+    return {
+      ...attempt,
+      pteAnalytics,
+    };
+  }
+
   return attempt;
 }
 
@@ -561,6 +976,29 @@ export async function getToeflIbtReport(attemptId: string, userId: string) {
     },
     overallBand: scores.overallBand,
     overallScore120: scores.overallScore120,
+  };
+}
+
+export async function getPteAnalyticsDebug(attemptId: string, userId: string) {
+  const attempt = await attemptModel.findById(attemptId);
+  if (!attempt) {
+    throw new NotFoundError('Attempt not found');
+  }
+  if (attempt.userId !== userId) {
+    throw new ForbiddenError('You do not have access to this attempt');
+  }
+  if (attempt.test?.testType !== 'pte_academic') {
+    throw new ValidationError('Debug analytics endpoint is only available for PTE Academic attempts');
+  }
+
+  const { analytics, debug } = await buildPteAnalyticsWithDebug(attemptId, attempt);
+
+  return {
+    attemptId: attempt.id,
+    testId: attempt.testId,
+    communicativeSkills: analytics.communicativeSkills,
+    skillsProfile: analytics.skillsProfile,
+    debug,
   };
 }
 

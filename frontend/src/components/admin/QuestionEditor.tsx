@@ -11,6 +11,8 @@ import TFNGEditor from './QuestionTypeEditors/TFNGEditor';
 import CompletionEditor from './QuestionTypeEditors/CompletionEditor';
 import MatchingEditor from './QuestionTypeEditors/MatchingEditor';
 import DropdownEditor from './QuestionTypeEditors/DropdownEditor';
+import PteChoiceEditor from './QuestionTypeEditors/PteChoiceEditor';
+import PteStructuredEditor from './QuestionTypeEditors/PteStructuredEditor';
 import type {
   TestType,
   SectionType,
@@ -21,6 +23,13 @@ import type {
   CompletionData,
   MatchingData,
   DropdownData,
+  PteMcqData,
+  PteReadingFillBlanksDropdownData,
+  PteReadingFillBlanksDragDropData,
+  PteReorderParagraphData,
+  PteListeningFillBlanksData,
+  PteHighlightIncorrectWordsData,
+  PteWriteFromDictationData,
 } from '@/types/test';
 
 interface QuestionFormData {
@@ -55,6 +64,16 @@ const ALL_QUESTION_TYPES: { value: QuestionType; label: string }[] = [
   { value: 'completion', label: 'Completion' },
   { value: 'matching', label: 'Matching' },
   { value: 'dropdown', label: 'Dropdown' },
+  { value: 'pte_mcq_single', label: 'PTE MCQ (Single Answer)' },
+  { value: 'pte_mcq_multiple', label: 'PTE MCQ (Multiple Answers)' },
+  { value: 'pte_reading_fill_blanks_dropdown', label: 'PTE Reading Fill in the Blanks (Dropdown)' },
+  { value: 'pte_reading_fill_blanks_drag_drop', label: 'PTE Reading Fill in the Blanks (Drag and Drop)' },
+  { value: 'pte_reorder_paragraph', label: 'PTE Re-order Paragraph' },
+  { value: 'pte_listening_fill_blanks', label: 'PTE Listening Fill in the Blanks' },
+  { value: 'pte_highlight_correct_summary', label: 'PTE Highlight Correct Summary' },
+  { value: 'pte_select_missing_word', label: 'PTE Select Missing Word' },
+  { value: 'pte_highlight_incorrect_words', label: 'PTE Highlight Incorrect Words' },
+  { value: 'pte_write_from_dictation', label: 'PTE Write from Dictation' },
 ];
 
 function getAllowedTypes(
@@ -99,7 +118,35 @@ function getAllowedTypes(
     }
   }
 
-  return null; // unknown test type — show all
+  if (testType === 'pte_academic') {
+    switch (sectionType) {
+      case 'reading':
+        return [
+          'pte_mcq_single',
+          'pte_mcq_multiple',
+          'pte_reading_fill_blanks_dropdown',
+          'pte_reading_fill_blanks_drag_drop',
+          'pte_reorder_paragraph',
+        ];
+      case 'listening':
+        return [
+          'pte_mcq_single',
+          'pte_mcq_multiple',
+          'pte_listening_fill_blanks',
+          'pte_highlight_correct_summary',
+          'pte_select_missing_word',
+          'pte_highlight_incorrect_words',
+          'pte_write_from_dictation',
+        ];
+      case 'writing':
+      case 'speaking':
+        return ['pte_mcq_single'];
+      default:
+        return null;
+    }
+  }
+
+  return null; // unknown test type -- show all
 }
 
 // ---------- Contextual guidance ----------
@@ -196,6 +243,39 @@ function getGuidance(
     }
   }
 
+  if (testType === 'pte_academic') {
+    switch (sectionType) {
+      case 'reading':
+        return {
+          icon: 'PTE',
+          title: 'PTE Reading',
+          description:
+            'Use PTE reading item types: MCQ, Fill in the Blanks (Dropdown/Drag and Drop), and Re-order Paragraph. Recommended per full set: FIB Dropdown (5-6), MCQ Multiple (2-3), Re-order Paragraph (2-3), FIB Drag-Drop (4-5), MCQ Single (2-3).',
+        };
+      case 'listening':
+        return {
+          icon: 'PTE',
+          title: 'PTE Listening',
+          description:
+            'Use PTE listening item types: Fill in the Blanks, Highlight Correct Summary, Select Missing Word, Highlight Incorrect Words, and Write from Dictation. Recommended per full set: Summarize Spoken Text (1), MCQ Multiple (2-3), FIB Listening (2-3), Highlight Correct Summary (2-3), MCQ Single (2-3), Select Missing Word (1-2), Highlight Incorrect Words (2-3), Write from Dictation (3-4).',
+        };
+      case 'writing':
+        return {
+          icon: 'PTE',
+          title: 'PTE Writing',
+          description:
+            'Extended writing prompts can be authored at section level; this editor currently supports objective items.',
+        };
+      case 'speaking':
+        return {
+          icon: 'PTE',
+          title: 'PTE Speaking',
+          description:
+            'Extended speaking prompts can be authored at section level; this editor currently supports objective items.',
+        };
+    }
+  }
+
   return null;
 }
 
@@ -243,6 +323,73 @@ function getDefaultQuestionData(type: QuestionType): QuestionData {
         context: '',
         dropdowns: {},
       } as DropdownData;
+    case 'pte_mcq_single':
+      return {
+        prompt: '',
+        options: [
+          { key: 'A', text: '' },
+          { key: 'B', text: '' },
+          { key: 'C', text: '' },
+          { key: 'D', text: '' },
+        ],
+      } as PteMcqData;
+    case 'pte_mcq_multiple':
+      return {
+        prompt: '',
+        options: [
+          { key: 'A', text: '' },
+          { key: 'B', text: '' },
+          { key: 'C', text: '' },
+          { key: 'D', text: '' },
+        ],
+      } as PteMcqData;
+    case 'pte_reading_fill_blanks_dropdown':
+      return {
+        context: '',
+        blanks: {},
+      } as PteReadingFillBlanksDropdownData;
+    case 'pte_reading_fill_blanks_drag_drop':
+      return {
+        textSegments: [''],
+        blankIds: ['b1'],
+        options: [''],
+      } as PteReadingFillBlanksDragDropData;
+    case 'pte_reorder_paragraph':
+      return {
+        blocks: [{ id: '1', text: '' }],
+      } as PteReorderParagraphData;
+    case 'pte_listening_fill_blanks':
+      return {
+        transcript: '',
+        blankIds: ['b1'],
+      } as PteListeningFillBlanksData;
+    case 'pte_highlight_correct_summary':
+      return {
+        prompt: '',
+        options: [
+          { key: 'A', text: '' },
+          { key: 'B', text: '' },
+          { key: 'C', text: '' },
+        ],
+      } as PteMcqData;
+    case 'pte_select_missing_word':
+      return {
+        prompt: '',
+        options: [
+          { key: 'A', text: '' },
+          { key: 'B', text: '' },
+          { key: 'C', text: '' },
+        ],
+      } as PteMcqData;
+    case 'pte_highlight_incorrect_words':
+      return {
+        transcript: '',
+        tokens: [],
+      } as PteHighlightIncorrectWordsData;
+    case 'pte_write_from_dictation':
+      return {
+        prompt: '',
+      } as PteWriteFromDictationData;
     default:
       return { options: [], multiSelect: false } as MCQData;
   }
@@ -262,6 +409,21 @@ function getDefaultCorrectAnswer(type: QuestionType): any {
       return {};
     case 'dropdown':
       return {};
+    case 'pte_mcq_single':
+    case 'pte_highlight_correct_summary':
+    case 'pte_select_missing_word':
+      return '';
+    case 'pte_mcq_multiple':
+    case 'pte_highlight_incorrect_words':
+      return [];
+    case 'pte_reading_fill_blanks_dropdown':
+    case 'pte_reading_fill_blanks_drag_drop':
+    case 'pte_listening_fill_blanks':
+      return {};
+    case 'pte_reorder_paragraph':
+      return [];
+    case 'pte_write_from_dictation':
+      return '';
     default:
       return '';
   }
@@ -273,7 +435,16 @@ function normalizeCorrectAnswer(type: QuestionType, answer: any): any {
 
   // For types that expect primitives (string/number/boolean) or arrays of strings,
   // but might receive an object wrapper like { answer: '...' }
-  const primitiveTypes: QuestionType[] = ['multiple_choice', 'true_false_not_given', 'yes_no_not_given', 'completion'];
+  const primitiveTypes: QuestionType[] = [
+    'multiple_choice',
+    'true_false_not_given',
+    'yes_no_not_given',
+    'completion',
+    'pte_mcq_single',
+    'pte_highlight_correct_summary',
+    'pte_select_missing_word',
+    'pte_write_from_dictation',
+  ];
 
   if (primitiveTypes.includes(type)) {
     if (typeof answer === 'object' && !Array.isArray(answer) && 'answer' in answer) {
@@ -442,6 +613,40 @@ export default function QuestionEditor({
             onChange={handleQuestionDataChange}
           />
         );
+      case 'pte_mcq_single':
+      case 'pte_highlight_correct_summary':
+      case 'pte_select_missing_word':
+        return (
+          <PteChoiceEditor
+            data={questionData as PteMcqData}
+            correctAnswer={correctAnswer}
+            onChange={handleQuestionDataChange}
+            multiSelect={false}
+          />
+        );
+      case 'pte_mcq_multiple':
+        return (
+          <PteChoiceEditor
+            data={questionData as PteMcqData}
+            correctAnswer={correctAnswer}
+            onChange={handleQuestionDataChange}
+            multiSelect={true}
+          />
+        );
+      case 'pte_reading_fill_blanks_dropdown':
+      case 'pte_reading_fill_blanks_drag_drop':
+      case 'pte_reorder_paragraph':
+      case 'pte_listening_fill_blanks':
+      case 'pte_highlight_incorrect_words':
+      case 'pte_write_from_dictation':
+        return (
+          <PteStructuredEditor
+            questionType={questionType}
+            questionData={questionData}
+            correctAnswer={correctAnswer}
+            onChange={handleQuestionDataChange}
+          />
+        );
       default:
         return <p className="text-sm text-gray-500">Unknown question type.</p>;
     }
@@ -567,3 +772,4 @@ export default function QuestionEditor({
     </form>
   );
 }
+

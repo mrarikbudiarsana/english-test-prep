@@ -69,6 +69,13 @@ function getSectionTypeOptions(testType: string) {
     );
   }
 
+  if (testType === 'pte_academic') {
+    // PTE Academic: Speaking+Writing, Reading, Listening
+    return allSectionTypeOptions.filter(o =>
+      ['speaking', 'reading', 'listening'].includes(o.value)
+    );
+  }
+
   // IELTS and others: all except Structure
   return allSectionTypeOptions.filter(o => o.value !== 'structure');
 }
@@ -100,6 +107,14 @@ function getDefaultDuration(testType: string, sectionType: SectionType): number 
       case 'listening': return 41;
       case 'writing': return 29;
       case 'speaking': return 20;
+      default: return 30;
+    }
+  }
+  if (testType === 'pte_academic') {
+    switch (sectionType) {
+      case 'speaking': return 80; // Speaking + Writing combined session
+      case 'reading': return 27;
+      case 'listening': return 35;
       default: return 30;
     }
   }
@@ -151,6 +166,21 @@ function getStructureGuide(testType: string): { title: string; lines: string[] }
         '    Build a Sentence (10 items) + Write an Email (1) + Academic Discussion (1)',
         'Speaking — 2 task types, ~20 min total',
         '    Listen and Repeat (7 prompts, 5 pts each) + Take an Interview (4 prompts, 5 pts each)',
+      ],
+    };
+  }
+
+  if (testType === 'pte_academic') {
+    return {
+      title: 'PTE Academic Structure',
+      lines: [
+        'Section 1 - Speaking & Writing: ~76-84 minutes',
+        '    Recommended set size: 35-40 items',
+        'Section 2 - Reading: ~23-30 minutes',
+        '    Recommended set size: 13-19 items',
+        'Section 3 - Listening: ~31-39 minutes',
+        '    Recommended set size: 12-18 items',
+        'Total full set: approximately 65-75 items',
       ],
     };
   }
@@ -264,7 +294,10 @@ export default function SectionEditor({ testType, existingSections = [], initial
         responseTime: sectionType === 'speaking' ? responseTime : null,
         moduleStage: testType === 'toefl_ibt' ? moduleStage : null,
         modulePath: testType === 'toefl_ibt' && moduleStage === 2 ? (modulePath || null) : null,
-        taskType: testType === 'toefl_ibt' ? (taskType || null) : null,
+        taskType:
+          testType === 'toefl_ibt' || (testType === 'pte_academic' && sectionType === 'speaking')
+            ? (taskType || null)
+            : null,
       });
     } finally {
       setLoading(false);
@@ -590,18 +623,51 @@ export default function SectionEditor({ testType, existingSections = [], initial
         sectionType === 'speaking' && (
           <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-4">
             <h4 className="text-sm font-semibold text-blue-800">Speaking Section Settings</h4>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Select
                 label="Part Number"
                 value={String(partNumber)}
                 onChange={(e) => setPartNumber(parseInt(e.target.value))}
-                options={[
-                  { value: '1', label: 'Part 1' },
-                  { value: '2', label: 'Part 2' },
-                  { value: '3', label: 'Part 3' },
-                  { value: '4', label: 'Part 4' },
-                ]}
+                options={testType === 'pte_academic'
+                  ? [
+                    { value: '1', label: 'S&W Block 1' },
+                    { value: '2', label: 'S&W Block 2' },
+                    { value: '3', label: 'S&W Block 3' },
+                    { value: '4', label: 'S&W Block 4' },
+                    { value: '5', label: 'S&W Block 5' },
+                    { value: '6', label: 'S&W Block 6' },
+                    { value: '7', label: 'S&W Block 7' },
+                    { value: '8', label: 'S&W Block 8' },
+                    { value: '9', label: 'S&W Block 9' },
+                    { value: '10', label: 'S&W Block 10' },
+                  ]
+                  : [
+                    { value: '1', label: 'Part 1' },
+                    { value: '2', label: 'Part 2' },
+                    { value: '3', label: 'Part 3' },
+                    { value: '4', label: 'Part 4' },
+                  ]}
               />
+              {testType === 'pte_academic' && (
+                <Select
+                  label="PTE Task Type (for scoring)"
+                  value={taskType}
+                  onChange={(e) => setTaskType(e.target.value)}
+                  options={[
+                    { value: '', label: '— Select task type —' },
+                    { value: 'read_aloud', label: 'Read Aloud' },
+                    { value: 'repeat_sentence', label: 'Repeat Sentence' },
+                    { value: 'describe_image', label: 'Describe Image' },
+                    { value: 'retell_lecture', label: 'Retell Lecture' },
+                    { value: 'answer_short_question', label: 'Answer Short Question' },
+                    { value: 'summarize_group_discussion', label: 'Summarize Group Discussion' },
+                    { value: 'respond_to_a_situation', label: 'Respond to a Situation' },
+                    { value: 'summarize_written_text', label: 'Summarize Written Text' },
+                    { value: 'write_essay', label: 'Write Essay' },
+                    { value: 'summarize_spoken_text', label: 'Summarize Spoken Text' },
+                  ]}
+                />
+              )}
               <Input
                 label="Prep Time (seconds)"
                 type="number"
@@ -617,6 +683,11 @@ export default function SectionEditor({ testType, existingSections = [], initial
                 onChange={(e) => setResponseTime(parseInt(e.target.value) || 0)}
               />
             </div>
+            {testType === 'pte_academic' && (
+              <p className="text-xs text-blue-700 bg-blue-100 rounded p-2">
+                Use one section prompt per PTE S&W task block. Task type is used by the PTE scoring engine for deterministic weighting and penalties.
+              </p>
+            )}
 
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">Speaking Prompts</label>

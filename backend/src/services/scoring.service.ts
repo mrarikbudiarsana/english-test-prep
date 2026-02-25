@@ -201,6 +201,10 @@ function normalizeChoiceArray(values: any[]): string[] {
   return values.map((v) => normalizeChoice(v)).sort();
 }
 
+function normalizeStringArray(values: any[]): string[] {
+  return values.map((v) => normalizeAnswer(String(unwrapAnswer(v)))).sort();
+}
+
 /**
  * Compare user answer vs correct answer for a single question.
  * Returns points earned (usually 1 or 0).
@@ -211,6 +215,8 @@ export function checkAnswer(
 ): { points: number; isCorrect: boolean } {
   const { questionType, correctAnswer, questionData } = question;
   let isCorrect = false;
+  let points = 0;
+  const maxPoints = getMaxPointsForQuestion(question);
 
   if (userAnswer === null || userAnswer === undefined || userAnswer === '') {
     return { points: 0, isCorrect: false };
@@ -219,24 +225,55 @@ export function checkAnswer(
   try {
     switch (questionType) {
       case 'multiple_choice':
+      case 'pte_mcq_single':
+      case 'pte_highlight_correct_summary':
+      case 'pte_select_missing_word':
         isCorrect = compareMultipleChoice(userAnswer, correctAnswer);
+        points = isCorrect ? maxPoints : 0;
+        break;
+      case 'pte_mcq_multiple':
+        points = scoreMultiSelectWithPenalty(userAnswer, correctAnswer);
+        isCorrect = points >= maxPoints;
         break;
 
       case 'true_false_not_given':
       case 'yes_no_not_given':
         isCorrect = String(unwrapAnswer(userAnswer)).toUpperCase() === String(unwrapAnswer(correctAnswer)).toUpperCase();
+        points = isCorrect ? maxPoints : 0;
         break;
 
       case 'completion':
+      case 'pte_write_from_dictation':
         isCorrect = compareCompletion(userAnswer, correctAnswer, questionData);
+        if (questionType === 'pte_write_from_dictation') {
+          points = scoreDictationWords(userAnswer, correctAnswer);
+          isCorrect = points >= maxPoints;
+        } else {
+          points = isCorrect ? maxPoints : 0;
+        }
         break;
 
       case 'matching':
         isCorrect = compareMatching(userAnswer, correctAnswer);
+        points = isCorrect ? maxPoints : 0;
         break;
 
       case 'dropdown':
-        isCorrect = compareDropdown(userAnswer, correctAnswer);
+      case 'pte_reading_fill_blanks_dropdown':
+      case 'pte_reading_fill_blanks_drag_drop':
+      case 'pte_listening_fill_blanks':
+        points = scoreObjectMap(userAnswer, correctAnswer);
+        isCorrect = points >= maxPoints;
+        break;
+
+      case 'pte_reorder_paragraph':
+        points = scoreReorderAdjacentPairs(userAnswer, correctAnswer);
+        isCorrect = points >= maxPoints;
+        break;
+
+      case 'pte_highlight_incorrect_words':
+        points = scoreMultiSelectWithPenalty(userAnswer, correctAnswer);
+        isCorrect = points >= maxPoints;
         break;
 
       default:
@@ -248,8 +285,43 @@ export function checkAnswer(
     isCorrect = false;
   }
 
-  const points = isCorrect ? (question.points || 1) : 0;
+  points = Math.max(0, Math.min(maxPoints, points));
   return { points, isCorrect };
+}
+
+function getMaxPointsForQuestion(question: Question): number {
+  const base = Number(question.points);
+  const basePoints = Number.isFinite(base) && base > 0 ? base : 1;
+  const qType = question.questionType;
+  const correct = unwrapAnswer(question.correctAnswer);
+
+  if (qType === 'pte_mcq_multiple' || qType === 'pte_highlight_incorrect_words') {
+    const derived = Array.isArray(correct) ? correct.length : 1;
+    return Math.max(basePoints, derived);
+  }
+
+  if (
+    qType === 'pte_reading_fill_blanks_dropdown' ||
+    qType === 'pte_reading_fill_blanks_drag_drop' ||
+    qType === 'pte_listening_fill_blanks'
+  ) {
+    const derived = correct && typeof correct === 'object' ? Object.keys(correct).length : 1;
+    return Math.max(basePoints, derived);
+  }
+
+  if (qType === 'pte_reorder_paragraph') {
+    const arr = Array.isArray(correct) ? correct : [];
+    const derived = Math.max(1, arr.length - 1);
+    return Math.max(basePoints, derived);
+  }
+
+  if (qType === 'pte_write_from_dictation') {
+    const sentence = String(correct || '');
+    const derived = Math.max(1, sentence.trim().split(/\s+/).filter(Boolean).length);
+    return Math.max(basePoints, derived);
+  }
+
+  return basePoints;
 }
 
 function compareMultipleChoice(user: any, correct: any): boolean {
@@ -301,9 +373,89 @@ function compareDropdown(user: any, correct: any): boolean {
   if (typeof userValue !== 'object' || typeof correctValue !== 'object') return false;
   const keys = Object.keys(correctValue);
   for (const key of keys) {
-    if (userValue[key] !== correctValue[key]) return false;
+    if (normalizeAnswer(String(userValue[key] || '')) !== normalizeAnswer(String(correctValue[key] || ''))) {
+      return false;
+    }
   }
   return true;
+}
+
+function compareOrderedArray(user: any, correct: any): boolean {
+  const userValue = unwrapAnswer(user);
+  const correctValue = unwrapAnswer(correct);
+  if (!Array.isArray(userValue) || !Array.isArray(correctValue)) return false;
+  if (userValue.length !== correctValue.length) return false;
+
+  for (let i = 0; i < correctValue.length; i++) {
+    if (normalizeAnswer(String(userValue[i])) !== normalizeAnswer(String(correctValue[i]))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function compareUnorderedArray(user: any, correct: any): boolean {
+  const userValue = unwrapAnswer(user);
+  const correctValue = unwrapAnswer(correct);
+  if (!Array.isArray(userValue) || !Array.isArray(correctValue)) return false;
+  if (userValue.length !== correctValue.length) return false;
+  const sortedUser = normalizeStringArray(userValue);
+  const sortedCorrect = normalizeStringArray(correctValue);
+  return sortedUser.every((val, idx) => val === sortedCorrect[idx]);
+}
+
+function scoreMultiSelectWithPenalty(user: any, correct: any): number {
+  const userValue = unwrapAnswer(user);
+  const correctValue = unwrapAnswer(correct);
+  if (!Array.isArray(userValue) || !Array.isArray(correctValue)) return 0;
+
+  const userSet = new Set(normalizeStringArray(userValue));
+  const correctSet = new Set(normalizeStringArray(correctValue));
+  let score = 0;
+  for (const val of userSet) {
+    if (correctSet.has(val)) score += 1;
+    else score -= 1;
+  }
+  return Math.max(0, score);
+}
+
+function scoreObjectMap(user: any, correct: any): number {
+  const userValue = unwrapAnswer(user);
+  const correctValue = unwrapAnswer(correct);
+  if (typeof userValue !== 'object' || typeof correctValue !== 'object') return 0;
+  let score = 0;
+  for (const key of Object.keys(correctValue)) {
+    if (normalizeAnswer(String(userValue[key] || '')) === normalizeAnswer(String(correctValue[key] || ''))) {
+      score += 1;
+    }
+  }
+  return score;
+}
+
+function scoreReorderAdjacentPairs(user: any, correct: any): number {
+  const userValue = unwrapAnswer(user);
+  const correctValue = unwrapAnswer(correct);
+  if (!Array.isArray(userValue) || !Array.isArray(correctValue) || correctValue.length < 2) return 0;
+  let score = 0;
+  for (let i = 0; i < correctValue.length - 1; i++) {
+    const correctPair = `${normalizeAnswer(String(correctValue[i]))}|${normalizeAnswer(String(correctValue[i + 1]))}`;
+    const userPair = `${normalizeAnswer(String(userValue[i] || ''))}|${normalizeAnswer(String(userValue[i + 1] || ''))}`;
+    if (correctPair === userPair) score += 1;
+  }
+  return score;
+}
+
+function scoreDictationWords(user: any, correct: any): number {
+  const userText = normalizeAnswer(String(unwrapAnswer(user)));
+  const correctText = normalizeAnswer(String(unwrapAnswer(correct)));
+  if (!userText || !correctText) return 0;
+  const userWords = userText.split(' ').filter(Boolean);
+  const correctWords = correctText.split(' ').filter(Boolean);
+  let score = 0;
+  for (let i = 0; i < correctWords.length; i++) {
+    if (userWords[i] && userWords[i] === correctWords[i]) score += 1;
+  }
+  return score;
 }
 
 /**
@@ -313,6 +465,7 @@ export function convertToBand(
   rawScore: number,
   sectionType: SectionType,
   testType: string = 'academic',
+  maxRawScore: number = rawScore,
 ): number {
   let table: Array<{ min: number; max: number; band: number }>;
 
@@ -329,6 +482,13 @@ export function convertToBand(
   } else if (testType === 'toefl_ibt') {
     if (sectionType === 'reading' || sectionType === 'listening' || sectionType === 'writing' || sectionType === 'speaking') {
       return rawToBandSpecific(rawScore, sectionType);
+    }
+    return 0;
+  } else if (testType === 'pte_academic') {
+    if (sectionType === 'reading' || sectionType === 'listening') {
+      const safeMax = maxRawScore > 0 ? maxRawScore : 1;
+      const ratio = Math.max(0, Math.min(1, rawScore / safeMax));
+      return Math.round(10 + ratio * 80); // 10..90
     }
     return 0;
   } else {
@@ -370,6 +530,23 @@ export function calculateOverallBand(
     const r = reading ?? 31;
     const total = (l + s + r) * 10 / 3;
     return Math.round(total); // Usually rounded to nearest whole number
+  }
+
+  if (testType === 'pte_academic') {
+    const sections: number[] = [];
+    const hasValidScore = (v: number | null): v is number =>
+      v !== null && v !== undefined && typeof v === 'number' && !isNaN(v) && v > 0;
+
+    if (hasValidScore(listening)) sections.push(listening);
+    if (hasValidScore(reading)) sections.push(reading);
+    if (hasValidScore(writing)) sections.push(writing);
+    if (hasValidScore(speaking)) sections.push(speaking);
+
+    if (sections.length === 0) return 0;
+
+    const avg = sections.reduce((a, b) => a + b, 0) / sections.length;
+    const rounded = Math.round(avg);
+    return Math.max(10, Math.min(90, rounded));
   }
 
   // IELTS Logic - only count sections with actual scores (> 0)
@@ -439,6 +616,10 @@ export async function scoreObjectiveSection(attemptId: string, sectionType: Sect
   const responses = responsesResult.rows;
 
   let rawScore = 0;
+  const maxRawScore = questions.reduce((sum, q) => {
+    const pts = Number(q.points);
+    return sum + (Number.isFinite(pts) && pts > 0 ? pts : 1);
+  }, 0);
 
   for (const q of questions) {
     const response = responses.find(r => r.question_id === q.id);
@@ -452,7 +633,7 @@ export async function scoreObjectiveSection(attemptId: string, sectionType: Sect
       }
 
       const { points, isCorrect } = checkAnswer(q, ans);
-      if (isCorrect) {
+      if (points > 0) {
         rawScore += points;
       }
 
@@ -464,7 +645,7 @@ export async function scoreObjectiveSection(attemptId: string, sectionType: Sect
     }
   }
 
-  const band = convertToBand(rawScore, sectionType, testType);
+  const band = convertToBand(rawScore, sectionType, testType, maxRawScore);
 
   // Update attempt
   let column = '';

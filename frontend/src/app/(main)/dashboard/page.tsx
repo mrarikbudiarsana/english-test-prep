@@ -5,7 +5,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardStats } from '@/types/api';
-import { formatBand, formatDate, formatScore, getBandColor, getBandBgColor } from '@/lib/utils';
+import { formatDate, formatScore, getScoreColor, getScoreBgColor } from '@/lib/utils';
 import {
   HiClipboardList,
   HiStar,
@@ -40,6 +40,10 @@ export default function DashboardPage() {
   // Get exam config based on user's preference
   const examType = user?.preferredExamType || 'ielts';
   const examConfig = getExamConfig(examType);
+  const scoreTestTypeForColors =
+    examType === 'pte' ? 'pte_academic' :
+      examType === 'toefl_itp' ? 'toefl_itp' :
+        undefined;
 
   useEffect(() => {
     async function fetchStats() {
@@ -271,7 +275,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`px-3 py-1 rounded-full text-sm font-bold ${getBandBgColor(attempt.overallBand ?? attempt.overallScore ?? 0)} ${getBandColor(attempt.overallBand ?? attempt.overallScore ?? 0)}`}>
+                      <div className={`px-3 py-1 rounded-full text-sm font-bold ${getScoreBgColor(attempt.overallBand ?? attempt.overallScore ?? 0, scoreTestTypeForColors)} ${getScoreColor(attempt.overallBand ?? attempt.overallScore ?? 0, scoreTestTypeForColors)}`}>
                         {displayScore(attempt.overallBand ?? attempt.overallScore, examConfig.scorePrecision)}
                       </div>
                       <div>

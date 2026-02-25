@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import * as attemptService from '../services/attempt.service';
 import * as responseModel from '../models/response.model';
+import { ValidationError } from '../middleware/errorHandler';
+import { pteAnalyticsDebugContractSchema } from '../contracts/pteAnalyticsDebug.contract';
 
 export async function startAttempt(
   req: Request,
@@ -175,6 +177,27 @@ export async function getToeflIbtReport(
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.json({ data: report });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getPteAnalyticsDebug(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const payload = await attemptService.getPteAnalyticsDebug(attemptId, req.user!.id);
+    const parsed = pteAnalyticsDebugContractSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new ValidationError('PTE analytics debug payload failed contract validation');
+    }
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.json({ data: parsed.data });
   } catch (error) {
     next(error);
   }

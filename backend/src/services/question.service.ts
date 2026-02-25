@@ -1,6 +1,7 @@
 import * as questionModel from '../models/question.model';
 import * as sectionModel from '../models/section.model';
-import { NotFoundError } from '../middleware/errorHandler';
+import { NotFoundError, ValidationError } from '../middleware/errorHandler';
+import { validatePteQuestionPayload } from '../utils/pteQuestionValidator';
 
 function sanitizeMcqOptionText(input: unknown, optionKey?: string): string {
   let text = typeof input === 'string' ? input : '';
@@ -176,6 +177,15 @@ export async function createQuestion(
       : (await questionModel.getMaxQuestionNumber(sectionId)) + 1;
   const sanitizedQuestionData = sanitizeQuestionData(data.questionType, data.questionData);
 
+  const pteValidation = validatePteQuestionPayload(
+    data.questionType,
+    sanitizedQuestionData,
+    data.correctAnswer,
+  );
+  if (!pteValidation.valid) {
+    throw new ValidationError(`Invalid PTE question payload: ${pteValidation.errors.join(' | ')}`);
+  }
+
   return questionModel.create({
     sectionId,
     questionNumber,
@@ -223,6 +233,17 @@ export async function updateQuestion(
       ? sanitizeQuestionData(resolvedType, data.questionData)
       : data.questionData,
   };
+
+  if (sanitizedData.questionData !== undefined || sanitizedData.correctAnswer !== undefined || data.questionType !== undefined) {
+    const pteValidation = validatePteQuestionPayload(
+      resolvedType,
+      sanitizedData.questionData ?? existing.questionData,
+      sanitizedData.correctAnswer ?? existing.correctAnswer,
+    );
+    if (!pteValidation.valid) {
+      throw new ValidationError(`Invalid PTE question payload: ${pteValidation.errors.join(' | ')}`);
+    }
+  }
 
   return questionModel.update(id, sanitizedData);
 }

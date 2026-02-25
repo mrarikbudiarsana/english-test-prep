@@ -14,6 +14,13 @@ import {
 } from '../config/toeflIbtScoreMappings';
 import * as emailService from './email.service';
 import { NotFoundError } from '../middleware/errorHandler';
+import {
+  adjustPteWritingBands,
+  band9ToPteScaled,
+  countWords,
+  getPteSpeakingWeights,
+  inferPteTaskType,
+} from '../utils/pteScoringRules';
 
 // ---------------------------------------------------------------------------
 // IELTS AI scoring (Writing + Speaking)
@@ -113,6 +120,16 @@ function computeOverallFromCriteria(criteriaBands: number[]): number {
   if (valid.length === 0) return 0;
   const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
   return roundToHalfBand(avg);
+}
+
+function toPteScaledScoreFromBand9(value: unknown): number {
+  const band = toWholeBand(value);
+  return band9ToPteScaled(band);
+}
+
+function mean(values: number[]): number {
+  if (!values.length) return 0;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
 // ---------------------------------------------------------------------------
@@ -224,9 +241,486 @@ OUTPUT FORMAT (VALID JSON ONLY)
 }
 `;
 
+const PTE_WRITING_SYSTEM_PROMPT = `
+You are a PTE Academic scorer. Score writing responses using PTE-aligned traits.
+
+Use this normalized output scale for each criterion:
+- Integer 0..9 only (no decimals).
+- Map official PTE trait levels to this 0..9 scale proportionally and consistently.
+
+When evaluating:
+- Summarize Written Text:
+  - prioritize content coverage and coherence
+  - enforce one-sentence form and word limits
+  - assess grammar, vocabulary, spelling
+- Summarize Spoken Text:
+  - prioritize content accuracy/completeness from the source
+  - enforce expected word-range form
+  - assess grammar, vocabulary, spelling
+- Write Essay:
+  - prioritize content relevance/development
+  - prioritize development/structure/coherence
+  - assess grammar, vocabulary, spelling
+  - enforce essay length expectations
+
+Return strict JSON with this shape:
+{
+  "tasks": [
+    {
+      "taskNumber": 1,
+      "wordCount": 0,
+      "taskAchievement": {"band": 0, "feedback": ""},
+      "taskResponse": {"band": 0, "feedback": ""},
+      "coherenceCohesion": {"band": 0, "feedback": ""},
+      "lexicalResource": {"band": 0, "feedback": ""},
+      "grammaticalRangeAccuracy": {"band": 0, "feedback": ""},
+      "generalFeedback": ""
+    }
+  ],
+  "summary": ""
+}
+
+Field mapping guidance:
+- taskAchievement: Content quality
+- taskResponse: Form / constraints handling
+- coherenceCohesion: Development, structure, discourse coherence
+- lexicalResource: Vocabulary control/range
+- grammaticalRangeAccuracy: Grammar control
+
+Important:
+- If the task is "Summarize Spoken Text", use taskResponse to reflect form/word-range control strongly.
+- Penalize capitalization-only responses, bullet-only responses, and severe punctuation omissions when relevant to form.
+`;
+
+const PTE_SPEAKING_SYSTEM_PROMPT = `
+You are a PTE Academic scorer. Score speaking responses using PTE-aligned traits.
+
+Use this normalized output scale for each criterion:
+- Integer 0..9 only (no decimals).
+- Map official PTE trait levels proportionally to this 0..9 scale.
+
+Prioritize the official traits shown in PTE scoring guides:
+- Content
+- Pronunciation
+- Oral Fluency
+For tasks with broader language demands (e.g., retell/summarize/respond), include language control in the normalized criteria.
+
+Return strict JSON with this shape:
+{
+  "parts": [
+    {
+      "partNumber": 1,
+      "fluencyCoherence": {"band": 0, "feedback": ""},
+      "lexicalResource": {"band": 0, "feedback": ""},
+      "grammaticalRangeAccuracy": {"band": 0, "feedback": ""},
+      "pronunciation": {"band": 0, "feedback": ""},
+      "partFeedback": ""
+    }
+  ],
+  "fluencyCoherence": {"band": 0, "feedback": ""},
+  "lexicalResource": {"band": 0, "feedback": ""},
+  "grammaticalRangeAccuracy": {"band": 0, "feedback": ""},
+  "pronunciation": {"band": 0, "feedback": ""},
+  "summary": ""
+}
+
+Field mapping guidance:
+- fluencyCoherence: Oral Fluency
+- lexicalResource: Content delivery quality
+- grammaticalRangeAccuracy: Language control/range
+- pronunciation: Pronunciation
+`;
+
 // ---------------------------------------------------------------------------
 // AI scoring functions
 // ---------------------------------------------------------------------------
+
+async function transcribeAudioUrl(url: string): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const audioResponse = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    const audioBlob = await audioResponse.blob();
+    // eslint-disable-next-line no-undef
+    const audioFile = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
+
+    const transcription = await openai.audio.transcriptions.create({
+      model: 'whisper-1',
+      file: audioFile,
+      language: 'en',
+    });
+    return transcription.text || null;
+  } catch (err) {
+    console.error(`Error transcribing audio URL ${url}:`, err);
+    return null;
+  }
+}
+
+async function scorePteWriting(attemptId: string): Promise<void> {
+  const writingRows = await query(
+    `SELECT
+      r.id AS response_id,
+      r.section_id AS section_id,
+      r.writing_text AS writing_text,
+      r.word_count AS word_count,
+      s.section_order AS section_order,
+      s.title AS section_title,
+      s.instructions AS instructions,
+      s.task_description AS task_description,
+      s.task_type AS task_type
+     FROM responses r
+     JOIN sections s ON s.id = r.section_id
+     WHERE r.attempt_id = $1
+       AND r.writing_text IS NOT NULL
+       AND LENGTH(TRIM(r.writing_text)) > 0
+     ORDER BY s.section_order ASC, r.answered_at ASC`,
+    [attemptId],
+  );
+
+  if (writingRows.rows.length === 0) return;
+
+  const grouped = new Map<string, any[]>();
+  for (const row of writingRows.rows) {
+    const key = row.section_id;
+    const list = grouped.get(key) || [];
+    list.push(row);
+    grouped.set(key, list);
+  }
+
+  const sections = Array.from(grouped.entries()).map(([sectionId, rows], idx) => {
+    const first = rows[0];
+    const taskHint = `${first.task_type || ''} ${first.section_title || ''} ${first.instructions || ''} ${first.task_description || ''}`;
+    const taskType = inferPteTaskType(taskHint);
+    const mergedText = rows.map((r) => r.writing_text).join('\n\n');
+    const wordCount = countWords(mergedText);
+    return {
+      sectionId,
+      taskNumber: idx + 1,
+      taskType,
+      description: first.task_description || first.instructions || first.section_title || 'No prompt provided.',
+      wordCount,
+      responseIds: rows.map((r) => r.response_id as string),
+      text: mergedText,
+    };
+  });
+
+  const taskPrompts = sections.map((task) =>
+    `## PTE Writing Task ${task.taskNumber}
+Task Type: ${task.taskType}
+Prompt: ${task.description}
+Candidate Response (${task.wordCount} words):
+${task.text}`,
+  );
+
+  const ai = await openai.chat.completions.create({
+    model: 'gpt-5-mini',
+    messages: [
+      { role: 'system', content: PTE_WRITING_SYSTEM_PROMPT },
+      { role: 'user', content: `Evaluate this PTE Academic writing submission.\n\n${taskPrompts.join('\n---\n\n')}` },
+    ],
+    response_format: { type: 'json_object' },
+    max_completion_tokens: 3500,
+  });
+
+  const raw = ai.choices[0]?.message?.content;
+  if (!raw) {
+    console.error('Empty response from OpenAI for PTE writing scoring');
+    return;
+  }
+
+  const parsed = safeJsonParse<{ tasks?: any[]; summary?: string }>(raw);
+
+  const normalizedTasks: WritingTaskFeedback[] = (parsed.tasks || []).map((t: any, idx: number) => {
+    const taskNumber = Number(t.taskNumber) || idx + 1;
+    const sourceTask = sections.find((s) => s.taskNumber === taskNumber);
+    const wordCount = Number(t.wordCount) || sourceTask?.wordCount || 0;
+
+    const taskAchievement: BandFeedback = {
+      band: toWholeBand(t.taskAchievement?.band),
+      feedback: String(t.taskAchievement?.feedback || ''),
+    };
+    const taskResponse: BandFeedback = {
+      band: toWholeBand(t.taskResponse?.band),
+      feedback: String(t.taskResponse?.feedback || ''),
+    };
+    const coherenceCohesion: BandFeedback = {
+      band: toWholeBand(t.coherenceCohesion?.band),
+      feedback: String(t.coherenceCohesion?.feedback || ''),
+    };
+    const lexicalResource: BandFeedback = {
+      band: toWholeBand(t.lexicalResource?.band),
+      feedback: String(t.lexicalResource?.feedback || ''),
+    };
+    const grammaticalRangeAccuracy: BandFeedback = {
+      band: toWholeBand(t.grammaticalRangeAccuracy?.band),
+      feedback: String(t.grammaticalRangeAccuracy?.feedback || ''),
+    };
+
+    const adjusted = adjustPteWritingBands(
+      sourceTask?.taskType || 'Unspecified PTE Task',
+      {
+        taskAchievement: taskAchievement.band,
+        taskResponse: taskResponse.band,
+        coherenceCohesion: coherenceCohesion.band,
+        lexicalResource: lexicalResource.band,
+        grammaticalRangeAccuracy: grammaticalRangeAccuracy.band,
+      },
+      wordCount,
+    );
+
+    const avgBand = mean([
+      adjusted.taskAchievement,
+      adjusted.taskResponse,
+      adjusted.coherenceCohesion,
+      adjusted.lexicalResource,
+      adjusted.grammaticalRangeAccuracy,
+    ]);
+
+    return {
+      taskNumber,
+      wordCount,
+      taskAchievement: { ...taskAchievement, band: adjusted.taskAchievement },
+      taskResponse: { ...taskResponse, band: adjusted.taskResponse },
+      coherenceCohesion: { ...coherenceCohesion, band: adjusted.coherenceCohesion },
+      lexicalResource: { ...lexicalResource, band: adjusted.lexicalResource },
+      grammaticalRangeAccuracy: { ...grammaticalRangeAccuracy, band: adjusted.grammaticalRangeAccuracy },
+      overallBand: toPteScaledScoreFromBand9(avgBand),
+      generalFeedback: String(t.generalFeedback || ''),
+    };
+  });
+
+  const overallWritingBand = normalizedTasks.length
+    ? clamp(Math.round(mean(normalizedTasks.map((t) => t.overallBand))), 10, 90)
+    : 0;
+
+  const feedback: WritingFeedbackResponse = {
+    tasks: normalizedTasks,
+    overallWritingBand,
+    summary: String(parsed.summary || ''),
+  };
+
+  for (const section of sections) {
+    const taskFeedback = normalizedTasks.find((t) => t.taskNumber === section.taskNumber);
+    if (!taskFeedback) continue;
+    for (const responseId of section.responseIds) {
+      await responseModel.updateScore(responseId, {
+        isCorrect: false,
+        score: taskFeedback.overallBand,
+        aiFeedback: taskFeedback,
+      });
+    }
+  }
+
+  await attemptModel.updateScores(attemptId, {
+    writingBand: overallWritingBand,
+    writingFeedback: feedback,
+  });
+}
+
+async function scorePteSpeaking(attemptId: string, speakingSections: any[]): Promise<void> {
+  const promptSnapshots: Array<{
+    sectionId: string;
+    partNumber: number;
+    taskType: string;
+    promptText: string;
+    responseId: string;
+    transcript: string;
+  }> = [];
+  const fallbackSnapshots: Array<{
+    sectionId: string;
+    partNumber: number;
+    taskType: string;
+    promptText: string;
+    responseId: string;
+    transcript: string;
+  }> = [];
+
+  for (const section of speakingSections) {
+    const responses = await responseModel.findByAttemptAndSection(attemptId, section.id);
+    const sectionBasePart = section.partNumber || section.sectionOrder;
+    const promptsRaw = section.speakingPrompts;
+    const promptsArray = Array.isArray(promptsRaw) ? promptsRaw : [];
+
+    for (const resp of responses) {
+      const recordingsMap = resp.answerData?.recordings as Record<string, { url: string; duration: number }> | undefined;
+      if (recordingsMap && typeof recordingsMap === 'object' && resp.id) {
+        const sorted = Object.keys(recordingsMap).map(Number).sort((a, b) => a - b);
+        for (const idx of sorted) {
+          const audioUrl = recordingsMap[idx]?.url;
+          if (!audioUrl) continue;
+          const transcript = await transcribeAudioUrl(audioUrl);
+          const promptObj = promptsArray[idx];
+          const promptText = String(promptObj?.text || section.instructions || section.title || `Prompt ${idx + 1}`);
+          const taskHint = `${section.taskType || ''} ${section.title || ''} ${section.instructions || ''} ${promptText}`;
+          const taskType = inferPteTaskType(taskHint);
+          promptSnapshots.push({
+            sectionId: section.id,
+            partNumber: sectionBasePart * 100 + idx + 1,
+            taskType,
+            promptText,
+            responseId: resp.id,
+            transcript: transcript || '',
+          });
+        }
+        continue;
+      }
+
+      if (!resp.id) continue;
+      let transcript = '';
+      if (resp.audioUrl) {
+        transcript = (await transcribeAudioUrl(resp.audioUrl)) || '';
+      } else if (resp.answerData && typeof resp.answerData === 'string') {
+        transcript = resp.answerData;
+      }
+      const promptText = String(section.instructions || section.title || 'No prompt provided');
+      const taskHint = `${section.taskType || ''} ${section.title || ''} ${section.instructions || ''} ${promptText}`;
+      const taskType = inferPteTaskType(taskHint);
+      fallbackSnapshots.push({
+        sectionId: section.id,
+        partNumber: sectionBasePart,
+        taskType,
+        promptText,
+        responseId: resp.id,
+        transcript,
+      });
+    }
+  }
+
+  const sectionSnapshots = promptSnapshots.length > 0 ? promptSnapshots : fallbackSnapshots;
+  if (sectionSnapshots.length === 0) {
+    return;
+  }
+
+  const userPrompt = sectionSnapshots
+    .map((part) => (
+      `## PTE Speaking Part ${part.partNumber}
+Task Type: ${part.taskType}
+Prompt:
+${part.promptText}
+
+Candidate Response (Transcript):
+${part.transcript || '[No response recorded]'}`
+    ))
+    .join('\n---\n\n');
+
+  const ai = await openai.chat.completions.create({
+    model: 'gpt-5-mini',
+    messages: [
+      { role: 'system', content: PTE_SPEAKING_SYSTEM_PROMPT },
+      { role: 'user', content: `Evaluate this PTE Academic speaking submission.\n\n${userPrompt}` },
+    ],
+    response_format: { type: 'json_object' },
+    max_completion_tokens: 3500,
+  });
+
+  const raw = ai.choices[0]?.message?.content;
+  if (!raw) {
+    console.error('Empty response from OpenAI for PTE speaking scoring');
+    return;
+  }
+
+  const parsed = safeJsonParse<any>(raw);
+
+  const normalizedParts: SpeakingPartFeedback[] = (parsed.parts || []).map((p: any, idx: number) => {
+    const partNumber = Number(p.partNumber) || idx + 1;
+    return {
+      partNumber,
+      fluencyCoherence: {
+        band: toWholeBand(p.fluencyCoherence?.band),
+        feedback: String(p.fluencyCoherence?.feedback || ''),
+      },
+      lexicalResource: {
+        band: toWholeBand(p.lexicalResource?.band),
+        feedback: String(p.lexicalResource?.feedback || ''),
+      },
+      grammaticalRangeAccuracy: {
+        band: toWholeBand(p.grammaticalRangeAccuracy?.band),
+        feedback: String(p.grammaticalRangeAccuracy?.feedback || ''),
+      },
+      pronunciation: {
+        band: toWholeBand(p.pronunciation?.band),
+        feedback: String(p.pronunciation?.feedback || ''),
+      },
+      partFeedback: String(p.partFeedback || ''),
+    };
+  });
+
+  const taskWeightedBand9: number[] = normalizedParts.map((part) => {
+    const snapshot = sectionSnapshots.find((s) => s.partNumber === part.partNumber);
+    const taskType = snapshot?.taskType || 'Unspecified PTE Task';
+    const weights = getPteSpeakingWeights(taskType);
+    const contentBand = part.lexicalResource.band;
+    const fluencyBand = part.fluencyCoherence.band;
+    const pronunciationBand = part.pronunciation.band;
+    const languageBand = part.grammaticalRangeAccuracy.band;
+    return (
+      contentBand * weights.content +
+      fluencyBand * weights.fluency +
+      pronunciationBand * weights.pronunciation +
+      languageBand * weights.language
+    );
+  });
+
+  const pteBand9Avg = taskWeightedBand9.length > 0
+    ? mean(taskWeightedBand9)
+    : mean([
+      toWholeBand(parsed.fluencyCoherence?.band),
+      toWholeBand(parsed.lexicalResource?.band),
+      toWholeBand(parsed.grammaticalRangeAccuracy?.band),
+      toWholeBand(parsed.pronunciation?.band),
+    ]);
+  const overallSpeakingBand = toPteScaledScoreFromBand9(pteBand9Avg);
+
+  const aggregate = (key: keyof SpeakingPartFeedback): BandFeedback => {
+    if (normalizedParts.length === 0) {
+      return { band: 0, feedback: '' };
+    }
+    const avgBand = mean(
+      normalizedParts.map((p) => {
+        const entry = p[key] as BandFeedback;
+        return entry.band;
+      }),
+    );
+    return { band: toWholeBand(avgBand), feedback: '' };
+  };
+
+  const overallFluency = aggregate('fluencyCoherence');
+  const overallLexical = aggregate('lexicalResource');
+  const overallGRA = aggregate('grammaticalRangeAccuracy');
+  const overallPron = aggregate('pronunciation');
+
+  const feedback: SpeakingFeedbackResponse = {
+    parts: normalizedParts,
+    overallSpeakingBand,
+    fluencyCoherence: overallFluency,
+    lexicalResource: overallLexical,
+    grammaticalRangeAccuracy: overallGRA,
+    pronunciation: overallPron,
+    summary: String(parsed.summary || ''),
+  };
+
+  for (const snapshot of sectionSnapshots) {
+    const partFeedback = normalizedParts.find((p) => p.partNumber === snapshot.partNumber);
+    if (!partFeedback) continue;
+    await responseModel.updateScore(snapshot.responseId, {
+      isCorrect: false,
+      score: overallSpeakingBand,
+      aiFeedback: {
+        ...partFeedback,
+        taskType: snapshot.taskType,
+        prompt: snapshot.promptText,
+      },
+    });
+  }
+
+  await attemptModel.updateScores(attemptId, {
+    speakingBand: overallSpeakingBand,
+    speakingFeedback: feedback,
+  });
+}
 
 /**
  * Score the writing section of an attempt using OpenAI.
@@ -239,6 +733,10 @@ OUTPUT FORMAT (VALID JSON ONLY)
 export async function scoreWriting(attemptId: string): Promise<void> {
   const attempt = await attemptModel.findById(attemptId);
   if (!attempt) throw new NotFoundError('Attempt not found');
+  if (attempt.test?.testType === 'pte_academic') {
+    await scorePteWriting(attemptId);
+    return;
+  }
 
   const writingSections = await sectionModel.findByTestIdAndType(attempt.testId, 'writing');
   if (writingSections.length === 0) return;
@@ -392,6 +890,10 @@ export async function scoreSpeaking(attemptId: string): Promise<void> {
 
   const speakingSections = await sectionModel.findByTestIdAndType(attempt.testId, 'speaking');
   if (speakingSections.length === 0) return;
+  if (attempt.test?.testType === 'pte_academic') {
+    await scorePteSpeaking(attemptId, speakingSections);
+    return;
+  }
 
   const partTranscripts: string[] = [];
 

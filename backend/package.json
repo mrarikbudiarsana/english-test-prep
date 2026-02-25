@@ -7,9 +7,10 @@
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "start": "node dist/index.js",
     "migrate": "ts-node src/migrate.ts",
-    "seed": "ts-node src/seed.ts"
+    "seed": "ts-node src/seed.ts",
+    "test:pte-rules": "ts-node src/tests/pteScoringRules.test.ts",
+    "test:pte-contract": "ts-node src/tests/pteAnalyticsDebug.contract.test.ts"
   },
   "keywords": [],
   "author": "",

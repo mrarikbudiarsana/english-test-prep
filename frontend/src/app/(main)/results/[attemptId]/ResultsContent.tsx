@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { Attempt } from '@/types/test';
-import { formatBand, formatDate, getBandColor, getBandBgColor, examNameFromTestType, usesBandScale } from '@/lib/utils';
+import { formatDate, formatScore, getBandColor, getBandBgColor, getScoreColor, getScoreBgColor, examNameFromTestType, usesBandScale } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTestTypesForExam } from '@/config/examConfig';
 import { HiArrowLeft } from 'react-icons/hi';
@@ -80,12 +80,61 @@ interface ToeflIbtReport {
     };
 }
 
-function CriterionCard({ label, data, showFeedback = false }: { label: string; data: BandFeedback; showFeedback?: boolean }) {
+interface PteAnalytics {
+    communicativeSkills: {
+        overall: number | null;
+        listening: number | null;
+        reading: number | null;
+        speaking: number | null;
+        writing: number | null;
+    };
+    skillsProfile: Record<string, number | null>;
+}
+
+interface PteWeightedDetail {
+    questionType: string;
+    score: number;
+    weight: number;
+    weighted: number;
+}
+
+interface PteWeightedBlock {
+    score: number | null;
+    totalWeight: number;
+    weightedSum: number;
+    details: PteWeightedDetail[];
+}
+
+interface PteAnalyticsDebug {
+    perQuestionType: Array<{
+        questionType: string;
+        normalizedAverage: number;
+        scaledScore: number;
+        sampleCount: number;
+        weights: {
+            overall: number;
+            listening: number;
+            reading: number;
+            speaking: number;
+            writing: number;
+        } | null;
+    }>;
+    communicativeWeighted: {
+        overall: PteWeightedBlock;
+        listening: PteWeightedBlock;
+        reading: PteWeightedBlock;
+        speaking: PteWeightedBlock;
+        writing: PteWeightedBlock;
+    };
+    profileWeighted: Record<string, PteWeightedBlock>;
+}
+
+function CriterionCard({ label, data, showFeedback = false, unitLabel = 'Band' }: { label: string; data: BandFeedback; showFeedback?: boolean; unitLabel?: string }) {
     return (
         <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-1">
                 <p className="text-xs font-medium text-gray-500">{label}</p>
-                <span className="text-lg font-bold text-gray-900">Band {data.band}</span>
+                <span className="text-lg font-bold text-gray-900">{unitLabel} {data.band}</span>
             </div>
             {showFeedback && data.feedback && (
                 <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap">{data.feedback}</p>
@@ -129,7 +178,7 @@ function CriteriaAnalytics({ criteria, color = '#3b82f6', maxScore = 9 }: { crit
 
             {/* Bars */}
             <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Band Scores</p>
+                <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Criteria Scores</p>
                 <div className="h-[200px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={barData} layout="vertical" margin={{ top: 4, right: 40, left: 4, bottom: 4 }} barCategoryGap="25%">
@@ -161,6 +210,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     const [viewMode, setViewMode] = useState<'overview' | 'analysis'>('overview');
     const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [toeflIbtReport, setToeflIbtReport] = useState<ToeflIbtReport | null>(null);
+    const [pteDebug, setPteDebug] = useState<PteAnalyticsDebug | null>(null);
     const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pollingDelayRef = useRef(5000);
     const MAX_POLLING_DELAY_MS = 20000;
@@ -211,6 +261,17 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                 setToeflIbtReport(null);
             }
 
+            if (testType === 'pte_academic' && user?.role === 'admin') {
+                try {
+                    const debugRes = await api.get(`/attempts/${resolvedAttemptId}/pte-analytics-debug`);
+                    setPteDebug((debugRes.data?.debug || null) as PteAnalyticsDebug | null);
+                } catch {
+                    setPteDebug(null);
+                }
+            } else {
+                setPteDebug(null);
+            }
+
             clearPollTimeout();
             if (res.data.status === 'scoring') {
                 const delay = pollingDelayRef.current;
@@ -248,7 +309,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
         } finally {
             setLoading(false);
         }
-    }, [clearPollTimeout, resolvedAttemptId]);
+    }, [clearPollTimeout, resolvedAttemptId, user?.role]);
 
     useEffect(() => {
         if (!resolvedAttemptId) {
@@ -322,6 +383,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     const isToeflItp = testType === 'toefl_itp';
     const isToeflIbt2026 = testType === 'toefl_ibt' && attempt.test?.deliveryModel === 'toefl_ibt_2026';
     const isBandScale = usesBandScale(testType);
+    const pteAnalytics = (attempt as any)?.pteAnalytics as PteAnalytics | undefined;
     const examName = examNameFromTestType(testType);
 
     // Only show sections that have meaningful data
@@ -362,12 +424,13 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
         : (isToeflItp
             ? 'Your Estimated TOEFL ITP Total Score'
             : (isBandScale ? `Your Estimated ${examName} Overall Band Score` : `Your Estimated ${examName} Overall Score`));
+    const scorePrecision = testType === 'pte_academic' ? 1 : 0.5;
     const toeflBannerClass = isToeflItp
         ? 'bg-gradient-to-br from-violet-50 via-indigo-50 to-white border-violet-200 shadow-[0_12px_35px_rgba(88,72,184,0.14)]'
-        : (displayScore ? getBandBgColor(displayScore) : 'bg-gray-100 border-gray-200');
+        : (displayScore ? getScoreBgColor(displayScore, testType) : 'bg-gray-100 border-gray-200');
     const toeflScoreClass = isToeflItp
         ? 'text-violet-700 drop-shadow-[0_3px_10px_rgba(88,72,184,0.25)]'
-        : (displayScore ? getBandColor(displayScore) : 'text-gray-400');
+        : (displayScore ? getScoreColor(displayScore, testType) : 'text-gray-400');
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
@@ -419,7 +482,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                         )}
                         <p className={`mb-2 font-medium ${isToeflItp ? 'text-4xl leading-tight text-violet-800' : 'text-sm text-gray-600'}`}>{displayLabel}</p>
                         <div className={`font-bold ${isToeflItp ? 'text-7xl md:text-8xl' : 'text-6xl'} ${toeflScoreClass}`}>
-                            {isToeflItp && !isPartialTest ? displayScore : formatBand(displayScore)}
+                            {isToeflItp && !isPartialTest ? displayScore : formatScore(Number(displayScore), scorePrecision)}
                         </div>
                         {attempt.completedAt && (
                             <p className={`mt-3 text-sm ${isToeflItp ? 'text-violet-700/80' : 'text-gray-500'}`}>Completed on {formatDate(attempt.completedAt)}</p>
@@ -445,14 +508,131 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                                         : 'border-gray-200 bg-white'}`}
                                 >
                                     <p className={`mb-1 text-sm font-medium ${isToeflItp ? 'text-violet-700' : 'text-gray-500'}`}>{section.label}</p>
-                                    <p className={`text-3xl font-bold ${isToeflItp ? 'text-violet-700' : (section.score ? getBandColor(section.score) : 'text-gray-400')}`}>
-                                        {isToeflItp ? section.score : formatBand(section.score)}
+                                    <p className={`text-3xl font-bold ${isToeflItp ? 'text-violet-700' : (section.score ? getScoreColor(section.score, testType) : 'text-gray-400')}`}>
+                                        {isToeflItp ? section.score : formatScore(Number(section.score), scorePrecision)}
                                     </p>
                                     {section.raw !== null && !isToeflItp && (
                                         <p className="text-xs text-gray-400 mt-1">{section.raw}/{section.total} correct</p>
                                     )}
                                 </div>
                             ))}
+                        </div>
+                    )}
+
+                    {testType === 'pte_academic' && pteAnalytics && (
+                        <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6">
+                            <h3 className="text-lg font-semibold text-cyan-900 mb-4">PTE Report Snapshot</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                                {[
+                                    { label: 'Overall', value: pteAnalytics.communicativeSkills.overall },
+                                    { label: 'Listening', value: pteAnalytics.communicativeSkills.listening },
+                                    { label: 'Reading', value: pteAnalytics.communicativeSkills.reading },
+                                    { label: 'Speaking', value: pteAnalytics.communicativeSkills.speaking },
+                                    { label: 'Writing', value: pteAnalytics.communicativeSkills.writing },
+                                ].map((item) => (
+                                    <div key={item.label} className="rounded-xl border border-cyan-100 bg-white p-4 text-center">
+                                        <p className="text-xs font-semibold text-cyan-700 uppercase tracking-wide">{item.label}</p>
+                                        <p className="mt-1 text-2xl font-bold text-cyan-900">{item.value ?? '-'}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {Object.entries(pteAnalytics.skillsProfile).map(([k, v]) => (
+                                    <div key={k} className="rounded-lg border border-cyan-100 bg-white px-3 py-2 flex items-center justify-between">
+                                        <span className="text-sm text-gray-700">{k}</span>
+                                        <span className="text-sm font-semibold text-cyan-800">{v ?? '-'}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {testType === 'pte_academic' && user?.role === 'admin' && pteDebug && (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 space-y-5">
+                            <h3 className="text-lg font-semibold text-amber-900">Admin: PTE Weighting Debug</h3>
+
+                            <div className="overflow-x-auto rounded-lg border border-amber-200 bg-white">
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-amber-100 text-amber-900">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left">Question Type</th>
+                                            <th className="px-3 py-2 text-right">Norm Avg</th>
+                                            <th className="px-3 py-2 text-right">Scaled</th>
+                                            <th className="px-3 py-2 text-right">Count</th>
+                                            <th className="px-3 py-2 text-right">W Overall</th>
+                                            <th className="px-3 py-2 text-right">W L</th>
+                                            <th className="px-3 py-2 text-right">W R</th>
+                                            <th className="px-3 py-2 text-right">W S</th>
+                                            <th className="px-3 py-2 text-right">W W</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {pteDebug.perQuestionType.map((row) => (
+                                            <tr key={row.questionType} className="border-t border-amber-100">
+                                                <td className="px-3 py-2 text-gray-800">{row.questionType}</td>
+                                                <td className="px-3 py-2 text-right text-gray-700">{row.normalizedAverage.toFixed(4)}</td>
+                                                <td className="px-3 py-2 text-right font-semibold text-gray-900">{row.scaledScore}</td>
+                                                <td className="px-3 py-2 text-right text-gray-700">{row.sampleCount}</td>
+                                                <td className="px-3 py-2 text-right text-gray-700">{row.weights?.overall ?? '-'}</td>
+                                                <td className="px-3 py-2 text-right text-gray-700">{row.weights?.listening ?? '-'}</td>
+                                                <td className="px-3 py-2 text-right text-gray-700">{row.weights?.reading ?? '-'}</td>
+                                                <td className="px-3 py-2 text-right text-gray-700">{row.weights?.speaking ?? '-'}</td>
+                                                <td className="px-3 py-2 text-right text-gray-700">{row.weights?.writing ?? '-'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                                {Object.entries(pteDebug.communicativeWeighted).map(([key, block]) => (
+                                    <div key={key} className="rounded-lg border border-amber-200 bg-white p-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">{key}</p>
+                                        <p className="text-2xl font-bold text-amber-900 mt-1">{block.score ?? '-'}</p>
+                                        <p className="text-xs text-gray-600 mt-1">Weight: {block.totalWeight}</p>
+                                        <p className="text-xs text-gray-600">Weighted Sum: {block.weightedSum}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="space-y-3">
+                                <h4 className="text-sm font-semibold text-amber-900">Skills Profile Contributions</h4>
+                                {Object.entries(pteDebug.profileWeighted).map(([profileKey, block]) => (
+                                    <details key={profileKey} className="rounded-lg border border-amber-200 bg-white">
+                                        <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+                                            <span className="text-sm font-medium text-gray-800">{profileKey}</span>
+                                            <span className="text-sm font-semibold text-amber-800">{block.score ?? '-'}</span>
+                                        </summary>
+                                        <div className="border-t border-amber-100 px-4 py-3">
+                                            <p className="text-xs text-gray-600 mb-2">
+                                                Weight: {block.totalWeight} | Weighted Sum: {block.weightedSum}
+                                            </p>
+                                            <div className="overflow-x-auto">
+                                                <table className="min-w-full text-xs">
+                                                    <thead className="text-gray-600">
+                                                        <tr>
+                                                            <th className="px-2 py-1 text-left">Question Type</th>
+                                                            <th className="px-2 py-1 text-right">Score</th>
+                                                            <th className="px-2 py-1 text-right">Weight</th>
+                                                            <th className="px-2 py-1 text-right">Weighted</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {block.details.map((d) => (
+                                                            <tr key={`${profileKey}_${d.questionType}`} className="border-t border-amber-50">
+                                                                <td className="px-2 py-1 text-gray-700">{d.questionType}</td>
+                                                                <td className="px-2 py-1 text-right text-gray-700">{d.score}</td>
+                                                                <td className="px-2 py-1 text-right text-gray-700">{d.weight}</td>
+                                                                <td className="px-2 py-1 text-right font-medium text-gray-900">{d.weighted}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </details>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -567,7 +747,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                                                     <span className="text-xs text-gray-400">{task.wordCount} words</span>
                                                 )}
                                                 <span className={`text-sm font-bold px-3 py-1 rounded-full ${getBandBgColor(task.overallBand)} ${getBandColor(task.overallBand)}`}>
-                                                    Band {task.overallBand}
+                                                    {isPTE ? 'Score' : 'Band'} {task.overallBand}
                                                 </span>
                                             </div>
                                         </div>
@@ -586,14 +766,14 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             {task.taskAchievement && (
-                                                <CriterionCard label={isPTE ? 'Content' : 'Task Achievement'} data={task.taskAchievement} showFeedback={tier === 'pro'} />
+                                                <CriterionCard label={isPTE ? 'Content' : 'Task Achievement'} data={task.taskAchievement} showFeedback={tier === 'pro'} unitLabel={isPTE ? 'Score' : 'Band'} />
                                             )}
                                             {task.taskResponse && (
-                                                <CriterionCard label={isPTE ? 'Form' : 'Task Response'} data={task.taskResponse} showFeedback={tier === 'pro'} />
+                                                <CriterionCard label={isPTE ? 'Form' : 'Task Response'} data={task.taskResponse} showFeedback={tier === 'pro'} unitLabel={isPTE ? 'Score' : 'Band'} />
                                             )}
-                                            <CriterionCard label={isPTE ? 'Written Discourse' : 'Coherence & Cohesion'} data={task.coherenceCohesion} showFeedback={tier === 'pro'} />
-                                            <CriterionCard label={isPTE ? 'Vocabulary' : 'Lexical Resource'} data={task.lexicalResource} showFeedback={tier === 'pro'} />
-                                            <CriterionCard label={isPTE ? 'Grammar' : 'Grammatical Range & Accuracy'} data={task.grammaticalRangeAccuracy} showFeedback={tier === 'pro'} />
+                                            <CriterionCard label={isPTE ? 'Written Discourse' : 'Coherence & Cohesion'} data={task.coherenceCohesion} showFeedback={tier === 'pro'} unitLabel={isPTE ? 'Score' : 'Band'} />
+                                            <CriterionCard label={isPTE ? 'Vocabulary' : 'Lexical Resource'} data={task.lexicalResource} showFeedback={tier === 'pro'} unitLabel={isPTE ? 'Score' : 'Band'} />
+                                            <CriterionCard label={isPTE ? 'Grammar' : 'Grammatical Range & Accuracy'} data={task.grammaticalRangeAccuracy} showFeedback={tier === 'pro'} unitLabel={isPTE ? 'Score' : 'Band'} />
                                         </div>
 
                                         {
@@ -654,10 +834,10 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
                             {/* Overall criteria detail cards */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <CriterionCard label={testType === 'pte_academic' ? 'Oral Fluency' : 'Fluency & Coherence'} data={speakingFeedback.fluencyCoherence} showFeedback={tier === 'pro'} />
-                                <CriterionCard label={testType === 'pte_academic' ? 'Vocabulary' : 'Lexical Resource'} data={speakingFeedback.lexicalResource} showFeedback={tier === 'pro'} />
-                                <CriterionCard label={testType === 'pte_academic' ? 'Grammar' : 'Grammatical Range & Accuracy'} data={speakingFeedback.grammaticalRangeAccuracy} showFeedback={tier === 'pro'} />
-                                <CriterionCard label="Pronunciation" data={speakingFeedback.pronunciation} showFeedback={tier === 'pro'} />
+                                <CriterionCard label={testType === 'pte_academic' ? 'Oral Fluency' : 'Fluency & Coherence'} data={speakingFeedback.fluencyCoherence} showFeedback={tier === 'pro'} unitLabel={testType === 'pte_academic' ? 'Score' : 'Band'} />
+                                <CriterionCard label={testType === 'pte_academic' ? 'Vocabulary' : 'Lexical Resource'} data={speakingFeedback.lexicalResource} showFeedback={tier === 'pro'} unitLabel={testType === 'pte_academic' ? 'Score' : 'Band'} />
+                                <CriterionCard label={testType === 'pte_academic' ? 'Grammar' : 'Grammatical Range & Accuracy'} data={speakingFeedback.grammaticalRangeAccuracy} showFeedback={tier === 'pro'} unitLabel={testType === 'pte_academic' ? 'Score' : 'Band'} />
+                                <CriterionCard label="Pronunciation" data={speakingFeedback.pronunciation} showFeedback={tier === 'pro'} unitLabel={testType === 'pte_academic' ? 'Score' : 'Band'} />
                             </div>
 
                             {/* Per-part breakdown */}
@@ -675,7 +855,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                                                 ].map(({ label, data }) => (
                                                     <div key={label} className="bg-gray-50 rounded-lg p-3">
                                                         <p className="text-xs text-gray-500">{label}</p>
-                                                        <p className="text-lg font-bold text-gray-900">Band {data.band}</p>
+                                                        <p className="text-lg font-bold text-gray-900">{testType === 'pte_academic' ? 'Score' : 'Band'} {data.band}</p>
                                                     </div>
                                                 ))}
                                             </div>

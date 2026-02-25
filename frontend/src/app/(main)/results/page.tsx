@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { Attempt, AttemptStatus, TestType } from '@/types/test';
 import { PaginatedResponse } from '@/types/api';
-import { formatBand, formatDate, getBandColor, getBandBgColor } from '@/lib/utils';
+import { formatDate, formatScore, getScoreColor, getScoreBgColor } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTestTypesForExam, getExamConfig } from '@/config/examConfig';
 import { ExamType } from '@/types/user';
@@ -323,7 +323,7 @@ export default function ResultsPage() {
                 else if (Number(score) >= 500) scoreBorderColor = 'border-blue-300';
               } else {
                 // Fallback to utils for IELTS/others
-                scoreBgColor = getBandBgColor(Number(score)); // This util might return tailwind classes. If so, fine.
+                scoreBgColor = getScoreBgColor(Number(score), attempt.test?.testType);
                 // Actually getBandBgColor returns tailwind classes like 'bg-red-50'
                 // But since we want to respect the user's "Don't touch other tests", 
                 // we should probably stick to the util functions for IELTS. DANGER: check utils implementation? 
@@ -349,7 +349,7 @@ export default function ResultsPage() {
                     <div className="flex items-start gap-5">
                       <div
                         className={`w-20 h-20 rounded-xl flex flex-col items-center justify-center font-bold transition-all border-2 ${!isToeflItp && score
-                            ? `${getBandBgColor(Number(score))} ${Number(score) >= 7 ? 'border-emerald-300' : Number(score) >= 5 ? 'border-blue-300' : 'border-amber-300'}`
+                            ? `${getScoreBgColor(Number(score), attempt.test?.testType)} ${attempt.test?.testType === 'pte_academic' ? (Number(score) >= 79 ? 'border-emerald-300' : Number(score) >= 65 ? 'border-blue-300' : 'border-amber-300') : (Number(score) >= 7 ? 'border-emerald-300' : Number(score) >= 5 ? 'border-blue-300' : 'border-amber-300')}`
                             : 'bg-[#f8f9fa] border-[#e8ecef]'
                           }`}
                         style={
@@ -363,10 +363,14 @@ export default function ResultsPage() {
                         {score !== null ? (
                           <>
                             <span
-                              className={`text-2xl ${!isToeflItp && score ? getBandColor(Number(score)) : ''}`}
+                              className={`text-2xl ${!isToeflItp && score ? getScoreColor(Number(score), attempt.test?.testType) : ''}`}
                               style={isToeflItp ? { color: theme.primary } : {}}
                             >
-                              {isToeflItp && !attempt.overallScore && attempt.status === 'completed' ? score : (isToeflItp ? score : formatBand(Number(score)))}
+                              {isToeflItp && !attempt.overallScore && attempt.status === 'completed'
+                                ? score
+                                : (isToeflItp
+                                  ? score
+                                  : formatScore(Number(score), attempt.test?.testType === 'pte_academic' ? 1 : 0.5))}
                             </span>
                             <span className="text-xs text-[#5a6c7d] font-medium">
                               {isToeflItp ? 'Score' : 'Overall'}
@@ -447,8 +451,8 @@ export default function ResultsPage() {
                               ].map((section, i) => (
                                 <div key={i} className="bg-[#f8f9fa] rounded-lg p-2 text-center border border-[#e8ecef]">
                                   <p className="text-xs text-[#5a6c7d] font-medium mb-0.5">{section.label}</p>
-                                  <p className={`text-base font-bold ${section.score ? getBandColor(section.score) : 'text-[#5a6c7d]'}`}>
-                                    {formatBand(section.score)}
+                                  <p className={`text-base font-bold ${section.score ? getScoreColor(section.score, attempt.test?.testType) : 'text-[#5a6c7d]'}`}>
+                                    {formatScore(Number(section.score), attempt.test?.testType === 'pte_academic' ? 1 : 0.5)}
                                   </p>
                                 </div>
                               ))

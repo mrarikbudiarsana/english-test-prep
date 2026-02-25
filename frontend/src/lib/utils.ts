@@ -84,6 +84,42 @@ export function getBandBgColor(band: number): string {
   return 'bg-red-100 border-red-300';
 }
 
+export function getScoreColor(score: number, testType?: string): string {
+  if (testType === 'pte_academic') {
+    if (score >= 79) return 'text-green-600';
+    if (score >= 65) return 'text-blue-600';
+    if (score >= 50) return 'text-yellow-600';
+    return 'text-red-600';
+  }
+
+  if (testType === 'toefl_itp') {
+    if (score >= 600) return 'text-green-600';
+    if (score >= 500) return 'text-blue-600';
+    if (score >= 460) return 'text-yellow-600';
+    return 'text-red-600';
+  }
+
+  return getBandColor(score);
+}
+
+export function getScoreBgColor(score: number, testType?: string): string {
+  if (testType === 'pte_academic') {
+    if (score >= 79) return 'bg-green-100 border-green-300';
+    if (score >= 65) return 'bg-blue-100 border-blue-300';
+    if (score >= 50) return 'bg-yellow-100 border-yellow-300';
+    return 'bg-red-100 border-red-300';
+  }
+
+  if (testType === 'toefl_itp') {
+    if (score >= 600) return 'bg-green-100 border-green-300';
+    if (score >= 500) return 'bg-blue-100 border-blue-300';
+    if (score >= 460) return 'bg-yellow-100 border-yellow-300';
+    return 'bg-red-100 border-red-300';
+  }
+
+  return getBandBgColor(score);
+}
+
 export function sectionTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     listening: 'Listening',

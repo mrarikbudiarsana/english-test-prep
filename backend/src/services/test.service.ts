@@ -1,5 +1,6 @@
 import * as testModel from '../models/test.model';
 import * as sectionModel from '../models/section.model';
+import * as questionModel from '../models/question.model';
 import { NotFoundError, ValidationError } from '../middleware/errorHandler';
 import { env } from '../config/env';
 import { DEFAULT_TOEFL_IBT_BLUEPRINT } from '../types/toeflBlueprint.types';
@@ -7,6 +8,52 @@ import {
   upsertToeflIbtBlueprint,
   validateToeflIbtBlueprint,
 } from './toefl-ibt-blueprint.service';
+import { validatePteQuestionPayload } from '../utils/pteQuestionValidator';
+
+async function validatePteAcademicForPublish(testId: string): Promise<string[]> {
+  const errors: string[] = [];
+  const expectedFlow = ['speaking', 'reading', 'listening'];
+  const durationRules: Record<string, { min: number; max: number }> = {
+    speaking: { min: 76, max: 84 },
+    reading: { min: 23, max: 30 },
+    listening: { min: 31, max: 39 },
+  };
+
+  const sections = await sectionModel.findByTestId(testId);
+  if (sections.length !== 3) {
+    errors.push('PTE Academic must have exactly 3 sections');
+    return errors;
+  }
+
+  sections.forEach((s, idx) => {
+    const expectedType = expectedFlow[idx];
+    if (s.sectionType !== expectedType) {
+      errors.push(`Section ${idx + 1} must be "${expectedType}"`);
+    }
+    const rule = durationRules[s.sectionType];
+    if (rule && (s.durationMinutes < rule.min || s.durationMinutes > rule.max)) {
+      errors.push(
+        `Section "${s.sectionType}" duration must be between ${rule.min}-${rule.max} minutes`,
+      );
+    }
+  });
+
+  const questions = await questionModel.findByTestId(testId);
+  const pteQuestions = questions.filter((q: any) => String(q.questionType).startsWith('pte_'));
+
+  if (pteQuestions.length === 0) {
+    errors.push('PTE Academic test must include PTE question items');
+  }
+
+  for (const q of pteQuestions) {
+    const result = validatePteQuestionPayload(q.questionType, q.questionData, q.correctAnswer);
+    if (!result.valid) {
+      errors.push(`Question #${q.questionNumber} (${q.questionType}): ${result.errors.join(', ')}`);
+    }
+  }
+
+  return errors;
+}
 
 /**
  * Get all published tests with pagination.
@@ -143,6 +190,13 @@ export async function publishTest(id: string, publish: boolean) {
       throw new ValidationError(
         `Cannot publish TOEFL iBT 2026 test: ${validation.errors.join(' | ')}`
       );
+    }
+  }
+
+  if (publish && existing.testType === 'pte_academic') {
+    const errors = await validatePteAcademicForPublish(id);
+    if (errors.length > 0) {
+      throw new ValidationError(`Cannot publish PTE Academic test: ${errors.join(' | ')}`);
     }
   }
 

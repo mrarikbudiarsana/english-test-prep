@@ -6,7 +6,18 @@ export type QuestionType =
   | 'yes_no_not_given'
   | 'completion'
   | 'matching'
-  | 'dropdown';
+  | 'dropdown'
+  // PTE objective item types
+  | 'pte_mcq_single'
+  | 'pte_mcq_multiple'
+  | 'pte_reading_fill_blanks_dropdown'
+  | 'pte_reading_fill_blanks_drag_drop'
+  | 'pte_reorder_paragraph'
+  | 'pte_listening_fill_blanks'
+  | 'pte_highlight_correct_summary'
+  | 'pte_select_missing_word'
+  | 'pte_highlight_incorrect_words'
+  | 'pte_write_from_dictation';
 
 export type AttemptStatus = 'in_progress' | 'completed' | 'abandoned' | 'scoring';
 export type AttemptMode = 'full' | 'section_practice';
@@ -114,7 +125,67 @@ export interface DropdownData {
   }>;
 }
 
-export type QuestionData = MCQData | TFNGData | YNNGData | CompletionData | MatchingData | DropdownData;
+// PTE-specific data interfaces (objective items only)
+export interface PteMcqData {
+  prompt?: string;
+  options: { key: string; text: string }[];
+}
+
+export interface PteReadingFillBlanksDropdownData {
+  context: string;
+  blanks: Record<string, { options: string[] }>;
+}
+
+export interface PteReadingFillBlanksDragDropData {
+  textSegments: string[];
+  options: string[];
+  blankIds: string[];
+}
+
+export interface PteReorderParagraphData {
+  blocks: { id: string; text: string }[];
+}
+
+export interface PteListeningFillBlanksData {
+  transcript: string;
+  blankIds: string[];
+}
+
+export interface PteHighlightCorrectSummaryData {
+  prompt?: string;
+  options: { key: string; text: string }[];
+}
+
+export interface PteSelectMissingWordData {
+  prompt?: string;
+  options: { key: string; text: string }[];
+}
+
+export interface PteHighlightIncorrectWordsData {
+  transcript: string;
+  tokens: { id: string; text: string; index: number }[];
+}
+
+export interface PteWriteFromDictationData {
+  prompt?: string;
+}
+
+export type QuestionData =
+  | MCQData
+  | TFNGData
+  | YNNGData
+  | CompletionData
+  | MatchingData
+  | DropdownData
+  | PteMcqData
+  | PteReadingFillBlanksDropdownData
+  | PteReadingFillBlanksDragDropData
+  | PteReorderParagraphData
+  | PteListeningFillBlanksData
+  | PteHighlightCorrectSummaryData
+  | PteSelectMissingWordData
+  | PteHighlightIncorrectWordsData
+  | PteWriteFromDictationData;
 
 export interface Attempt {
   id: string;

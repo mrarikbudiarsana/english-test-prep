@@ -11,6 +11,12 @@ import {
   CompletionData,
   MatchingData,
   DropdownData,
+  PteMcqData,
+  PteReadingFillBlanksDropdownData,
+  PteReadingFillBlanksDragDropData,
+  PteReorderParagraphData,
+  PteListeningFillBlanksData,
+  PteHighlightIncorrectWordsData,
 } from '@/types/test';
 import MultipleChoice from './questions/MultipleChoice';
 import TrueFalseNotGiven from './questions/TrueFalseNotGiven';
@@ -18,6 +24,11 @@ import YesNoNotGiven from './questions/YesNoNotGiven';
 import Completion from './questions/Completion';
 import Matching from './questions/Matching';
 import DropdownSelect from './questions/DropdownSelect';
+import PteFillBlanksDragDrop from './questions/PteFillBlanksDragDrop';
+import PteReorderParagraph from './questions/PteReorderParagraph';
+import PteListeningFillBlanks from './questions/PteListeningFillBlanks';
+import PteHighlightIncorrectWords from './questions/PteHighlightIncorrectWords';
+import PteWriteFromDictation from './questions/PteWriteFromDictation';
 import TextHighlighter from './TextHighlighter';
 
 interface QuestionRendererProps {
@@ -118,6 +129,108 @@ export default function QuestionRenderer({
             readOnly={readOnly}
             correctAnswer={readOnly ? (question.correctAnswer as Record<string, string> | undefined) : undefined}
             displayNumber={typeof resolvedNumber === 'number' ? resolvedNumber : undefined}
+          />
+        );
+
+      case 'pte_mcq_single':
+      case 'pte_highlight_correct_summary':
+      case 'pte_select_missing_word': {
+        const data = question.questionData as PteMcqData;
+        return (
+          <MultipleChoice
+            data={{ options: data.options || [], multiSelect: false }}
+            answer={answer}
+            onChange={handleChange}
+            readOnly={readOnly}
+            correctAnswer={readOnly ? (question.correctAnswer as string | undefined) : undefined}
+          />
+        );
+      }
+
+      case 'pte_mcq_multiple': {
+        const data = question.questionData as PteMcqData;
+        return (
+          <MultipleChoice
+            data={{ options: data.options || [], multiSelect: true }}
+            answer={answer}
+            onChange={handleChange}
+            readOnly={readOnly}
+            correctAnswer={readOnly ? (question.correctAnswer as string[] | undefined) : undefined}
+          />
+        );
+      }
+
+      case 'pte_reading_fill_blanks_dropdown': {
+        const data = question.questionData as PteReadingFillBlanksDropdownData;
+        const dropdownData: DropdownData = {
+          context: data.context || '',
+          dropdowns: Object.fromEntries(
+            Object.entries(data.blanks || {}).map(([k, v]) => [k, { options: v.options || [] }])
+          ),
+        };
+        return (
+          <DropdownSelect
+            data={dropdownData}
+            answer={answer}
+            onChange={handleChange}
+            readOnly={readOnly}
+            correctAnswer={readOnly ? (question.correctAnswer as Record<string, string> | undefined) : undefined}
+            displayNumber={typeof resolvedNumber === 'number' ? resolvedNumber : undefined}
+          />
+        );
+      }
+
+      case 'pte_reading_fill_blanks_drag_drop':
+        return (
+          <PteFillBlanksDragDrop
+            data={question.questionData as PteReadingFillBlanksDragDropData}
+            answer={answer}
+            onChange={handleChange}
+            readOnly={readOnly}
+            correctAnswer={readOnly ? (question.correctAnswer as Record<string, string> | undefined) : undefined}
+          />
+        );
+
+      case 'pte_reorder_paragraph':
+        return (
+          <PteReorderParagraph
+            data={question.questionData as PteReorderParagraphData}
+            answer={answer}
+            onChange={handleChange}
+            readOnly={readOnly}
+            correctAnswer={readOnly ? (question.correctAnswer as string[] | undefined) : undefined}
+          />
+        );
+
+      case 'pte_listening_fill_blanks':
+        return (
+          <PteListeningFillBlanks
+            data={question.questionData as PteListeningFillBlanksData}
+            answer={answer}
+            onChange={handleChange}
+            readOnly={readOnly}
+            correctAnswer={readOnly ? (question.correctAnswer as Record<string, string> | undefined) : undefined}
+          />
+        );
+
+      case 'pte_highlight_incorrect_words':
+        return (
+          <PteHighlightIncorrectWords
+            data={question.questionData as PteHighlightIncorrectWordsData}
+            answer={answer}
+            onChange={handleChange}
+            readOnly={readOnly}
+            correctAnswer={readOnly ? (question.correctAnswer as string[] | undefined) : undefined}
+          />
+        );
+
+      case 'pte_write_from_dictation':
+        return (
+          <PteWriteFromDictation
+            answer={answer}
+            onChange={handleChange}
+            readOnly={readOnly}
+            correctAnswer={readOnly ? (question.correctAnswer as string | undefined) : undefined}
           />
         );
 

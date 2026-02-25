@@ -32,10 +32,11 @@ interface DashboardChartsProps {
 
 type SkillsTab = 'sections' | 'writing' | 'speaking';
 
-function CriteriaPanel({ criteria, color, radarId }: {
+function CriteriaPanel({ criteria, color, radarId, metricLabel = 'Band' }: {
     criteria: { label: string; short: string; band: number }[];
     color: string;
     radarId: string;
+    metricLabel?: string;
 }) {
     const radarData = criteria.map(c => ({ subject: c.short, score: c.band, fullMark: 9 }));
     const barData = criteria.map(c => ({ subject: c.label, score: c.band }));
@@ -53,7 +54,7 @@ function CriteriaPanel({ criteria, color, radarId }: {
                         <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }} />
                         <PolarRadiusAxis domain={[0, 9]} tick={false} axisLine={false} />
                         <Radar dataKey="score" stroke={color} strokeWidth={2} fill={color} fillOpacity={0.2} />
-                        <Tooltip formatter={(v: any) => [`Band ${v}`, 'Score']} contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 11 }} />
+                        <Tooltip formatter={(v: any) => [`${metricLabel} ${v}`, 'Score']} contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 11 }} />
                     </RadarChart>
                 </ResponsiveContainer>
             </div>
@@ -62,7 +63,7 @@ function CriteriaPanel({ criteria, color, radarId }: {
                     <BarChart data={barData} layout="vertical" margin={{ top: 2, right: 36, left: 4, bottom: 2 }} barCategoryGap="20%">
                         <XAxis type="number" domain={[0, 9]} hide />
                         <YAxis type="category" dataKey="subject" width={108} tick={{ fontSize: 11, fill: '#475569', fontWeight: 500 }} axisLine={false} tickLine={false} />
-                        <Tooltip formatter={(v: any) => [`Band ${v}`, 'Score']} contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 11 }} />
+                        <Tooltip formatter={(v: any) => [`${metricLabel} ${v}`, 'Score']} contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 11 }} />
                         <Bar dataKey="score" radius={[0, 6, 6, 0]} maxBarSize={22}>
                             {barData.map((_, i) => <Cell key={i} fill={color} fillOpacity={0.8} />)}
                             <LabelList dataKey="score" position="right" formatter={(v: any) => `${v}`} style={{ fill: '#475569', fontSize: 12, fontWeight: 700 }} />
@@ -258,9 +259,9 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'i
                             <p className="text-sm text-gray-500 max-w-xs">Upgrade to Starter to see your detailed skill breakdown.</p>
                         </div>
                     ) : skillsTab === 'writing' && writingCriteria ? (
-                        <CriteriaPanel criteria={writingCriteria} color="#3b82f6" radarId="dashWritingRadar" />
+                        <CriteriaPanel criteria={writingCriteria} color="#3b82f6" radarId="dashWritingRadar" metricLabel={examType === 'pte' ? 'Score' : 'Band'} />
                     ) : skillsTab === 'speaking' && speakingCriteria ? (
-                        <CriteriaPanel criteria={speakingCriteria} color="#8b5cf6" radarId="dashSpeakingRadar" />
+                        <CriteriaPanel criteria={speakingCriteria} color="#8b5cf6" radarId="dashSpeakingRadar" metricLabel={examType === 'pte' ? 'Score' : 'Band'} />
                     ) : scoredSections.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-slate-400">
                             <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
