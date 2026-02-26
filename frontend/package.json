@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:pte-preview-time": "node ../backend/node_modules/ts-node/dist/bin.js --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" src/lib/ptePreviewTime.test.ts"
   },
   "dependencies": {
     "@radix-ui/react-context-menu": "^2.2.16",

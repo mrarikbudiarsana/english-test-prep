@@ -12,8 +12,18 @@ import { Modal } from '@/components/ui/Modal';
 import { Textarea } from '@/components/ui/Textarea';
 import TestForm from '@/components/admin/TestForm';
 import SectionEditor from '@/components/admin/SectionEditor';
+import { formatLastValidatedAgo } from '@/lib/ptePreviewTime';
 import { sectionTypeLabel } from '@/lib/utils';
 import type { Test, Section, SectionType } from '@/types/test';
+
+type PteBlueprintPreview = {
+  valid: boolean;
+  errors: string[];
+  readingCounts: Record<string, number>;
+  listeningCounts: Record<string, number>;
+  readingRules: Record<string, { min: number; max: number }>;
+  listeningRules: Record<string, { min: number; max: number }>;
+};
 
 export default function AdminEditTestPage() {
   const params = useParams();
@@ -23,6 +33,7 @@ export default function AdminEditTestPage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [publishLoading, setPublishLoading] = useState(false);
   const [blueprintText, setBlueprintText] = useState('');
@@ -34,11 +45,45 @@ export default function AdminEditTestPage() {
     errors: string[];
     warnings: string[];
   } | null>(null);
+  const [pteBlueprintPreview, setPteBlueprintPreview] = useState<PteBlueprintPreview | null>(null);
+  const [pteBlueprintLoading, setPteBlueprintLoading] = useState(false);
+  const [ptePreviewValidatedAt, setPtePreviewValidatedAt] = useState<number | null>(null);
+  const [ptePreviewFetchFailed, setPtePreviewFetchFailed] = useState(false);
+  const [nowTs, setNowTs] = useState(Date.now());
 
   // Section editor state
   const [showSectionEditor, setShowSectionEditor] = useState(false);
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [deletingSectionId, setDeletingSectionId] = useState<string | null>(null);
+
+  const loadPteBlueprintPreview = useCallback(async (): Promise<PteBlueprintPreview> => {
+    setPteBlueprintLoading(true);
+    try {
+      const previewRes = await api.get(`/admin/tests/${testId}/pte-blueprint/validate`);
+      const previewData = previewRes.data.data || previewRes.data;
+      const normalizedPreview = previewData as PteBlueprintPreview;
+      setPteBlueprintPreview(normalizedPreview);
+      setPtePreviewFetchFailed(false);
+      setPtePreviewValidatedAt(Date.now());
+      setPublishError(null);
+      return normalizedPreview;
+    } catch {
+      const fallbackPreview: PteBlueprintPreview = {
+        valid: false,
+        errors: ['Failed to load question distribution for PTE blueprint preview.'],
+        readingCounts: {},
+        listeningCounts: {},
+        readingRules: {},
+        listeningRules: {},
+      };
+      setPteBlueprintPreview(fallbackPreview);
+      setPtePreviewFetchFailed(true);
+      setPtePreviewValidatedAt(Date.now());
+      return fallbackPreview;
+    } finally {
+      setPteBlueprintLoading(false);
+    }
+  }, [testId]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -64,16 +109,61 @@ export default function AdminEditTestPage() {
           ? fetchedSections.sort((a: Section, b: Section) => a.sectionOrder - b.sectionOrder)
           : []
       );
+      if (fetchedTest?.testType === 'pte_academic') {
+        await loadPteBlueprintPreview();
+      } else {
+        setPteBlueprintPreview(null);
+        setPtePreviewValidatedAt(null);
+        setPtePreviewFetchFailed(false);
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to load test');
     } finally {
       setLoading(false);
     }
-  }, [testId]);
+  }, [loadPteBlueprintPreview, testId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (test?.testType !== 'pte_academic') return;
+
+    let lastRefreshAt = 0;
+    const refreshIfNeeded = () => {
+      const now = Date.now();
+      if (now - lastRefreshAt < 1500) return;
+      lastRefreshAt = now;
+      void loadPteBlueprintPreview();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshIfNeeded();
+      }
+    };
+
+    const onWindowFocus = () => {
+      refreshIfNeeded();
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onWindowFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onWindowFocus);
+    };
+  }, [loadPteBlueprintPreview, test?.testType]);
+
+  useEffect(() => {
+    if (test?.testType !== 'pte_academic') return;
+    const timer = window.setInterval(() => setNowTs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [test?.testType]);
+
+  const lastValidatedText = formatLastValidatedAgo(ptePreviewValidatedAt, nowTs);
 
   const handleTestUpdate = async (data: {
     title: string;
@@ -95,21 +185,30 @@ export default function AdminEditTestPage() {
   const handlePublishToggle = async () => {
     if (!test) return;
     setPublishLoading(true);
+    setPublishError(null);
     try {
+      if (!test.isPublished && test.testType === 'pte_academic') {
+        const latestPreview = await loadPteBlueprintPreview();
+        if (!latestPreview.valid) {
+          const firstErrors = latestPreview.errors.slice(0, 3).join('\n- ');
+          setPublishError(`Cannot publish. Fix PTE blueprint issues first:\n- ${firstErrors}`);
+          return;
+        }
+      }
       if (!test.isPublished && test.deliveryModel === 'toefl_ibt_2026') {
         const validateRes = await api.get(`/admin/tests/${testId}/blueprint/validate`);
         const validateData = validateRes.data.data || validateRes.data;
         setBlueprintValidation(validateData);
         if (!validateData.valid) {
           const firstErrors = (validateData.errors || []).slice(0, 3).join('\n- ');
-          alert(`Cannot publish. Fix blueprint issues first:\n- ${firstErrors}`);
+          setPublishError(`Cannot publish. Fix blueprint issues first:\n- ${firstErrors}`);
           return;
         }
       }
       const response = await api.post(`/admin/tests/${testId}/publish`);
       setTest(response.data.data || response.data);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to update publish status');
+      setPublishError(err.response?.data?.error || 'Failed to update publish status');
     } finally {
       setPublishLoading(false);
     }
@@ -191,6 +290,10 @@ export default function AdminEditTestPage() {
       }
       setShowSectionEditor(false);
       setEditingSection(null);
+      setPublishError(null);
+      if (test?.testType === 'pte_academic') {
+        await loadPteBlueprintPreview();
+      }
     } catch (err: any) {
       alert(err.response?.data?.error || 'Failed to save section');
       throw err; // re-throw so SectionEditor can handle loading state
@@ -210,6 +313,10 @@ export default function AdminEditTestPage() {
     try {
       await api.delete(`/admin/sections/${sectionId}`);
       setSections((prev) => prev.filter((s) => s.id !== sectionId));
+      setPublishError(null);
+      if (test?.testType === 'pte_academic') {
+        await loadPteBlueprintPreview();
+      }
     } catch (err: any) {
       alert(err.response?.data?.error || 'Failed to delete section');
     } finally {
@@ -303,6 +410,14 @@ export default function AdminEditTestPage() {
         </Button>
       </div>
 
+      {publishError ? (
+        <Card>
+          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 whitespace-pre-line">
+            {publishError}
+          </div>
+        </Card>
+      ) : null}
+
       {/* Test Details Form */}
       <Card>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Test Details</h2>
@@ -317,6 +432,89 @@ export default function AdminEditTestPage() {
           loading={saving}
         />
       </Card>
+
+      {test.testType === 'pte_academic' && (
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">PTE Blueprint Preview</h2>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={loadPteBlueprintPreview}
+                loading={pteBlueprintLoading}
+              >
+                Revalidate Preview
+              </Button>
+              {pteBlueprintLoading ? (
+                <span className="text-xs text-gray-500">Loading...</span>
+              ) : pteBlueprintPreview ? (
+                <Badge variant={pteBlueprintPreview.valid ? 'success' : 'default'} className={pteBlueprintPreview.valid ? '' : 'bg-amber-100 text-amber-800 border-amber-200'}>
+                  {pteBlueprintPreview.valid ? 'Valid' : 'Needs Fixes'}
+                </Badge>
+              ) : null}
+              {!pteBlueprintLoading && lastValidatedText ? (
+                <span className="text-xs text-gray-500">{lastValidatedText}</span>
+              ) : null}
+            </div>
+          </div>
+
+          {ptePreviewFetchFailed ? (
+            <div className="mb-4 rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
+              Couldn&apos;t refresh latest blueprint preview. Click Revalidate Preview to retry.
+            </div>
+          ) : null}
+
+          {pteBlueprintPreview?.errors?.length ? (
+            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3">
+              <h3 className="text-sm font-semibold text-amber-800 mb-2">Issues</h3>
+              <ul className="list-disc pl-5 space-y-1 text-sm text-amber-700">
+                {pteBlueprintPreview.errors.map((msg, idx) => (
+                  <li key={`pte-blueprint-err-${idx}`}>{msg}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Reading Distribution</h3>
+              <div className="space-y-1 text-sm">
+                {Object.entries(pteBlueprintPreview?.readingRules || {}).map(([type, rule]) => {
+                  const count = pteBlueprintPreview?.readingCounts?.[type] || 0;
+                  const ok = count >= rule.min && count <= rule.max;
+                  return (
+                    <div key={`read-${type}`} className="flex items-center justify-between">
+                      <span className="text-gray-700">{type}</span>
+                      <span className={ok ? 'text-emerald-700 font-medium' : 'text-amber-700 font-medium'}>
+                        {count} (target {rule.min}-{rule.max})
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Listening Distribution</h3>
+              <div className="space-y-1 text-sm">
+                {Object.entries(pteBlueprintPreview?.listeningRules || {}).map(([type, rule]) => {
+                  const count = pteBlueprintPreview?.listeningCounts?.[type] || 0;
+                  const ok = count >= rule.min && count <= rule.max;
+                  return (
+                    <div key={`list-${type}`} className="flex items-center justify-between">
+                      <span className="text-gray-700">{type}</span>
+                      <span className={ok ? 'text-emerald-700 font-medium' : 'text-amber-700 font-medium'}>
+                        {count} (target {rule.min}-{rule.max})
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {test.deliveryModel === 'toefl_ibt_2026' && (
         <Card>

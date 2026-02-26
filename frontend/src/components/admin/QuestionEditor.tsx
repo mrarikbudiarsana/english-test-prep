@@ -454,6 +454,43 @@ function normalizeCorrectAnswer(type: QuestionType, answer: any): any {
   return answer;
 }
 
+function countWords(value: string): number {
+  return value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .length;
+}
+
+function getPteDerivedMaxPoints(
+  questionType: QuestionType,
+  correctAnswer: any,
+): number | null {
+  switch (questionType) {
+    case 'pte_mcq_multiple':
+    case 'pte_highlight_incorrect_words': {
+      if (!Array.isArray(correctAnswer)) return 1;
+      return Math.max(1, correctAnswer.length);
+    }
+    case 'pte_reading_fill_blanks_dropdown':
+    case 'pte_reading_fill_blanks_drag_drop':
+    case 'pte_listening_fill_blanks': {
+      if (!correctAnswer || typeof correctAnswer !== 'object' || Array.isArray(correctAnswer)) return 1;
+      return Math.max(1, Object.keys(correctAnswer).length);
+    }
+    case 'pte_reorder_paragraph': {
+      if (!Array.isArray(correctAnswer)) return 1;
+      return Math.max(1, correctAnswer.length - 1);
+    }
+    case 'pte_write_from_dictation': {
+      if (typeof correctAnswer !== 'string') return 1;
+      return Math.max(1, countWords(correctAnswer));
+    }
+    default:
+      return null;
+  }
+}
+
 // ---------- Component ----------
 
 export default function QuestionEditor({
@@ -512,6 +549,14 @@ export default function QuestionEditor({
 
   // Question grouping: show for IELTS (always relevant), or when no test type context
   const showGrouping = !testType || isIelts;
+  const pteDerivedMaxPoints = useMemo(() => {
+    if (testType !== 'pte_academic') return null;
+    return getPteDerivedMaxPoints(questionType, correctAnswer);
+  }, [testType, questionType, correctAnswer]);
+  const shouldWarnPtePoints =
+    pteDerivedMaxPoints !== null &&
+    Number.isFinite(points) &&
+    points < pteDerivedMaxPoints;
 
   const handleTypeChange = (newType: QuestionType) => {
     setQuestionType(newType);
@@ -691,6 +736,12 @@ export default function QuestionEditor({
           error={errors.points}
         />
       </div>
+      {shouldWarnPtePoints && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          PTE scoring warning: this item can award up to {pteDerivedMaxPoints} points based on its correct-answer shape,
+          but configured Points is {points}. Section normalization will use the higher derived max.
+        </div>
+      )}
 
       {/* Audio Uploader — only for relevant contexts */}
       {showAudioUploader && (

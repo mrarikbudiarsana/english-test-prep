@@ -522,6 +522,11 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                     {testType === 'pte_academic' && pteAnalytics && (
                         <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6">
                             <h3 className="text-lg font-semibold text-cyan-900 mb-4">PTE Report Snapshot</h3>
+                            {user?.role === 'admin' && attempt.scoreMappingVersion && (
+                                <p className="text-xs text-cyan-700 mb-4">
+                                    Calibration Mapping: {attempt.scoreMappingVersion}
+                                </p>
+                            )}
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
                                 {[
                                     { label: 'Overall', value: pteAnalytics.communicativeSkills.overall },

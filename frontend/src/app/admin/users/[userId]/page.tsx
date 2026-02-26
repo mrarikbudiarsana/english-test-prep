@@ -12,6 +12,9 @@ import { formatDate } from '@/lib/utils';
 import type { User } from '@/types/user';
 import type { Attempt } from '@/types/test';
 
+const CURRENT_PTE_MAPPING_VERSION = 'pte_objective_2026_v1_0_0';
+type MappingFilter = 'all' | 'current' | 'legacy';
+
 export default function AdminUserDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -19,6 +22,7 @@ export default function AdminUserDetailPage() {
 
     const [user, setUser] = useState<User | null>(null);
     const [attempts, setAttempts] = useState<Attempt[]>([]);
+    const [mappingFilter, setMappingFilter] = useState<MappingFilter>('all');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -48,6 +52,17 @@ export default function AdminUserDetailPage() {
             return <Badge variant="default" className="bg-gray-100 text-gray-800">In Progress</Badge>;
         }
 
+        const mappingLabel = attempt.scoreMappingVersion ? (
+            <div className={`mt-1 text-[11px] ${attempt.test?.testType === 'pte_academic' ? 'text-cyan-700' : 'text-gray-500'}`}>
+                Mapping: {attempt.scoreMappingVersion}
+                {attempt.test?.testType === 'pte_academic' && attempt.scoreMappingVersion !== CURRENT_PTE_MAPPING_VERSION && (
+                    <span className="ml-2 inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                        Legacy
+                    </span>
+                )}
+            </div>
+        ) : null;
+
         // TOEFL iBT 2026 Display
         if (attempt.test?.deliveryModel === 'toefl_ibt_2026') {
             const r = attempt.readingBand ?? '-';
@@ -72,20 +87,42 @@ export default function AdminUserDetailPage() {
                         <div>W: {w} <span className="text-[10px] text-gray-400">({w30})</span></div>
                         <div>S: {s} <span className="text-[10px] text-gray-400">({s30})</span></div>
                     </div>
+                    {mappingLabel}
                 </div>
             );
         }
 
         // Standard Scores
         if (attempt.overallScore !== null) {
-            return <span className="font-bold">{attempt.overallScore}</span>;
+            return (
+                <div>
+                    <span className="font-bold">{attempt.overallScore}</span>
+                    {mappingLabel}
+                </div>
+            );
         }
         if (attempt.overallBand !== null) {
-            return <span className="font-bold">Band {attempt.overallBand}</span>;
+            return (
+                <div>
+                    <span className="font-bold">Band {attempt.overallBand}</span>
+                    {mappingLabel}
+                </div>
+            );
         }
 
         return <span className="text-gray-400 text-xs">Not Scored</span>;
     };
+
+    const filteredAttempts = attempts.filter((attempt) => {
+        if (mappingFilter === 'all') return true;
+        if (attempt.test?.testType !== 'pte_academic') return true;
+        if (attempt.status !== 'completed') return true;
+
+        const version = attempt.scoreMappingVersion;
+        if (!version) return mappingFilter === 'legacy';
+        if (mappingFilter === 'current') return version === CURRENT_PTE_MAPPING_VERSION;
+        return version !== CURRENT_PTE_MAPPING_VERSION;
+    });
 
     if (loading) {
         return (
@@ -148,11 +185,26 @@ export default function AdminUserDetailPage() {
             </div>
 
             <Card padding={false}>
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-900">Attempts History ({attempts.length})</h2>
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-3">
+                    <h2 className="text-lg font-semibold text-gray-900">Attempts History ({filteredAttempts.length})</h2>
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="mapping-filter" className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            Mapping
+                        </label>
+                        <select
+                            id="mapping-filter"
+                            value={mappingFilter}
+                            onChange={(e) => setMappingFilter(e.target.value as MappingFilter)}
+                            className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                            <option value="all">All</option>
+                            <option value="current">Current</option>
+                            <option value="legacy">Legacy</option>
+                        </select>
+                    </div>
                 </div>
 
-                {attempts.length === 0 ? (
+                {filteredAttempts.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
                         No attempts found for this user.
                     </div>
@@ -176,7 +228,7 @@ export default function AdminUserDetailPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {attempts.map((attempt) => (
+                                {filteredAttempts.map((attempt) => (
                                     <tr key={attempt.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {formatDate(attempt.startedAt)}
