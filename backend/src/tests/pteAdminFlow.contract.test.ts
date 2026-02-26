@@ -22,11 +22,11 @@ function makeValidObjectiveQuestions(): any[] {
   for (let i = 0; i < 2; i++) rows.push({ questionNumber: n++, questionType: 'pte_mcq_single', sectionType: 'reading', questionData: {}, correctAnswer: 'A', points: 1 });
 
   // Listening distribution
-  for (let i = 0; i < 2; i++) rows.push({ questionNumber: n++, questionType: 'pte_mcq_multiple', sectionType: 'listening', questionData: {}, correctAnswer: ['A'], points: 1 });
+  for (let i = 0; i < 2; i++) rows.push({ questionNumber: n++, questionType: 'pte_mcq_multiple', sectionType: 'listening', questionData: {}, correctAnswer: ['A'], points: 1, audioUrl: 'https://example.com/media/pte-listen-mcq-multiple.mp3' });
   for (let i = 0; i < 2; i++) rows.push({ questionNumber: n++, questionType: 'pte_listening_fill_blanks', sectionType: 'listening', questionData: {}, correctAnswer: { b1: 'x' }, points: 1 });
-  for (let i = 0; i < 2; i++) rows.push({ questionNumber: n++, questionType: 'pte_highlight_correct_summary', sectionType: 'listening', questionData: {}, correctAnswer: 'A', points: 1 });
-  for (let i = 0; i < 2; i++) rows.push({ questionNumber: n++, questionType: 'pte_mcq_single', sectionType: 'listening', questionData: {}, correctAnswer: 'A', points: 1 });
-  for (let i = 0; i < 1; i++) rows.push({ questionNumber: n++, questionType: 'pte_select_missing_word', sectionType: 'listening', questionData: {}, correctAnswer: 'A', points: 1 });
+  for (let i = 0; i < 2; i++) rows.push({ questionNumber: n++, questionType: 'pte_highlight_correct_summary', sectionType: 'listening', questionData: {}, correctAnswer: 'A', points: 1, audioUrl: 'https://example.com/media/pte-listen-hcs.mp3' });
+  for (let i = 0; i < 2; i++) rows.push({ questionNumber: n++, questionType: 'pte_mcq_single', sectionType: 'listening', questionData: {}, correctAnswer: 'A', points: 1, audioUrl: 'https://example.com/media/pte-listen-mcq-single.mp3' });
+  for (let i = 0; i < 1; i++) rows.push({ questionNumber: n++, questionType: 'pte_select_missing_word', sectionType: 'listening', questionData: {}, correctAnswer: 'A', points: 1, audioUrl: 'https://example.com/media/pte-listen-select-missing-word.mp3' });
   for (let i = 0; i < 2; i++) rows.push({ questionNumber: n++, questionType: 'pte_highlight_incorrect_words', sectionType: 'listening', questionData: {}, correctAnswer: ['w1'], points: 1 });
   for (let i = 0; i < 3; i++) rows.push({ questionNumber: n++, questionType: 'pte_write_from_dictation', sectionType: 'listening', questionData: {}, correctAnswer: 'one two three', points: 3 });
 

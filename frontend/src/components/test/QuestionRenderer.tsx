@@ -31,6 +31,18 @@ import PteHighlightIncorrectWords from './questions/PteHighlightIncorrectWords';
 import PteWriteFromDictation from './questions/PteWriteFromDictation';
 import TextHighlighter from './TextHighlighter';
 
+function isLikelyVideoUrl(url: string): boolean {
+  const lower = url.toLowerCase();
+  return (
+    lower.includes('/video/upload/') ||
+    lower.endsWith('.mp4') ||
+    lower.endsWith('.webm') ||
+    lower.endsWith('.ogg') ||
+    lower.endsWith('.mov') ||
+    lower.endsWith('.m4v')
+  );
+}
+
 interface QuestionRendererProps {
   question: Question;
   answer: any;
@@ -298,6 +310,8 @@ export default function QuestionRenderer({
   })();
 
   const isRedundantHeader = !processedHeaderText;
+  const mediaUrl = question.audioUrl || '';
+  const isVideoMedia = mediaUrl ? isLikelyVideoUrl(mediaUrl) : false;
 
   return (
     <div className={cn(
@@ -333,15 +347,25 @@ export default function QuestionRenderer({
             })}
           </div>
           <div className="flex-1">
-            {question.audioUrl && (
+            {mediaUrl && (
               <div className="mb-3">
-                <AudioPlayer
-                  src={question.audioUrl}
-                  playOnce={playOnce}
-                  autoPlay={autoPlay}
-                  onEnd={onAudioEnd}
-                  disabled={disableAudio}
-                />
+                {isVideoMedia ? (
+                  <video
+                    src={mediaUrl}
+                    controls
+                    autoPlay={autoPlay}
+                    className="w-full rounded-lg border border-gray-200"
+                    preload="metadata"
+                  />
+                ) : (
+                  <AudioPlayer
+                    src={mediaUrl}
+                    playOnce={playOnce}
+                    autoPlay={autoPlay}
+                    onEnd={onAudioEnd}
+                    disabled={disableAudio}
+                  />
+                )}
               </div>
             )}
             {!isRedundantHeader && (

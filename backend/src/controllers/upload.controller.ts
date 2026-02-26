@@ -36,3 +36,21 @@ export async function uploadImage(
     next(error);
   }
 }
+
+export async function uploadVideo(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const file = req.file;
+    if (!file) {
+      res.status(400).json({ error: 'No video file provided' });
+      return;
+    }
+    const url = await uploadService.uploadFile(file, 'videos');
+    res.json({ url });
+  } catch (error) {
+    next(error);
+  }
+}

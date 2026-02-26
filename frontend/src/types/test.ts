@@ -64,6 +64,9 @@ export interface SpeakingPrompt {
   id: string;
   text: string;
   followUp?: string;
+  audioUrl?: string;
+  mediaUrl?: string;
+  imageUrl?: string;
 }
 
 export type AnswerData = string | string[] | Record<string, string> | number | boolean | null;

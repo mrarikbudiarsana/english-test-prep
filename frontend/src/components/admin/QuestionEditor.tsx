@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import AudioUploader from './AudioUploader';
+import VideoUploader from './VideoUploader';
 import MCQEditor from './QuestionTypeEditors/MCQEditor';
 import TFNGEditor from './QuestionTypeEditors/TFNGEditor';
 import CompletionEditor from './QuestionTypeEditors/CompletionEditor';
@@ -75,6 +76,13 @@ const ALL_QUESTION_TYPES: { value: QuestionType; label: string }[] = [
   { value: 'pte_highlight_incorrect_words', label: 'PTE Highlight Incorrect Words' },
   { value: 'pte_write_from_dictation', label: 'PTE Write from Dictation' },
 ];
+
+const PTE_TYPES_WITH_MEDIA = new Set<QuestionType>([
+  'pte_mcq_single',
+  'pte_mcq_multiple',
+  'pte_highlight_correct_summary',
+  'pte_select_missing_word',
+]);
 
 function getAllowedTypes(
   testType?: TestType,
@@ -546,6 +554,10 @@ export default function QuestionEditor({
 
   // Audio uploader: show for TOEFL ITP Listening Part A (per-question audio), or when no test type context
   const showAudioUploader = !testType || (isToeflItp && sectionType === 'listening' && partNumber === 1);
+  const showPteMediaUploader =
+    testType === 'pte_academic' &&
+    sectionType === 'listening' &&
+    PTE_TYPES_WITH_MEDIA.has(questionType);
 
   // Question grouping: show for IELTS (always relevant), or when no test type context
   const showGrouping = !testType || isIelts;
@@ -756,6 +768,17 @@ export default function QuestionEditor({
             onUpload={(url) => setAudioUrl(url)}
             currentUrl={audioUrl}
           />
+        </div>
+      )}
+
+      {showPteMediaUploader && (
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+          <h4 className="text-sm font-semibold text-gray-700">Stimulus Media (Audio or Video)</h4>
+          <p className="text-xs text-gray-500">
+            Upload either audio or video for this listening item type. The latest upload is used in the test player.
+          </p>
+          <AudioUploader onUpload={(url) => setAudioUrl(url)} currentUrl={audioUrl} />
+          <VideoUploader onUpload={(url) => setAudioUrl(url)} currentUrl={audioUrl} />
         </div>
       )}
 

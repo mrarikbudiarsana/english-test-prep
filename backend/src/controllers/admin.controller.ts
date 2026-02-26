@@ -130,6 +130,20 @@ export async function validatePteBlueprint(
   }
 }
 
+export async function validatePtePublish(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const testId = req.params.testId as string;
+    const result = await adminService.validatePtePublish(testId);
+    res.json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ---------- Section CRUD ----------
 
 export async function createSection(

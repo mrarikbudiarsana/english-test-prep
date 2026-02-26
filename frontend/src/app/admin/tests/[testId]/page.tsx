@@ -25,6 +25,22 @@ type PteBlueprintPreview = {
   listeningRules: Record<string, { min: number; max: number }>;
 };
 
+type PtePublishIssue = {
+  type: 'section' | 'question' | 'speaking_prompt' | 'blueprint';
+  message: string;
+  sectionType?: string;
+  sectionOrder?: number;
+  questionNumber?: number;
+  questionType?: string;
+  promptIndex?: number;
+};
+
+type PtePublishValidation = {
+  valid: boolean;
+  errors: string[];
+  issues: PtePublishIssue[];
+};
+
 export default function AdminEditTestPage() {
   const params = useParams();
   const testId = params.testId as string;
@@ -49,6 +65,8 @@ export default function AdminEditTestPage() {
   const [pteBlueprintLoading, setPteBlueprintLoading] = useState(false);
   const [ptePreviewValidatedAt, setPtePreviewValidatedAt] = useState<number | null>(null);
   const [ptePreviewFetchFailed, setPtePreviewFetchFailed] = useState(false);
+  const [ptePublishValidation, setPtePublishValidation] = useState<PtePublishValidation | null>(null);
+  const [ptePublishValidationLoading, setPtePublishValidationLoading] = useState(false);
   const [nowTs, setNowTs] = useState(Date.now());
 
   // Section editor state
@@ -85,6 +103,26 @@ export default function AdminEditTestPage() {
     }
   }, [testId]);
 
+  const loadPtePublishValidation = useCallback(async (): Promise<PtePublishValidation> => {
+    setPtePublishValidationLoading(true);
+    try {
+      const res = await api.get(`/admin/tests/${testId}/pte-publish/validate`);
+      const data = (res.data.data || res.data) as PtePublishValidation;
+      setPtePublishValidation(data);
+      return data;
+    } catch {
+      const fallback: PtePublishValidation = {
+        valid: false,
+        errors: ['Failed to load PTE publish readiness check.'],
+        issues: [{ type: 'blueprint', message: 'Failed to load PTE publish readiness check.' }],
+      };
+      setPtePublishValidation(fallback);
+      return fallback;
+    } finally {
+      setPtePublishValidationLoading(false);
+    }
+  }, [testId]);
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -110,9 +148,10 @@ export default function AdminEditTestPage() {
           : []
       );
       if (fetchedTest?.testType === 'pte_academic') {
-        await loadPteBlueprintPreview();
+        await Promise.all([loadPteBlueprintPreview(), loadPtePublishValidation()]);
       } else {
         setPteBlueprintPreview(null);
+        setPtePublishValidation(null);
         setPtePreviewValidatedAt(null);
         setPtePreviewFetchFailed(false);
       }
@@ -121,7 +160,7 @@ export default function AdminEditTestPage() {
     } finally {
       setLoading(false);
     }
-  }, [loadPteBlueprintPreview, testId]);
+  }, [loadPteBlueprintPreview, loadPtePublishValidation, testId]);
 
   useEffect(() => {
     fetchData();
@@ -135,7 +174,7 @@ export default function AdminEditTestPage() {
       const now = Date.now();
       if (now - lastRefreshAt < 1500) return;
       lastRefreshAt = now;
-      void loadPteBlueprintPreview();
+      void Promise.all([loadPteBlueprintPreview(), loadPtePublishValidation()]);
     };
 
     const onVisibilityChange = () => {
@@ -155,7 +194,7 @@ export default function AdminEditTestPage() {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('focus', onWindowFocus);
     };
-  }, [loadPteBlueprintPreview, test?.testType]);
+  }, [loadPteBlueprintPreview, loadPtePublishValidation, test?.testType]);
 
   useEffect(() => {
     if (test?.testType !== 'pte_academic') return;
@@ -188,10 +227,13 @@ export default function AdminEditTestPage() {
     setPublishError(null);
     try {
       if (!test.isPublished && test.testType === 'pte_academic') {
-        const latestPreview = await loadPteBlueprintPreview();
-        if (!latestPreview.valid) {
-          const firstErrors = latestPreview.errors.slice(0, 3).join('\n- ');
-          setPublishError(`Cannot publish. Fix PTE blueprint issues first:\n- ${firstErrors}`);
+        const publishValidation = await loadPtePublishValidation();
+        if (!publishValidation.valid) {
+          const topIssues = publishValidation.issues
+            .slice(0, 6)
+            .map((issue) => issue.message)
+            .join('\n- ');
+          setPublishError(`Cannot publish. Fix PTE publish issues first:\n- ${topIssues}`);
           return;
         }
       }
@@ -292,7 +334,7 @@ export default function AdminEditTestPage() {
       setEditingSection(null);
       setPublishError(null);
       if (test?.testType === 'pte_academic') {
-        await loadPteBlueprintPreview();
+        await Promise.all([loadPteBlueprintPreview(), loadPtePublishValidation()]);
       }
     } catch (err: any) {
       alert(err.response?.data?.error || 'Failed to save section');
@@ -315,7 +357,7 @@ export default function AdminEditTestPage() {
       setSections((prev) => prev.filter((s) => s.id !== sectionId));
       setPublishError(null);
       if (test?.testType === 'pte_academic') {
-        await loadPteBlueprintPreview();
+        await Promise.all([loadPteBlueprintPreview(), loadPtePublishValidation()]);
       }
     } catch (err: any) {
       alert(err.response?.data?.error || 'Failed to delete section');
@@ -343,6 +385,27 @@ export default function AdminEditTestPage() {
       structure: 'bg-indigo-100 text-indigo-800 border-indigo-200',
     };
     return colors[type] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  const resolveIssueSection = (issue: PtePublishIssue): Section | null => {
+    if (!sections.length) return null;
+
+    if (issue.sectionOrder != null) {
+      const byOrder = sections.find((s) => s.sectionOrder === issue.sectionOrder);
+      if (byOrder) return byOrder;
+    }
+
+    if (issue.sectionType) {
+      const byType = sections.find((s) => s.sectionType === issue.sectionType);
+      if (byType) return byType;
+    }
+
+    if (issue.type === 'question' && issue.sectionType) {
+      const byType = sections.find((s) => s.sectionType === issue.sectionType);
+      if (byType) return byType;
+    }
+
+    return null;
   };
 
   if (loading) {
@@ -513,6 +576,78 @@ export default function AdminEditTestPage() {
               </div>
             </div>
           </div>
+        </Card>
+      )}
+
+      {test.testType === 'pte_academic' && (
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">PTE Publish Readiness</h2>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={loadPtePublishValidation}
+                loading={ptePublishValidationLoading}
+              >
+                Revalidate Readiness
+              </Button>
+              {ptePublishValidation ? (
+                <Badge
+                  variant={ptePublishValidation.valid ? 'success' : 'default'}
+                  className={ptePublishValidation.valid ? '' : 'bg-amber-100 text-amber-800 border-amber-200'}
+                >
+                  {ptePublishValidation.valid ? 'Ready to Publish' : 'Fix Required'}
+                </Badge>
+              ) : null}
+            </div>
+          </div>
+
+          {ptePublishValidation?.issues?.length ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+              <h3 className="text-sm font-semibold text-amber-800 mb-2">Issue List</h3>
+              <div className="space-y-2">
+                {ptePublishValidation.issues.map((issue, idx) => {
+                  const issueSection = resolveIssueSection(issue);
+                  const canOpenQuestionPage = issue.type === 'question' && issueSection;
+                  const canEditSection =
+                    (issue.type === 'section' || issue.type === 'speaking_prompt') &&
+                    issueSection;
+
+                  return (
+                    <div
+                      key={`pte-publish-issue-${idx}`}
+                      className="flex items-start justify-between gap-3 rounded border border-amber-200 bg-white/70 px-3 py-2 text-sm text-amber-800"
+                    >
+                      <p className="min-w-0 flex-1">
+                        {idx + 1}. {issue.message}
+                      </p>
+                      {canOpenQuestionPage ? (
+                        <Link href={`/admin/tests/${testId}/sections/${issueSection.id}`}>
+                          <Button size="sm" variant="outline" className="whitespace-nowrap">
+                            Open Questions
+                          </Button>
+                        </Link>
+                      ) : canEditSection ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="whitespace-nowrap"
+                          onClick={() => openEditSection(issueSection)}
+                        >
+                          Open Section
+                        </Button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              No publish-blocking issues found.
+            </div>
+          )}
         </Card>
       )}
 

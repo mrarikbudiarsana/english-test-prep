@@ -99,6 +99,13 @@ export async function validatePteBlueprint(testId: string) {
 }
 
 /**
+ * Admin: Validate PTE publish readiness (blueprint + required authored media).
+ */
+export async function validatePtePublish(testId: string) {
+  return testService.validatePtePublishForTest(testId);
+}
+
+/**
  * Admin: Create a new section for a test.
  */
 export async function createSection(

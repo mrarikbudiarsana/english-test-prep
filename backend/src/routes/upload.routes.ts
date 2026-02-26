@@ -5,12 +5,13 @@ import { authMiddleware } from '../middleware/auth';
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 },
+  limits: { fileSize: 200 * 1024 * 1024 },
 });
 
 const router = Router();
 
 router.post('/audio', authMiddleware, upload.single('audio'), uploadController.uploadAudio);
+router.post('/video', authMiddleware, upload.single('video'), uploadController.uploadVideo);
 router.post('/image', authMiddleware, upload.single('image'), uploadController.uploadImage);
 
 export default router;

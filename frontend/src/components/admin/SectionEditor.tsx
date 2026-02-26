@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import AudioUploader from './AudioUploader';
+import VideoUploader from './VideoUploader';
 import ImageUploader from '@/components/ui/ImageUploader';
 import type { Section, SectionType, SpeakingPrompt } from '@/types/test';
 
@@ -53,6 +54,17 @@ const allSectionTypeOptions = [
   { value: 'speaking', label: 'Speaking' },
   { value: 'structure', label: 'Structure & Written Expression' },
 ];
+
+const PTE_TASKS_WITH_PROMPT_AUDIO = new Set([
+  'repeat_sentence',
+  'retell_lecture',
+  'answer_short_question',
+  'summarize_group_discussion',
+]);
+const PTE_TASKS_WITH_PROMPT_IMAGE = new Set([
+  'describe_image',
+  'retell_lecture',
+]);
 
 function getSectionTypeOptions(testType: string) {
   if (testType === 'toefl_itp') {
@@ -221,6 +233,18 @@ export default function SectionEditor({ testType, existingSections = [], initial
   const [taskType, setTaskType] = useState<string>(initialData?.taskType ?? '');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const speakingPromptMediaRequired =
+    testType === 'pte_academic' &&
+    sectionType === 'speaking' &&
+    PTE_TASKS_WITH_PROMPT_AUDIO.has(taskType);
+  const speakingPromptImageEnabled =
+    testType === 'pte_academic' &&
+    sectionType === 'speaking' &&
+    PTE_TASKS_WITH_PROMPT_IMAGE.has(taskType);
+  const speakingPromptImageRequired =
+    testType === 'pte_academic' &&
+    sectionType === 'speaking' &&
+    taskType === 'describe_image';
 
   // For TOEFL ITP: only the first section of each type shows the duration field
   // (subsequent sections auto-get duration=0 from the backend).
@@ -261,6 +285,18 @@ export default function SectionEditor({ testType, existingSections = [], initial
     const newErrors: Record<string, string> = {};
     if (!title.trim()) newErrors.title = 'Section title is required';
     if (showDuration && durationMinutes < 1) newErrors.durationMinutes = 'Duration must be at least 1 minute';
+    if (sectionType === 'speaking' && speakingPromptMediaRequired) {
+      const missingIndex = speakingPrompts.findIndex((p) => !((p.mediaUrl || p.audioUrl || '').trim()));
+      if (missingIndex >= 0) {
+        newErrors.speakingPrompts = `Prompt ${missingIndex + 1} is missing media (audio/video).`;
+      }
+    }
+    if (sectionType === 'speaking' && speakingPromptImageRequired) {
+      const missingImageIndex = speakingPrompts.findIndex((p) => !((p.imageUrl || '').trim()));
+      if (missingImageIndex >= 0) {
+        newErrors.speakingPrompts = `Prompt ${missingImageIndex + 1} is missing image.`;
+      }
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -688,9 +724,22 @@ export default function SectionEditor({ testType, existingSections = [], initial
                 Use one section prompt per PTE S&W task block. Task type is used by the PTE scoring engine for deterministic weighting and penalties.
               </p>
             )}
+            {speakingPromptMediaRequired && (
+              <p className="text-xs text-blue-700 bg-blue-100 rounded p-2">
+                This task contributes to Listening score. Upload one media file (audio/video) per prompt.
+              </p>
+            )}
+            {speakingPromptImageEnabled && (
+              <p className="text-xs text-blue-700 bg-blue-100 rounded p-2">
+                This task supports image stimulus per prompt.
+              </p>
+            )}
 
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">Speaking Prompts</label>
+              {errors.speakingPrompts && (
+                <p className="text-sm text-red-600">{errors.speakingPrompts}</p>
+              )}
               {speakingPrompts.map((prompt, index) => (
                 <div key={index} className="p-3 bg-white rounded-lg border border-blue-100 space-y-2">
                   <div className="flex items-center justify-between">
@@ -718,6 +767,24 @@ export default function SectionEditor({ testType, existingSections = [], initial
                     onChange={(e) => updatePrompt(index, 'followUp', e.target.value)}
                     placeholder="Follow-up question (optional)"
                   />
+                  {speakingPromptMediaRequired && (
+                    <div className="space-y-3">
+                      <AudioUploader
+                        onUpload={(url) => updatePrompt(index, 'mediaUrl', url || '')}
+                        currentUrl={(prompt.mediaUrl || prompt.audioUrl) || null}
+                      />
+                      <VideoUploader
+                        onUpload={(url) => updatePrompt(index, 'mediaUrl', url || '')}
+                        currentUrl={(prompt.mediaUrl || prompt.audioUrl) || null}
+                      />
+                    </div>
+                  )}
+                  {speakingPromptImageEnabled && (
+                    <ImageUploader
+                      onUpload={(url) => updatePrompt(index, 'imageUrl', url || '')}
+                      currentUrl={prompt.imageUrl || null}
+                    />
+                  )}
                 </div>
               ))}
               <Button variant="outline" size="sm" onClick={addPrompt} type="button">

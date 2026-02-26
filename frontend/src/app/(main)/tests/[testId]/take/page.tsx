@@ -27,6 +27,18 @@ import ToeflIbtTestSession from '@/components/test/toefl-ibt/ToeflIbtTestSession
 const SECTION_ORDER: SectionType[] = ['listening', 'reading', 'writing', 'speaking', 'structure'];
 const SECTION_ORDER_TOEFL: SectionType[] = ['listening', 'structure', 'reading'];
 
+function isLikelyVideoUrl(url: string): boolean {
+  const lower = url.toLowerCase();
+  return (
+    lower.includes('/video/upload/') ||
+    lower.endsWith('.mp4') ||
+    lower.endsWith('.webm') ||
+    lower.endsWith('.ogg') ||
+    lower.endsWith('.mov') ||
+    lower.endsWith('.m4v')
+  );
+}
+
 /**
  * Calculate effective points for a question based on its type.
  * Multi-select MCQs use expectedAnswers, dropdowns use key count.
@@ -1666,8 +1678,45 @@ function TestTakingContent() {
                               {/* Show only current prompt */}
                               {(() => {
                                 const prompt = (currentSectionPart.speakingPrompts as any[])[currentPromptIndex];
+                                const promptMediaUrl =
+                                  typeof prompt?.mediaUrl === 'string'
+                                    ? prompt.mediaUrl
+                                    : (typeof prompt?.audioUrl === 'string' ? prompt.audioUrl : '');
+                                const promptImageUrl = typeof prompt?.imageUrl === 'string' ? prompt.imageUrl : '';
+                                const isPromptVideo = promptMediaUrl ? isLikelyVideoUrl(promptMediaUrl) : false;
                                 return (
                                   <div key={currentPromptIndex} className="space-y-4">
+                                    {promptImageUrl && (
+                                      <div className="mx-auto max-w-xl overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                        <Image
+                                          src={promptImageUrl}
+                                          alt={`Prompt image ${currentPromptIndex + 1}`}
+                                          width={1200}
+                                          height={700}
+                                          className="h-auto w-full object-contain"
+                                          unoptimized
+                                        />
+                                      </div>
+                                    )}
+                                    {promptMediaUrl && (
+                                      isPromptVideo ? (
+                                        <video
+                                          key={`${currentSectionPart.id}-${currentPromptIndex}-${promptMediaUrl}`}
+                                          src={promptMediaUrl}
+                                          controls
+                                          autoPlay
+                                          className="w-full rounded-lg border border-gray-200"
+                                          preload="metadata"
+                                        />
+                                      ) : (
+                                        <AudioPlayer
+                                          key={`${currentSectionPart.id}-${currentPromptIndex}-${promptMediaUrl}`}
+                                          src={promptMediaUrl}
+                                          autoPlay
+                                          playOnce
+                                        />
+                                      )
+                                    )}
                                     <p className="text-xl font-medium text-gray-900">{prompt?.text}</p>
                                     {prompt?.followUp && (
                                       <p className="text-gray-500 text-sm mt-2">Follow-up: {prompt.followUp}</p>
