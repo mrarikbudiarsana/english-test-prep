@@ -17,6 +17,7 @@ router.delete('/tests/:testId', adminController.deleteTest);
 router.post('/tests/:testId/publish', adminController.publishTest);
 router.post('/tests/:testId/blueprint', adminController.setToeflIbtBlueprint);
 router.get('/tests/:testId/blueprint/validate', adminController.validateToeflIbtBlueprint);
+router.get('/tests/:testId/pte-blueprint/validate', adminController.validatePteBlueprint);
 
 // Section CRUD
 router.post('/tests/:testId/sections', adminController.createSection);

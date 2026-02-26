@@ -12,6 +12,7 @@ import {
   overallBandToCefr,
   rawToScore30,
 } from '../config/toeflIbtScoreMappings';
+import { PTE_OBJECTIVE_MAPPING_VERSION } from '../config/pteObjectiveScoreMapping';
 import * as emailService from './email.service';
 import { NotFoundError } from '../middleware/errorHandler';
 import {
@@ -1225,11 +1226,24 @@ export async function finalizeScoring(attemptId: string) {
     );
     await attemptModel.updateScores(attemptId, { overallScore: overall });
   } else if (!(testType === 'toefl_ibt' && deliveryModel === 'toefl_ibt_2026')) {
-    await query(
-      `UPDATE attempts SET overall_band = $1, status = 'completed' WHERE id = $2`,
-      [overall, attemptId]
-    );
-    await attemptModel.updateScores(attemptId, { overallBand: overall });
+    if (testType === 'pte_academic') {
+      await query(
+        `UPDATE attempts
+         SET overall_band = $1, score_mapping_version = $2, status = 'completed'
+         WHERE id = $3`,
+        [overall, PTE_OBJECTIVE_MAPPING_VERSION, attemptId]
+      );
+      await attemptModel.updateScores(attemptId, {
+        overallBand: overall,
+        scoreMappingVersion: PTE_OBJECTIVE_MAPPING_VERSION,
+      });
+    } else {
+      await query(
+        `UPDATE attempts SET overall_band = $1, status = 'completed' WHERE id = $2`,
+        [overall, attemptId]
+      );
+      await attemptModel.updateScores(attemptId, { overallBand: overall });
+    }
   }
 
   await attemptModel.complete(attemptId);

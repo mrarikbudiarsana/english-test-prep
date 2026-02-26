@@ -3,6 +3,9 @@ import { SectionType } from '../models/section.model';
 import { Question, QuestionType } from '../models/question.model';
 import { TestType } from '../models/test.model';
 import { rawToBandSpecific } from '../config/toeflIbtScoreMappings';
+import { rawToPteObjectiveScore } from '../config/pteObjectiveScoreMapping';
+
+type QueryLike = (text: string, params?: any[]) => Promise<{ rows: any[] }>;
 
 // IELTS Band conversion tables (approximate)
 const LISTENING_BAND_TABLE = [
@@ -289,7 +292,7 @@ export function checkAnswer(
   return { points, isCorrect };
 }
 
-function getMaxPointsForQuestion(question: Question): number {
+export function getMaxPointsForQuestion(question: Question): number {
   const base = Number(question.points);
   const basePoints = Number.isFinite(base) && base > 0 ? base : 1;
   const qType = question.questionType;
@@ -322,6 +325,26 @@ function getMaxPointsForQuestion(question: Question): number {
   }
 
   return basePoints;
+}
+
+export function calculateSectionMaxRawScore(questions: Question[]): number {
+  return questions.reduce((sum, q) => sum + getMaxPointsForQuestion(q), 0);
+}
+
+function normalizeQuestionRow(row: any): Question {
+  return {
+    id: row.id,
+    sectionId: row.sectionId ?? row.section_id,
+    questionNumber: row.questionNumber ?? row.question_number,
+    questionType: row.questionType ?? row.question_type,
+    questionText: row.questionText ?? row.question_text,
+    questionData: row.questionData ?? row.question_data ?? {},
+    correctAnswer: row.correctAnswer ?? row.correct_answer,
+    points: row.points,
+    explanation: row.explanation ?? null,
+    createdAt: row.createdAt ?? row.created_at ?? new Date(),
+    updatedAt: row.updatedAt ?? row.updated_at ?? new Date(),
+  };
 }
 
 function compareMultipleChoice(user: any, correct: any): boolean {
@@ -486,9 +509,7 @@ export function convertToBand(
     return 0;
   } else if (testType === 'pte_academic') {
     if (sectionType === 'reading' || sectionType === 'listening') {
-      const safeMax = maxRawScore > 0 ? maxRawScore : 1;
-      const ratio = Math.max(0, Math.min(1, rawScore / safeMax));
-      return Math.round(10 + ratio * 80); // 10..90
+      return rawToPteObjectiveScore(rawScore, maxRawScore);
     }
     return 0;
   } else {
@@ -582,7 +603,12 @@ export function calculateOverallBand(
   return finalBand;
 }
 
-export async function scoreObjectiveSection(attemptId: string, sectionType: SectionType, testType: string): Promise<number> {
+export async function scoreObjectiveSectionWithQuery(
+  queryFn: QueryLike,
+  attemptId: string,
+  sectionType: SectionType,
+  testType: string,
+): Promise<number> {
   // 1. Fetch questions for this section
   // 2. Fetch user responses for this attempt & section
   // 3. Compare and sum points
@@ -591,7 +617,7 @@ export async function scoreObjectiveSection(attemptId: string, sectionType: Sect
   // This is a "service method" so we might need to query DB.
   // Ideally this logic should be in a service class, but functionally:
 
-  const questionsResult = await query(
+  const questionsResult = await queryFn(
     `SELECT q.*
      FROM questions q
      JOIN sections s ON s.id = q.section_id
@@ -600,14 +626,14 @@ export async function scoreObjectiveSection(attemptId: string, sectionType: Sect
      ORDER BY q.question_number ASC`,
     [attemptId, sectionType]
   );
-  const questions = questionsResult.rows;
+  const questions = questionsResult.rows.map(normalizeQuestionRow);
 
   // No questions for this section type - return without updating band (leave it null)
   if (questions.length === 0) {
     return 0;
   }
 
-  const responsesResult = await query(
+  const responsesResult = await queryFn(
     `SELECT * FROM responses WHERE attempt_id = $1 AND section_id IN (
        SELECT id FROM sections WHERE section_type = $2
     )`,
@@ -616,16 +642,14 @@ export async function scoreObjectiveSection(attemptId: string, sectionType: Sect
   const responses = responsesResult.rows;
 
   let rawScore = 0;
-  const maxRawScore = questions.reduce((sum, q) => {
-    const pts = Number(q.points);
-    return sum + (Number.isFinite(pts) && pts > 0 ? pts : 1);
-  }, 0);
+  const maxRawScore = calculateSectionMaxRawScore(questions as Question[]);
 
   for (const q of questions) {
     const response = responses.find(r => r.question_id === q.id);
     if (response) {
       // Parse answerData if stringified
       let ans = response.answer_data;
+      if (ans === undefined) ans = response.answerData;
       if (typeof ans === 'string') {
         try { ans = JSON.parse(ans); } catch { }
       } else if (ans && typeof ans === 'object' && ans.answerData) {
@@ -638,7 +662,7 @@ export async function scoreObjectiveSection(attemptId: string, sectionType: Sect
       }
 
       // Optional: Update response with is_correct field for feedback
-      await query(
+      await queryFn(
         `UPDATE responses SET is_correct = $1, score = $2 WHERE id = $3`,
         [isCorrect, points, response.id]
       );
@@ -684,11 +708,15 @@ export async function scoreObjectiveSection(attemptId: string, sectionType: Sect
       WHERE id = $3
     `;
     try {
-      await query(updateQuery, [rawScore, band, attemptId]);
+      await queryFn(updateQuery, [rawScore, band, attemptId]);
     } catch (e) {
       console.error(`Failed to update score columns (${column}, ${bandColumn})`, e);
     }
   }
 
   return band;
+}
+
+export async function scoreObjectiveSection(attemptId: string, sectionType: SectionType, testType: string): Promise<number> {
+  return scoreObjectiveSectionWithQuery(query, attemptId, sectionType, testType);
 }

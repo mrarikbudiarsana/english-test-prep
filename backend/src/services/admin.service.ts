@@ -92,6 +92,13 @@ export async function validateToeflIbtBlueprint(testId: string) {
 }
 
 /**
+ * Admin: Validate PTE blueprint distribution + authored content.
+ */
+export async function validatePteBlueprint(testId: string) {
+  return testService.validatePteBlueprintForTest(testId);
+}
+
+/**
  * Admin: Create a new section for a test.
  */
 export async function createSection(

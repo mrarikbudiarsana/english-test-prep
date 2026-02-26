@@ -9,6 +9,8 @@ import {
   validateToeflIbtBlueprint,
 } from './toefl-ibt-blueprint.service';
 import { validatePteQuestionPayload } from '../utils/pteQuestionValidator';
+import { validatePteConfiguredPoints } from '../utils/ptePointRules';
+import { previewPteBlueprint } from '../utils/pteBlueprintValidator';
 
 async function validatePteAcademicForPublish(testId: string): Promise<string[]> {
   const errors: string[] = [];
@@ -49,6 +51,10 @@ async function validatePteAcademicForPublish(testId: string): Promise<string[]> 
     const result = validatePteQuestionPayload(q.questionType, q.questionData, q.correctAnswer);
     if (!result.valid) {
       errors.push(`Question #${q.questionNumber} (${q.questionType}): ${result.errors.join(', ')}`);
+    }
+    const pointsError = validatePteConfiguredPoints(q.questionType, q.correctAnswer, q.points);
+    if (pointsError) {
+      errors.push(`Question #${q.questionNumber} (${q.questionType}): ${pointsError}`);
     }
   }
 
@@ -195,6 +201,10 @@ export async function publishTest(id: string, publish: boolean) {
 
   if (publish && existing.testType === 'pte_academic') {
     const errors = await validatePteAcademicForPublish(id);
+    const freshBlueprintValidation = await validatePteBlueprintForTest(id);
+    if (!freshBlueprintValidation.valid) {
+      errors.push(...freshBlueprintValidation.errors);
+    }
     if (errors.length > 0) {
       throw new ValidationError(`Cannot publish PTE Academic test: ${errors.join(' | ')}`);
     }
@@ -209,4 +219,17 @@ export async function setToeflIbtBlueprint(testId: string, blueprint: unknown) {
 
 export async function validateToeflIbtBlueprintForTest(testId: string) {
   return validateToeflIbtBlueprint(testId);
+}
+
+export async function validatePteBlueprintForTest(testId: string) {
+  const test = await testModel.findById(testId);
+  if (!test) {
+    throw new NotFoundError('Test not found');
+  }
+  if (test.testType !== 'pte_academic') {
+    throw new ValidationError('PTE blueprint validation is only available for PTE Academic tests');
+  }
+
+  const questions = await questionModel.findByTestId(testId);
+  return previewPteBlueprint(questions);
 }

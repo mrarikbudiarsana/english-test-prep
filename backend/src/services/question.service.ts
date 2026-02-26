@@ -2,6 +2,7 @@ import * as questionModel from '../models/question.model';
 import * as sectionModel from '../models/section.model';
 import { NotFoundError, ValidationError } from '../middleware/errorHandler';
 import { validatePteQuestionPayload } from '../utils/pteQuestionValidator';
+import { validatePteConfiguredPoints } from '../utils/ptePointRules';
 
 function sanitizeMcqOptionText(input: unknown, optionKey?: string): string {
   let text = typeof input === 'string' ? input : '';
@@ -186,6 +187,15 @@ export async function createQuestion(
     throw new ValidationError(`Invalid PTE question payload: ${pteValidation.errors.join(' | ')}`);
   }
 
+  const ptePointsError = validatePteConfiguredPoints(
+    data.questionType,
+    data.correctAnswer,
+    data.points ?? 1,
+  );
+  if (ptePointsError) {
+    throw new ValidationError(`Invalid PTE points configuration: ${ptePointsError}`);
+  }
+
   return questionModel.create({
     sectionId,
     questionNumber,
@@ -243,6 +253,15 @@ export async function updateQuestion(
     if (!pteValidation.valid) {
       throw new ValidationError(`Invalid PTE question payload: ${pteValidation.errors.join(' | ')}`);
     }
+  }
+
+  const ptePointsError = validatePteConfiguredPoints(
+    resolvedType,
+    sanitizedData.correctAnswer ?? existing.correctAnswer,
+    sanitizedData.points ?? existing.points,
+  );
+  if (ptePointsError) {
+    throw new ValidationError(`Invalid PTE points configuration: ${ptePointsError}`);
   }
 
   return questionModel.update(id, sanitizedData);
