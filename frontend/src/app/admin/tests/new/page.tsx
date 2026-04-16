@@ -17,6 +17,7 @@ export default function AdminNewTestPage() {
     description: string;
     testType: string;
     isFree: boolean;
+    durationMinutes: number;
   }) => {
     setLoading(true);
     setError(null);

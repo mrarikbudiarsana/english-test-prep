@@ -25,6 +25,7 @@ export async function createTest(
     description?: string;
     testType: string;
     isFree?: boolean;
+    durationMinutes?: number;
   },
 ) {
   return testService.createTest(data, createdBy);

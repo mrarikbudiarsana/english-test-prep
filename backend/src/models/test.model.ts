@@ -117,11 +117,22 @@ export async function create(data: {
   blueprintJson?: any;
   isFree?: boolean;
   createdBy?: string;
+  durationMinutes?: number;
 }) {
   const deliveryModel = data.deliveryModel ?? 'legacy';
+  
+  const durationMap: Record<string, number> = {
+    academic: 165,
+    general_training: 165,
+    toefl_ibt: 117,
+    toefl_itp: 115,
+    pte_academic: 120,
+  };
+  const durationMinutes = data.durationMinutes ?? durationMap[data.testType] ?? 120;
+
   const result = await query(
-    `INSERT INTO tests (title, description, test_type, delivery_model, blueprint_json, is_free, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO tests (title, description, test_type, delivery_model, blueprint_json, is_free, duration_minutes, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.title,
@@ -130,6 +141,7 @@ export async function create(data: {
       deliveryModel,
       data.blueprintJson != null ? JSON.stringify(data.blueprintJson) : null,
       data.isFree ?? false,
+      durationMinutes,
       data.createdBy ?? null,
     ],
   );

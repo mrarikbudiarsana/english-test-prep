@@ -233,6 +233,7 @@ export async function createTest(
     description?: string;
     testType: string;
     isFree?: boolean;
+    durationMinutes?: number;
   },
   createdBy: string,
 ) {
@@ -252,6 +253,7 @@ export async function createTest(
     deliveryModel,
     blueprintJson: data.testType === 'toefl_ibt' ? DEFAULT_TOEFL_IBT_BLUEPRINT : null,
     isFree: data.isFree,
+    durationMinutes: data.durationMinutes,
     createdBy,
   });
 }

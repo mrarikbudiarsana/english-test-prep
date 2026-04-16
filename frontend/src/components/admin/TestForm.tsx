@@ -12,6 +12,7 @@ interface TestFormData {
   description: string;
   testType: TestType;
   isFree: boolean;
+  durationMinutes: number;
 }
 
 interface TestFormProps {
@@ -33,6 +34,7 @@ export default function TestForm({ initialData, onSubmit, loading }: TestFormPro
   const [description, setDescription] = useState(initialData?.description || '');
   const [testType, setTestType] = useState<TestType>(initialData?.testType || 'academic');
   const [isFree, setIsFree] = useState(initialData?.isFree ?? false);
+  const [durationMinutes, setDurationMinutes] = useState<number>(initialData?.durationMinutes ?? 120);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = (): boolean => {
@@ -50,7 +52,7 @@ export default function TestForm({ initialData, onSubmit, loading }: TestFormPro
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    await onSubmit({ title: title.trim(), description: description.trim(), testType, isFree });
+    await onSubmit({ title: title.trim(), description: description.trim(), testType, isFree, durationMinutes });
   };
 
   return (
@@ -78,6 +80,14 @@ export default function TestForm({ initialData, onSubmit, loading }: TestFormPro
         onChange={(e) => setTestType(e.target.value as TestType)}
         options={testTypeOptions}
         error={errors.testType}
+      />
+
+      <Input
+        type="number"
+        label="Duration (minutes)"
+        value={durationMinutes.toString()}
+        onChange={(e) => setDurationMinutes(parseInt(e.target.value) || 0)}
+        min={1}
       />
 
       <label className="flex items-center gap-3 cursor-pointer">

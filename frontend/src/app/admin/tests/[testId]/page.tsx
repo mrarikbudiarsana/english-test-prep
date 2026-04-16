@@ -209,6 +209,7 @@ export default function AdminEditTestPage() {
     description: string;
     testType: string;
     isFree: boolean;
+    durationMinutes: number;
   }) => {
     setSaving(true);
     try {
@@ -490,6 +491,7 @@ export default function AdminEditTestPage() {
             description: test.description || '',
             testType: test.testType,
             isFree: test.isFree,
+            durationMinutes: test.durationMinutes,
           }}
           onSubmit={handleTestUpdate}
           loading={saving}
