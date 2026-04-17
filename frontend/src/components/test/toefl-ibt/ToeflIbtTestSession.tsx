@@ -58,6 +58,16 @@ export default function ToeflIbtTestSession({ testId, attemptId }: ToeflIbtTestS
   const [routingMessage, setRoutingMessage] = useState('');
   const saveInFlightRef = useRef(false);
 
+  // Prevent accidental quits via browser refresh/close
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = ''; // Shows standard browser warning
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   // Load sections on mount
   useEffect(() => {
     async function load() {

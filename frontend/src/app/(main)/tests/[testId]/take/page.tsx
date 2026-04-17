@@ -117,6 +117,16 @@ function TestTakingContent() {
     }
   }, [testId]);
 
+  // Prevent accidental quits via browser refresh/close
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = ''; // Shows standard browser warning
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   // Resizable split pane state
   const [leftPaneWidth, setLeftPaneWidth] = useState(55); // percentage
   const [isResizing, setIsResizing] = useState(false);
@@ -774,7 +784,9 @@ function TestTakingContent() {
           <div className="flex items-center justify-start space-x-3">
             <button
               onClick={() => {
-                router.push('/dashboard');
+                if (window.confirm('Are you sure you want to quit the test? Your current progress has been saved.')) {
+                  router.push('/dashboard');
+                }
               }}
               className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               title="Exit to Dashboard"
