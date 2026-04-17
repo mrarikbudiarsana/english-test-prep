@@ -149,7 +149,7 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     if (audioRef.current) {
       audioRef.current.volume = volume;
     }
-  }, [volume]);
+  }, [volume, isLoaded]); // Re-apply volume when a new audio is loaded
 
   const seek = useCallback((time: number) => {
     if (audioRef.current) {

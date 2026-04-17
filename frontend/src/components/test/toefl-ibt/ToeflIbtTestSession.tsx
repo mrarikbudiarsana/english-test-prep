@@ -272,14 +272,7 @@ export default function ToeflIbtTestSession({ testId, attemptId }: ToeflIbtTestS
         <div className="text-center space-y-4 max-w-md">
           <p className="text-red-600 font-medium">{error}</p>
           <button
-            onClick={() => {
-              try {
-                if (document.fullscreenElement) {
-                  document.exitFullscreen().catch(() => {});
-                }
-              } catch (err) {}
-              router.back();
-            }}
+            onClick={() => router.back()}
             className="text-blue-600 hover:underline text-sm"
           >
             Go back
@@ -311,14 +304,7 @@ export default function ToeflIbtTestSession({ testId, attemptId }: ToeflIbtTestS
             Your responses have been submitted. Your results will be available shortly.
           </p>
           <button
-            onClick={() => {
-              try {
-                if (document.fullscreenElement) {
-                  document.exitFullscreen().catch(() => {});
-                }
-              } catch (err) {}
-              router.push(`/attempts/${attemptId}/results`);
-            }}
+            onClick={() => router.push(`/attempts/${attemptId}/results`)}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
           >
             View Results

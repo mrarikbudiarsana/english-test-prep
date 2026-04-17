@@ -154,10 +154,10 @@ export default function QuestionNavigator({
                     <div className="mt-3 grid grid-cols-2 gap-2">
                         <button
                             onClick={onPrevious}
-                            disabled={!onPrevious || isFirst}
+                            disabled={!onPrevious || isFirst || !allowNavigation}
                             className={cn(
                                 "h-10 rounded-lg border text-sm font-medium transition-colors",
-                                (!onPrevious || isFirst)
+                                (!onPrevious || isFirst || !allowNavigation)
                                     ? "text-gray-300 border-gray-100 bg-gray-50 cursor-not-allowed"
                                     : "text-gray-700 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300"
                             )}

@@ -538,13 +538,6 @@ function TestTakingContent() {
   };
 
   const handleViewResults = () => {
-    // Attempt to exit fullscreen
-    try {
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
-    } catch (err) {}
-    
     const resolvedAttemptId = state.attemptId || attemptId;
     if (resolvedAttemptId) {
       router.push(`/results/${resolvedAttemptId}`);
@@ -781,11 +774,6 @@ function TestTakingContent() {
           <div className="flex items-center justify-start space-x-3">
             <button
               onClick={() => {
-                try {
-                  if (document.fullscreenElement) {
-                    document.exitFullscreen().catch(() => {});
-                  }
-                } catch (err) {}
                 router.push('/dashboard');
               }}
               className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -879,7 +867,7 @@ function TestTakingContent() {
         <div className="h-full">
           {/* TOEFL iTP Specific Rendering (Pagination) */}
           {testType === 'toefl_itp' && state.currentSectionType !== 'reading' ? (
-            <div className="max-w-7xl mx-auto px-4 py-8 h-full flex flex-col">
+            <div className="w-full px-6 lg:px-12 py-8 h-full flex flex-col">
               {viewingDirections ? (
                 <div
                   className={cn(
@@ -974,7 +962,7 @@ function TestTakingContent() {
                             })}
                         </div>
                       ) : currentQuestion && (
-                        <div className={cn("space-y-6", shouldUseToeflFocusCard && "mx-auto w-full max-w-3xl")}>
+                        <div className={cn("space-y-6", shouldUseToeflFocusCard && "w-full max-w-5xl mx-auto")}>
                           {shouldUseToeflFocusCard && (
                             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                               <div className="flex items-center justify-between gap-4 text-sm">
@@ -1069,8 +1057,7 @@ function TestTakingContent() {
               {/* Listening Section */}
               {(state.currentSectionType === 'listening' || state.currentSectionType === 'structure') && (
                 <div className="h-full overflow-y-auto">
-                  {/* Keep listening section constrained or make full width? Usually listening is centered content. Let's keep max-w-7xl for listening/writing/speaking unless requested otherwise. Reading needs full width. */}
-                  <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+                  <div className="w-full px-6 lg:px-12 py-6 space-y-6">
 
                     {/* Part Navigation for Listening/Structure */}
                     {currentSectionParts.length > 1 && !isIeltsListeningSection && (
@@ -1623,7 +1610,7 @@ function TestTakingContent() {
               {/* Writing Section */}
               {state.currentSectionType === 'writing' && (
                 <div className="h-full overflow-y-auto">
-                  <div className="max-w-7xl mx-auto px-4 py-6 pb-24">
+                  <div className="w-full px-6 lg:px-12 py-6 pb-24">
                     {/* Writing task navigation (Task 1 / Task 2) */}
                     {currentSectionParts.length > 1 && (
                       <div className="mb-6 flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
