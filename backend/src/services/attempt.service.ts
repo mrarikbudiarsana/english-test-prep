@@ -937,7 +937,7 @@ export async function submitTest(attemptId: string) {
   return attemptModel.findById(attemptId);
 }
 
-export async function getToeflIbtScores(attemptId: string, userId: string) {
+export async function getToeflIbtScores(attemptId: string, userId?: string) {
   const attempt = await getAttempt(attemptId, userId);
   if (attempt.test?.testType !== 'toefl_ibt' || attempt.test?.deliveryModel !== 'toefl_ibt_2026') {
     throw new ValidationError('Scores endpoint is only available for TOEFL iBT 2026 attempts');
@@ -945,7 +945,7 @@ export async function getToeflIbtScores(attemptId: string, userId: string) {
   return hydrateToeflIbt2026Reporting(attemptId);
 }
 
-export async function getToeflIbtReport(attemptId: string, userId: string) {
+export async function getToeflIbtReport(attemptId: string, userId?: string) {
   const { attempt, scores } = await getToeflIbtScores(attemptId, userId);
   logToeflIbtAuditEvent('toefl_ibt_report_generated', {
     attemptId,
@@ -979,12 +979,12 @@ export async function getToeflIbtReport(attemptId: string, userId: string) {
   };
 }
 
-export async function getPteAnalyticsDebug(attemptId: string, userId: string) {
+export async function getPteAnalyticsDebug(attemptId: string, userId?: string) {
   const attempt = await attemptModel.findById(attemptId);
   if (!attempt) {
     throw new NotFoundError('Attempt not found');
   }
-  if (attempt.userId !== userId) {
+  if (userId && attempt.userId !== userId) {
     throw new ForbiddenError('You do not have access to this attempt');
   }
   if (attempt.test?.testType !== 'pte_academic') {

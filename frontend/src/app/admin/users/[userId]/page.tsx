@@ -52,7 +52,11 @@ export default function AdminUserDetailPage() {
             return <Badge variant="default" className="bg-gray-100 text-gray-800">In Progress</Badge>;
         }
 
-        const mappingLabel = attempt.scoreMappingVersion ? (
+        const isMappedTestType =
+            attempt.test?.testType === 'pte_academic' ||
+            attempt.test?.deliveryModel === 'toefl_ibt_2026';
+
+        const mappingLabel = attempt.scoreMappingVersion && isMappedTestType ? (
             <div className={`mt-1 text-[11px] ${attempt.test?.testType === 'pte_academic' ? 'text-cyan-700' : 'text-gray-500'}`}>
                 Mapping: {attempt.scoreMappingVersion}
                 {attempt.test?.testType === 'pte_academic' && attempt.scoreMappingVersion !== CURRENT_PTE_MAPPING_VERSION && (

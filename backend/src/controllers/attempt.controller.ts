@@ -138,7 +138,9 @@ export async function getResults(
 ): Promise<void> {
   try {
     const attemptId = req.params.attemptId as string;
-    const results = await attemptService.getAttempt(attemptId, req.user!.id);
+    // Admins can view any attempt; skip ownership check by omitting userId
+    const userId = req.user!.role === 'admin' ? undefined : req.user!.id;
+    const results = await attemptService.getAttempt(attemptId, userId);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
@@ -155,7 +157,9 @@ export async function getToeflIbtScores(
 ): Promise<void> {
   try {
     const attemptId = req.params.attemptId as string;
-    const scores = await attemptService.getToeflIbtScores(attemptId, req.user!.id);
+    // Admins can view any attempt; skip ownership check by omitting userId
+    const userId = req.user!.role === 'admin' ? undefined : req.user!.id;
+    const scores = await attemptService.getToeflIbtScores(attemptId, userId as string);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
@@ -172,7 +176,9 @@ export async function getToeflIbtReport(
 ): Promise<void> {
   try {
     const attemptId = req.params.attemptId as string;
-    const report = await attemptService.getToeflIbtReport(attemptId, req.user!.id);
+    // Admins can view any attempt; skip ownership check by omitting userId
+    const userId = req.user!.role === 'admin' ? undefined : req.user!.id;
+    const report = await attemptService.getToeflIbtReport(attemptId, userId as string);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
@@ -189,7 +195,9 @@ export async function getPteAnalyticsDebug(
 ): Promise<void> {
   try {
     const attemptId = req.params.attemptId as string;
-    const payload = await attemptService.getPteAnalyticsDebug(attemptId, req.user!.id);
+    // Admins can view debug data for any attempt; skip ownership check by omitting userId
+    const userId = req.user!.role === 'admin' ? undefined : req.user!.id;
+    const payload = await attemptService.getPteAnalyticsDebug(attemptId, userId as string);
     const parsed = pteAnalyticsDebugContractSchema.safeParse(payload);
     if (!parsed.success) {
       throw new ValidationError('PTE analytics debug payload failed contract validation');

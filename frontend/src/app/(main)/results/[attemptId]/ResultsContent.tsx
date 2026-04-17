@@ -226,6 +226,8 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     }, []);
 
     const tier = (() => {
+        // Admins always get full access to see all result details
+        if (user?.role === 'admin') return 'pro';
         if (!subscription || subscription.status !== 'active') return 'free';
         if (subscription.planType === 'monthly') return 'starter';
         if (subscription.planType === 'yearly' || subscription.planType === 'quarterly') return 'pro';
@@ -364,7 +366,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
         );
     }
 
-    if (attempt.test?.testType && allowedTestTypes.length > 0 && !allowedTestTypes.includes(attempt.test.testType)) {
+    if (attempt.test?.testType && allowedTestTypes.length > 0 && !allowedTestTypes.includes(attempt.test.testType) && user?.role !== 'admin') {
         return (
             <div className="max-w-2xl mx-auto text-center py-16 space-y-4">
                 <h2 className="text-2xl font-bold text-gray-900">Result not available for current program</h2>
