@@ -38,7 +38,7 @@ export default function ListenMcqRenderer({ question, answer, onChange }: Listen
       {audioUrl && (
         <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
           <p className="text-xs text-gray-500 mb-2">Listen to the audio, then answer the question.</p>
-          <AudioPlayer src={audioUrl} playOnce={playOnce} />
+          <AudioPlayer src={audioUrl} playOnce={playOnce} disableScrubbing={true} />
         </div>
       )}
 

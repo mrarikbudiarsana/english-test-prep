@@ -33,11 +33,26 @@ import TextHighlighter from './TextHighlighter';
 
 function isLikelyVideoUrl(url: string): boolean {
   const lower = url.toLowerCase();
+  
+  // Cloudinary puts both audio and video in `/video/upload/`.
+  // Explicitly exclude known audio formats so they render in AudioPlayer.
+  if (
+    lower.endsWith('.mp3') ||
+    lower.endsWith('.wav') ||
+    lower.endsWith('.m4a') ||
+    lower.endsWith('.aac') ||
+    lower.endsWith('.ogg') ||
+    lower.endsWith('.weba') ||
+    lower.endsWith('.flac') ||
+    lower.endsWith('.wma')
+  ) {
+    return false;
+  }
+
   return (
     lower.includes('/video/upload/') ||
     lower.endsWith('.mp4') ||
     lower.endsWith('.webm') ||
-    lower.endsWith('.ogg') ||
     lower.endsWith('.mov') ||
     lower.endsWith('.m4v')
   );
@@ -55,6 +70,8 @@ interface QuestionRendererProps {
   playOnce?: boolean;
   autoPlay?: boolean;
   disableAudio?: boolean;
+  disableScrubbing?: boolean;
+  volume?: number;
 }
 
 export default function QuestionRenderer({
@@ -68,6 +85,8 @@ export default function QuestionRenderer({
   playOnce = false,
   autoPlay = false,
   disableAudio = false,
+  disableScrubbing = false,
+  volume = 1,
 }: QuestionRendererProps) {
   const handleChange = (newAnswer: any) => {
     onAnswerChange(question.id, newAnswer);
@@ -356,6 +375,9 @@ export default function QuestionRenderer({
                     autoPlay={autoPlay}
                     className="w-full rounded-lg border border-gray-200"
                     preload="metadata"
+                    ref={(el) => {
+                      if (el) el.volume = volume;
+                    }}
                   />
                 ) : (
                   <AudioPlayer
@@ -364,6 +386,8 @@ export default function QuestionRenderer({
                     autoPlay={autoPlay}
                     onEnd={onAudioEnd}
                     disabled={disableAudio}
+                    disableScrubbing={disableScrubbing}
+                    volume={volume}
                   />
                 )}
               </div>

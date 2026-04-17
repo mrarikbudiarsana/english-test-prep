@@ -6,11 +6,13 @@ interface UseAudioPlayerOptions {
   playOnce?: boolean;
   autoPlay?: boolean;
   onEnd?: () => void;
+  volume?: number;
 }
 
 export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   const playOnce = options?.playOnce ?? false;
   const onEnd = options?.onEnd;
+  const volume = options?.volume ?? 1;
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -142,6 +144,12 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
       play();
     }
   }, [isLoaded, options?.autoPlay, isPlaying, playOnce, hasPlayed, play]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
 
   const seek = useCallback((time: number) => {
     if (audioRef.current) {

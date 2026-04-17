@@ -9,9 +9,11 @@ interface AudioPlayerProps {
   autoPlay?: boolean;
   onEnd?: () => void;
   disabled?: boolean;
+  disableScrubbing?: boolean;
+  volume?: number;
 }
 
-export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled = false }: AudioPlayerProps) {
+export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled = false, disableScrubbing = false, volume = 1 }: AudioPlayerProps) {
   const {
     isPlaying,
     currentTime,
@@ -22,7 +24,7 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled =
     play,
     pause,
     seek,
-  } = useAudioPlayer({ playOnce, autoPlay: disabled ? false : autoPlay, onEnd });
+  } = useAudioPlayer({ playOnce, autoPlay: disabled ? false : autoPlay, onEnd, volume });
 
   useEffect(() => {
     if (src) {
@@ -51,7 +53,7 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled =
 
   const handleProgressClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (disabled) return;
+      if (disabled || disableScrubbing) return;
       if (!duration) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
@@ -109,7 +111,7 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled =
         <div className="flex flex-1 flex-col gap-1.5">
           {/* Progress Bar */}
           <div
-            className="group relative h-2 w-full cursor-pointer rounded-full bg-gray-200"
+            className={`group relative h-2 w-full rounded-full bg-gray-200 ${disableScrubbing ? '' : 'cursor-pointer'}`}
             onClick={handleProgressClick}
           >
             <div

@@ -6,7 +6,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Section, Question, SectionType, MCQData, DropdownData, TestType } from '@/types/test';
 import { TestSessionProvider, useTestSession } from '@/contexts/TestSessionContext';
-import { HiArrowLeft, HiBookOpen } from 'react-icons/hi';
+import { HiArrowLeft, HiBookOpen, HiVolumeUp, HiVolumeOff } from 'react-icons/hi';
 import TestTimer from '@/components/test/TestTimer';
 import QuestionRenderer from '@/components/test/QuestionRenderer';
 import AudioPlayer from '@/components/test/AudioPlayer';
@@ -29,11 +29,24 @@ const SECTION_ORDER_TOEFL: SectionType[] = ['listening', 'structure', 'reading']
 
 function isLikelyVideoUrl(url: string): boolean {
   const lower = url.toLowerCase();
+  
+  if (
+    lower.endsWith('.mp3') ||
+    lower.endsWith('.wav') ||
+    lower.endsWith('.m4a') ||
+    lower.endsWith('.aac') ||
+    lower.endsWith('.ogg') ||
+    lower.endsWith('.weba') ||
+    lower.endsWith('.flac') ||
+    lower.endsWith('.wma')
+  ) {
+    return false;
+  }
+
   return (
     lower.includes('/video/upload/') ||
     lower.endsWith('.mp4') ||
     lower.endsWith('.webm') ||
-    lower.endsWith('.ogg') ||
     lower.endsWith('.mov') ||
     lower.endsWith('.m4v')
   );
@@ -86,6 +99,7 @@ function TestTakingContent() {
 
   const [testTitle, setTestTitle] = useState<string>('');
   const [testType, setTestType] = useState<TestType>('academic'); // Default, updated on load
+  const [globalVolume, setGlobalVolume] = useState<number>(1);
 
   // Load test title
   useEffect(() => {
@@ -363,7 +377,7 @@ function TestTakingContent() {
   };
 
   const handleAudioEnd = () => {
-    if (testType === 'toefl_itp' && state.currentSectionType === 'listening') {
+    if (state.currentSectionType === 'listening') {
       // Auto-advance when audio ends
       // We use a small timeout to allow the user to see the "Audio Finished" state briefly if needed,
       // but usually immediate is better for this test type.
@@ -524,6 +538,13 @@ function TestTakingContent() {
   };
 
   const handleViewResults = () => {
+    // Attempt to exit fullscreen
+    try {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch (err) {}
+    
     const resolvedAttemptId = state.attemptId || attemptId;
     if (resolvedAttemptId) {
       router.push(`/results/${resolvedAttemptId}`);
@@ -759,7 +780,14 @@ function TestTakingContent() {
           {/* Left: Test Title */}
           <div className="flex items-center justify-start space-x-3">
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => {
+                try {
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                  }
+                } catch (err) {}
+                router.push('/dashboard');
+              }}
               className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               title="Exit to Dashboard"
             >
@@ -782,6 +810,30 @@ function TestTakingContent() {
           {/* Right: Controls */}
           <div className="flex items-center justify-end space-x-4">
             {/* Focus Mode button removed as test page is always full screen */}
+
+            {/* Volume Toggle for Listening */}
+            {state.currentSectionType === 'listening' && (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setGlobalVolume(v => v > 0 ? 0 : 1)}
+                  className="text-gray-500 hover:text-gray-700 p-1"
+                  title={globalVolume === 0 ? "Unmute" : "Mute"}
+                >
+                  {globalVolume === 0 ? <HiVolumeOff className="w-5 h-5" /> : <HiVolumeUp className="w-5 h-5" />}
+                </button>
+                <div className="w-20 hidden md:block">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={globalVolume}
+                    onChange={(e) => setGlobalVolume(parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
+                </div>
+              </div>
+            )}
 
             <TestTimer
               timeRemaining={timer.timeRemaining}
@@ -861,6 +913,9 @@ function TestTakingContent() {
                         playOnce={true}
                         autoPlay={true}
                         disabled={isListeningReviewAudioLocked}
+                        disableScrubbing={state.currentSectionType === 'listening'}
+                                  volume={globalVolume}
+                        onEnd={state.currentSectionType === 'listening' ? handleAudioEnd : undefined}
                       />
                     </div>
                   )}
@@ -912,6 +967,8 @@ function TestTakingContent() {
                                   displayNumber={startNum}
                                   isActive={questions.indexOf(question) === currentQuestionIndex}
                                   disableAudio={isListeningReviewAudioLocked}
+                                  disableScrubbing={state.currentSectionType === 'listening'}
+                                  volume={globalVolume}
                                 />
                               );
                             })}
@@ -952,6 +1009,8 @@ function TestTakingContent() {
                               playOnce={testType === 'toefl_itp'}
                               autoPlay={true}
                               disableAudio={isListeningReviewAudioLocked}
+                              disableScrubbing={state.currentSectionType === 'listening'}
+                                  volume={globalVolume}
                             />
                           </div>
                         </div>
@@ -1042,6 +1101,9 @@ function TestTakingContent() {
                         src={currentSectionPart.audioUrl}
                         playOnce={mode === 'full'}
                         autoPlay={true}
+                        disableScrubbing={state.currentSectionType === 'listening'}
+                                  volume={globalVolume}
+                        onEnd={state.currentSectionType === 'listening' ? handleAudioEnd : undefined}
                       />
                     )}
 
@@ -1097,6 +1159,8 @@ function TestTakingContent() {
                                           onAnswerChange={handleAnswerChange}
                                           displayNumber={startNum}
                                           isActive={questions.indexOf(question) === currentQuestionIndex}
+                                          disableScrubbing={state.currentSectionType === 'listening'}
+                                  volume={globalVolume}
                                         />
                                       </div>
                                     );
@@ -1120,6 +1184,8 @@ function TestTakingContent() {
                                   onAnswerChange={handleAnswerChange}
                                   displayNumber={startNum}
                                   isActive={questions.indexOf(question) === currentQuestionIndex}
+                                  disableScrubbing={state.currentSectionType === 'listening'}
+                                  volume={globalVolume}
                                 />
                               </div>
                             );

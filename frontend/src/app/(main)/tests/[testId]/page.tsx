@@ -116,6 +116,16 @@ export default function TestOverviewPage() {
 
   const handleStartTest = async (mode: 'full' | 'section_practice', sectionType?: string) => {
     setStarting(true);
+    
+    // Request fullscreen on user interaction
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (err) {
+      console.warn('Could not enter fullscreen:', err);
+    }
+    
     try {
       const response = await api.post('/attempts', {
         testId,
