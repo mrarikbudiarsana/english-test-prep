@@ -23,9 +23,9 @@ declare global {
 
 export default function SubscriptionPage() {
   const { user } = useAuth();
-  const examConfig = user?.preferredExamType ? getExamConfig(user.preferredExamType) : null;
-  const examName = examConfig?.name || 'English';
-  const scoreLabel = examConfig?.scoreLabel || 'score';
+  const examConfig = getExamConfig('toefl_itp');
+  const examName = examConfig.name;
+  const scoreLabel = examConfig.scoreLabel;
   const [plans, setPlans] = useState<PlanConfig[]>([]);
   const [currentSub, setCurrentSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,8 +102,9 @@ export default function SubscriptionPage() {
 
   const features = [
     `Unlimited ${examName} practice tests`,
-    'AI-powered Writing feedback',
-    'AI-powered Speaking evaluation',
+    'Listening, Structure, and Reading score breakdowns',
+    'Detailed answer review',
+    'Section-level progress tracking',
     `Detailed ${scoreLabel.toLowerCase()} breakdowns`,
     'Progress tracking & analytics',
     'Section-by-section practice',
@@ -125,7 +126,7 @@ export default function SubscriptionPage() {
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900">Choose Your Plan</h1>
         <p className="mt-2 text-gray-500">
-          Unlock unlimited practice tests with AI-powered feedback
+          Unlock unlimited TOEFL ITP practice tests and detailed score analysis
         </p>
       </div>
 

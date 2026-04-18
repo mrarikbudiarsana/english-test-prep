@@ -11,9 +11,6 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Modal } from '@/components/ui/Modal';
 import QuestionEditor from '@/components/admin/QuestionEditor';
 import BulkQuestionImporter from '@/components/admin/BulkQuestionImporter';
-import IELTSBulkQuestionImporter from '@/components/admin/IELTSBulkQuestionImporter';
-import ToeflIbtItemEditor from '@/components/admin/ToeflIbtItemEditor';
-import ToeflIbtBulkItemImporter from '@/components/admin/ToeflIbtBulkItemImporter';
 import { sectionTypeLabel, questionTypeLabel } from '@/lib/utils';
 import type { Test, Section, Question } from '@/types/test';
 
@@ -27,15 +24,10 @@ export default function AdminSectionQuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Question editor state
   const [showQuestionEditor, setShowQuestionEditor] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null);
   const [showBulkImporter, setShowBulkImporter] = useState(false);
-  const [showIELTSBulkImporter, setShowIELTSBulkImporter] = useState(false);
-  const [showToeflIbtItemEditor, setShowToeflIbtItemEditor] = useState(false);
-  const [showToeflIbtBulkImporter, setShowToeflIbtBulkImporter] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -48,53 +40,33 @@ export default function AdminSectionQuestionsPage() {
       ]);
 
       setTest(testRes.data.data || testRes.data);
-
       const allSections = sectionsRes.data.data || sectionsRes.data;
-      const currentSection = Array.isArray(allSections)
-        ? allSections.find((s: Section) => s.id === sectionId)
-        : null;
-      setSection(currentSection || null);
-
+      setSection(Array.isArray(allSections) ? allSections.find((item: Section) => item.id === sectionId) || null : null);
       const fetchedQuestions = questionsRes.data.data || questionsRes.data;
-      setQuestions(
-        Array.isArray(fetchedQuestions)
-          ? fetchedQuestions.sort((a: Question, b: Question) => a.questionNumber - b.questionNumber)
-          : []
-      );
+      setQuestions(Array.isArray(fetchedQuestions) ? fetchedQuestions.sort((a: Question, b: Question) => a.questionNumber - b.questionNumber) : []);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to load section data');
     } finally {
       setLoading(false);
     }
-  }, [testId, sectionId]);
+  }, [sectionId, testId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  const nextQuestionNumber = questions.length > 0 ? Math.max(...questions.map((q) => q.questionNumber)) + 1 : 1;
+
   const handleQuestionSubmit = async (questionData: any) => {
     try {
-      // Check if editingQuestion has an ID - if so, it's an update, otherwise it's a create
-      if (editingQuestion && editingQuestion.id) {
-        const response = await api.put(
-          `/admin/tests/${testId}/sections/${sectionId}/questions/${editingQuestion.id}`,
-          questionData
-        );
+      if (editingQuestion?.id) {
+        const response = await api.put(`/admin/tests/${testId}/sections/${sectionId}/questions/${editingQuestion.id}`, questionData);
         const updated = response.data.data || response.data;
-        setQuestions((prev) =>
-          prev
-            .map((q) => (q.id === editingQuestion.id ? updated : q))
-            .sort((a, b) => a.questionNumber - b.questionNumber)
-        );
+        setQuestions((prev) => prev.map((question) => question.id === editingQuestion.id ? updated : question).sort((a, b) => a.questionNumber - b.questionNumber));
       } else {
-        const response = await api.post(
-          `/admin/tests/${testId}/sections/${sectionId}/questions`,
-          questionData
-        );
+        const response = await api.post(`/admin/tests/${testId}/sections/${sectionId}/questions`, questionData);
         const created = response.data.data || response.data;
-        setQuestions((prev) =>
-          [...prev, created].sort((a, b) => a.questionNumber - b.questionNumber)
-        );
+        setQuestions((prev) => [...prev, created].sort((a, b) => a.questionNumber - b.questionNumber));
       }
       setShowQuestionEditor(false);
       setEditingQuestion(null);
@@ -105,20 +77,11 @@ export default function AdminSectionQuestionsPage() {
   };
 
   const handleQuestionDelete = async (questionId: string) => {
-    const question = questions.find((q) => q.id === questionId);
-    if (
-      !window.confirm(
-        `Are you sure you want to delete question ${question?.questionNumber || ''}? This cannot be undone.`
-      )
-    ) {
-      return;
-    }
+    if (!window.confirm('Delete this question? This cannot be undone.')) return;
     setDeletingQuestionId(questionId);
     try {
-      await api.delete(
-        `/admin/tests/${testId}/sections/${sectionId}/questions/${questionId}`
-      );
-      setQuestions((prev) => prev.filter((q) => q.id !== questionId));
+      await api.delete(`/admin/tests/${testId}/sections/${sectionId}/questions/${questionId}`);
+      setQuestions((prev) => prev.filter((question) => question.id !== questionId));
     } catch (err: any) {
       alert(err.response?.data?.error || 'Failed to delete question');
     } finally {
@@ -126,511 +89,78 @@ export default function AdminSectionQuestionsPage() {
     }
   };
 
-  const openEditQuestion = (question: Question) => {
-    setEditingQuestion(question);
-    if (isToeflIbt) {
-      setShowToeflIbtItemEditor(true);
-      return;
-    }
-    setShowQuestionEditor(true);
-  };
-
-  const openNewQuestion = () => {
-    if (isToeflIbt) {
-      setEditingQuestion(null);
-      setShowToeflIbtItemEditor(true);
-      return;
-    }
-
-    // Auto-fill group info from the last question (if any) for easier IELTS-style grouping
-    const lastQuestion = questions.length > 0 ? questions[questions.length - 1] : null;
-    const prefillData = lastQuestion?.groupLabel ? {
-      groupLabel: lastQuestion.groupLabel,
-      groupInstructions: lastQuestion.groupInstructions,
-      // Note: Don't prefill title - only first question in group should have it
-    } : {};
-
-    setEditingQuestion({ ...prefillData } as any);
-    setShowQuestionEditor(true);
-  };
-
-  const handleBulkImport = async (
-    bulkQuestions: Array<{
-      questionText: string;
-      options: { key: string; text: string }[];
-      correctAnswer: string;
-      explanation?: string;
-      questionNumber?: number;
-    }>
-  ) => {
-    const response = await api.post(`/admin/sections/${sectionId}/questions/bulk`, {
-      questions: bulkQuestions,
-    });
+  const handleBulkImport = async (bulkQuestions: Array<{ questionText: string; options: { key: string; text: string }[]; correctAnswer: string; explanation?: string; questionNumber?: number; }>) => {
+    const response = await api.post(`/admin/sections/${sectionId}/questions/bulk`, { questions: bulkQuestions });
     const result = response.data.data || response.data;
     const created = result.questions || [];
-    setQuestions((prev) =>
-      [...prev, ...created].sort((a: Question, b: Question) => a.questionNumber - b.questionNumber)
-    );
+    setQuestions((prev) => [...prev, ...created].sort((a: Question, b: Question) => a.questionNumber - b.questionNumber));
     setShowBulkImporter(false);
   };
 
-  const handleIELTSBulkImport = async (
-    bulkQuestions: Array<{
-      questionType: string;
-      questionText: string;
-      questionData: any;
-      correctAnswer: any;
-      explanation?: string;
-      questionNumber?: number;
-      groupLabel?: string;
-      groupInstructions?: string;
-    }>
-  ) => {
-    const response = await api.post(`/admin/sections/${sectionId}/questions/bulk-ielts`, {
-      questions: bulkQuestions,
-    });
-    const result = response.data.data || response.data;
-    const created = result.questions || [];
-    setQuestions((prev) =>
-      [...prev, ...created].sort((a: Question, b: Question) => a.questionNumber - b.questionNumber)
-    );
-    setShowIELTSBulkImporter(false);
-  };
-
-  const handleToeflIbtItemSubmit = async (payload: any) => {
-    try {
-      const requestBody = {
-        questionNumber: editingQuestion?.questionNumber || nextQuestionNumber,
-        questionType: payload.questionType,
-        questionText: payload.questionText,
-        questionData: payload.questionData,
-        correctAnswer: payload.correctAnswer,
-        points: payload.points,
-        itemPayload: payload.itemPayload,
-      };
-
-      if (editingQuestion?.id) {
-        const response = await api.put(
-          `/admin/tests/${testId}/sections/${sectionId}/questions/${editingQuestion.id}`,
-          requestBody
-        );
-        const updated = response.data.data || response.data;
-        setQuestions((prev) =>
-          prev
-            .map((q) => (q.id === editingQuestion.id ? updated : q))
-            .sort((a, b) => a.questionNumber - b.questionNumber)
-        );
-      } else {
-        const response = await api.post(
-          `/admin/tests/${testId}/sections/${sectionId}/questions`,
-          requestBody
-        );
-        const created = response.data.data || response.data;
-        setQuestions((prev) =>
-          [...prev, created].sort((a: Question, b: Question) => a.questionNumber - b.questionNumber)
-        );
-      }
-
-      setShowToeflIbtItemEditor(false);
-      setEditingQuestion(null);
-    } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to save item');
-      throw err;
-    }
-  };
-
-  const handleToeflIbtBulkImport = async (
-    bulkQuestions: Array<{
-      questionType: string;
-      questionText: string;
-      questionData: any;
-      correctAnswer: any;
-      points?: number;
-      questionNumber?: number;
-      itemPayload: any;
-    }>
-  ) => {
-    const response = await api.post(`/admin/sections/${sectionId}/questions/bulk-toefl-ibt`, {
-      questions: bulkQuestions,
-    });
-    const result = response.data.data || response.data;
-    const created = result.questions || [];
-    setQuestions((prev) =>
-      [...prev, ...created].sort((a: Question, b: Question) => a.questionNumber - b.questionNumber)
-    );
-    setShowToeflIbtBulkImporter(false);
-  };
-
-  const isToeflItp = test?.testType === 'toefl_itp';
-  const isToeflIbt = test?.testType === 'toefl_ibt';
-  const isIelts = test?.testType === 'academic' || test?.testType === 'general_training';
-
-  const getQuestionTypeColor = (type: string): string => {
-    const colors: Record<string, string> = {
-      multiple_choice: 'info',
-      true_false_not_given: 'warning',
-      yes_no_not_given: 'warning',
-      completion: 'success',
-      matching: 'error',
-      dropdown: 'default',
-    };
-    return colors[type] || 'default';
-  };
-
-  const getQuestionPreview = (question: Question): string => {
-    const text = question.questionText || '';
-    return text.length > 100 ? text.substring(0, 100) + '...' : text;
-  };
+  const getQuestionPreview = (question: Question) => question.questionText?.slice(0, 140) || 'Untitled question';
+  const getQuestionTypeColor = (_type: string) => 'default';
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton variant="text" width="50%" height={32} />
-        <Card>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} variant="rect" height={64} />
-            ))}
-          </div>
-        </Card>
-      </div>
-    );
+    return <div className="space-y-6"><Skeleton className="h-10 w-80" /><Skeleton className="h-64 w-full" /><Skeleton className="h-96 w-full" /></div>;
   }
 
-  if (error || !section) {
-    return (
-      <div className="space-y-6">
-        <Link
-          href={`/admin/tests/${testId}`}
-          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-        >
-          &larr; Back to Test
-        </Link>
-        <Card>
-          <div className="text-center py-8">
-            <p className="text-red-600 mb-4">{error || 'Section not found'}</p>
-            <button onClick={fetchData} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-              Try again
-            </button>
-          </div>
-        </Card>
-      </div>
-    );
+  if (error || !test || !section) {
+    return <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error || 'Section not found'}</div>;
   }
-
-  // Calculate next question number accounting for multi-select MCQs that consume multiple numbers
-  // e.g., "Choose TWO" question 11 displays as 11-12, so next should be 13
-  const nextQuestionNumber = questions.length > 0
-    ? questions.reduce((maxEnd, q) => {
-      const qData = q.questionData as any;
-      const consumed = (q.questionType === 'multiple_choice' && qData?.multiSelect)
-        ? (qData.expectedAnswers || 2)
-        : 1;
-      const questionEnd = q.questionNumber + consumed - 1;
-      return Math.max(maxEnd, questionEnd);
-    }, 0) + 1
-    : 1;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link
-          href={`/admin/tests/${testId}`}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-          </svg>
-        </Link>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {section.title || `Section ${section.sectionOrder}`}
-          </h1>
-          <p className="text-sm text-gray-500">
-            {sectionTypeLabel(section.sectionType)} | Order: {section.sectionOrder} | {section.durationMinutes} min
-          </p>
+          <Link href={`/admin/tests/${testId}`} className="text-sm text-gray-500 hover:text-gray-700">Back to Test</Link>
+          <h1 className="text-2xl font-bold text-gray-900 mt-1">{section.title || 'Section Questions'}</h1>
+          <p className="text-sm text-gray-500 mt-1">{sectionTypeLabel(section.sectionType)} authoring for TOEFL ITP.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="default">{sectionTypeLabel(section.sectionType)}</Badge>
+          <Button variant="outline" onClick={() => setShowBulkImporter(true)}>Bulk Import</Button>
+          <Button onClick={() => { setEditingQuestion(null); setShowQuestionEditor(true); }}>Add Question</Button>
         </div>
       </div>
 
-      {/* Section Info */}
       <Card>
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Badge variant="info">{sectionTypeLabel(section.sectionType)}</Badge>
-              <span className="text-sm text-gray-500">{questions.length} question{questions.length !== 1 ? 's' : ''}</span>
-            </div>
-            {section.instructions && (
-              <p className="text-sm text-gray-600 max-w-2xl">{section.instructions}</p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {isToeflItp && (
-              <Button variant="outline" onClick={() => setShowBulkImporter(true)}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                Bulk Import
-              </Button>
-            )}
-            {isIelts && (section?.sectionType === 'listening' || section?.sectionType === 'reading') && (
-              <Button variant="outline" onClick={() => setShowIELTSBulkImporter(true)}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                Bulk Import
-              </Button>
-            )}
-            {isToeflIbt && (
-              <>
-                <Button variant="outline" onClick={() => setShowToeflIbtBulkImporter(true)}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  Bulk Import
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setEditingQuestion(null);
-                    setShowToeflIbtItemEditor(true);
-                  }}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                  Add TOEFL iBT Item
-                </Button>
-              </>
-            )}
-            {!isToeflIbt && (
-              <Button onClick={openNewQuestion}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                Add Question
-              </Button>
-            )}
-          </div>
+        <div className="grid gap-3 sm:grid-cols-4 text-sm">
+          <div><p className="text-gray-500">Section</p><p className="font-semibold text-gray-900">{sectionTypeLabel(section.sectionType)}</p></div>
+          <div><p className="text-gray-500">Part</p><p className="font-semibold text-gray-900">{section.partNumber || '-'}</p></div>
+          <div><p className="text-gray-500">Duration</p><p className="font-semibold text-gray-900">{section.durationMinutes} min</p></div>
+          <div><p className="text-gray-500">Questions</p><p className="font-semibold text-gray-900">{questions.length}</p></div>
         </div>
       </Card>
 
-      {/* Questions List */}
       {questions.length === 0 ? (
-        <Card>
-          <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-            </svg>
-            <p className="text-gray-500 mb-4">No questions in this section yet.</p>
-            <Button onClick={openNewQuestion}>Add First Question</Button>
-          </div>
-        </Card>
+        <Card><div className="text-center py-12"><p className="text-gray-500 mb-4">No questions in this section yet.</p><Button onClick={() => { setEditingQuestion(null); setShowQuestionEditor(true); }}>Add First Question</Button></div></Card>
       ) : (
         <div className="space-y-3">
           {questions.map((question) => (
-            <Card
-              key={question.id}
-              className={question.groupLabel ? 'border-l-4 border-l-blue-400' : ''}
-            >
+            <Card key={question.id}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-700">
-                    {question.questionNumber}
-                  </div>
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-700">{question.questionNumber}</div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant={getQuestionTypeColor(question.questionType) as any}>
-                        {questionTypeLabel(question.questionType)}
-                      </Badge>
-                      <span className="text-xs text-gray-400">
-                        {question.points} pt{question.points !== 1 ? 's' : ''}
-                      </span>
-                    </div>
+                    <div className="flex items-center gap-2 mb-1"><Badge variant={getQuestionTypeColor(question.questionType) as any}>{questionTypeLabel(question.questionType)}</Badge><span className="text-xs text-gray-400">{question.points} pt{question.points !== 1 ? 's' : ''}</span></div>
                     <p className="text-sm text-gray-700">{getQuestionPreview(question)}</p>
-                    {question.groupLabel && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                          📑 {question.groupLabel}
-                        </span>
-                        {question.groupInstructions && (
-                          <span className="text-xs text-gray-400" title={question.groupInstructions}>
-                            (has shared instructions)
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {question.correctAnswer !== undefined && question.correctAnswer !== null && (
-                      <p className="text-xs text-green-600 mt-1">
-                        Answer: {typeof question.correctAnswer === 'object'
-                          ? JSON.stringify(question.correctAnswer)
-                          : String(question.correctAnswer)}
-                      </p>
-                    )}
+                    {question.correctAnswer !== undefined && question.correctAnswer !== null && <p className="text-xs text-green-600 mt-1">Answer: {typeof question.correctAnswer === 'object' ? JSON.stringify(question.correctAnswer) : String(question.correctAnswer)}</p>}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button variant="ghost" size="sm" onClick={() => openEditQuestion(question)}>
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleQuestionDelete(question.id)}
-                    loading={deletingQuestionId === question.id}
-                    className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                  >
-                    Delete
-                  </Button>
-                </div>
+                <div className="flex items-center gap-2 flex-shrink-0"><Button variant="ghost" size="sm" onClick={() => { setEditingQuestion(question); setShowQuestionEditor(true); }}>Edit</Button><Button variant="ghost" size="sm" onClick={() => handleQuestionDelete(question.id)} loading={deletingQuestionId === question.id} className="text-red-600 hover:text-red-800 hover:bg-red-50">Delete</Button></div>
               </div>
             </Card>
           ))}
         </div>
       )}
 
-      {/* Question Editor Modal */}
-      <Modal
-        isOpen={showQuestionEditor}
-        onClose={() => {
-          setShowQuestionEditor(false);
-          setEditingQuestion(null);
-        }}
-        title={
-          editingQuestion && editingQuestion.id
-            ? `Edit Question ${editingQuestion.questionNumber}`
-            : editingQuestion?.groupLabel
-              ? `Add New Question (Group: ${editingQuestion.groupLabel})`
-              : 'Add New Question'
-        }
-        size="lg"
-      >
-        <QuestionEditor
-          testType={test?.testType}
-          sectionType={section?.sectionType}
-          partNumber={section?.partNumber ?? undefined}
-          initialData={
-            editingQuestion && editingQuestion.id
-              ? {
-                id: editingQuestion.id,
-                questionNumber: editingQuestion.questionNumber,
-                questionType: editingQuestion.questionType,
-                questionText: editingQuestion.questionText,
-                audioUrl: editingQuestion.audioUrl || null,
-                questionData: editingQuestion.questionData,
-                correctAnswer: editingQuestion.correctAnswer,
-                points: editingQuestion.points,
-                explanation: editingQuestion.explanation || null,
-                groupLabel: editingQuestion.groupLabel || null,
-                groupInstructions: editingQuestion.groupInstructions || null,
-              }
-              : editingQuestion
-                ? {
-                  groupLabel: editingQuestion.groupLabel || null,
-                  groupInstructions: editingQuestion.groupInstructions || null,
-                }
-                : undefined
-          }
-          nextQuestionNumber={nextQuestionNumber}
-          onSubmit={handleQuestionSubmit}
-          onCancel={() => {
-            setShowQuestionEditor(false);
-            setEditingQuestion(null);
-          }}
-        />
+      <Modal isOpen={showQuestionEditor} onClose={() => { setShowQuestionEditor(false); setEditingQuestion(null); }} title={editingQuestion?.id ? `Edit Question ${editingQuestion.questionNumber}` : 'Add New Question'} size="lg">
+        <QuestionEditor testType={test.testType} sectionType={section.sectionType} partNumber={section.partNumber ?? undefined} initialData={editingQuestion?.id ? { id: editingQuestion.id, questionNumber: editingQuestion.questionNumber, questionType: editingQuestion.questionType, questionText: editingQuestion.questionText, audioUrl: editingQuestion.audioUrl || null, questionData: editingQuestion.questionData, correctAnswer: editingQuestion.correctAnswer, points: editingQuestion.points, explanation: editingQuestion.explanation || null } : undefined} nextQuestionNumber={nextQuestionNumber} onSubmit={handleQuestionSubmit} onCancel={() => { setShowQuestionEditor(false); setEditingQuestion(null); }} />
       </Modal>
 
-      {/* Bulk Import Modal (TOEFL ITP only) */}
-      {isToeflItp && (
-        <Modal
-          isOpen={showBulkImporter}
-          onClose={() => setShowBulkImporter(false)}
-          title="Bulk Import Questions (TOEFL ITP)"
-          size="lg"
-        >
-          <BulkQuestionImporter
-            startingQuestionNumber={nextQuestionNumber}
-            onSubmit={handleBulkImport}
-            onCancel={() => setShowBulkImporter(false)}
-          />
-        </Modal>
-      )}
-
-      {/* Bulk Import Modal (IELTS only) */}
-      {isIelts && section && (
-        <Modal
-          isOpen={showIELTSBulkImporter}
-          onClose={() => setShowIELTSBulkImporter(false)}
-          title="Bulk Import Questions (IELTS)"
-          size="lg"
-        >
-          <IELTSBulkQuestionImporter
-            sectionType={section.sectionType}
-            startingQuestionNumber={nextQuestionNumber}
-            onSubmit={handleIELTSBulkImport}
-            onCancel={() => setShowIELTSBulkImporter(false)}
-          />
-        </Modal>
-      )}
-
-      {/* TOEFL iBT Item Editor Modal */}
-      {isToeflIbt && section && (
-        <Modal
-          isOpen={showToeflIbtItemEditor}
-          onClose={() => {
-            setShowToeflIbtItemEditor(false);
-            setEditingQuestion(null);
-          }}
-          title={
-            editingQuestion?.id
-              ? `Edit TOEFL iBT Item - Q${editingQuestion.questionNumber}`
-              : `Add TOEFL iBT Item - Q${nextQuestionNumber}`
-          }
-          size="lg"
-        >
-          <ToeflIbtItemEditor
-            taskType={section.taskType}
-            nextQuestionNumber={nextQuestionNumber}
-            initialData={
-              editingQuestion?.id
-                ? {
-                  id: editingQuestion.id,
-                  questionNumber: editingQuestion.questionNumber,
-                  questionType: editingQuestion.questionType as any,
-                  questionText: editingQuestion.questionText,
-                  questionData: editingQuestion.questionData,
-                  correctAnswer: editingQuestion.correctAnswer,
-                  audioUrl: editingQuestion.audioUrl || null,
-                  itemPayload: editingQuestion.itemPayload || null,
-                }
-                : undefined
-            }
-            onSubmit={handleToeflIbtItemSubmit}
-            onCancel={() => {
-              setShowToeflIbtItemEditor(false);
-              setEditingQuestion(null);
-            }}
-          />
-        </Modal>
-      )}
-
-      {/* TOEFL iBT Bulk Import Modal */}
-      {isToeflIbt && section && (
-        <Modal
-          isOpen={showToeflIbtBulkImporter}
-          onClose={() => setShowToeflIbtBulkImporter(false)}
-          title="Bulk Import Items (TOEFL iBT)"
-          size="lg"
-        >
-          <ToeflIbtBulkItemImporter
-            taskType={section.taskType}
-            startingQuestionNumber={nextQuestionNumber}
-            onSubmit={handleToeflIbtBulkImport}
-            onCancel={() => setShowToeflIbtBulkImporter(false)}
-          />
-        </Modal>
-      )}
+      <Modal isOpen={showBulkImporter} onClose={() => setShowBulkImporter(false)} title="Bulk Import Questions (TOEFL ITP)" size="lg">
+        <BulkQuestionImporter startingQuestionNumber={nextQuestionNumber} onSubmit={handleBulkImport} onCancel={() => setShowBulkImporter(false)} />
+      </Modal>
     </div>
   );
 }

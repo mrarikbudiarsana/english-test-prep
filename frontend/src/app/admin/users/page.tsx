@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import api from '@/lib/api';
@@ -10,28 +10,44 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { formatDate } from '@/lib/utils';
 import type { User } from '@/types/user';
 
+const PAGE_SIZE = 50;
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async (currentOffset: number, append: boolean) => {
     try {
-      setLoading(true);
-      setError(null);
-      const response = await api.get('/admin/users');
-      setUsers(response.data.data || response.data);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+        setError(null);
+      }
+      const response = await api.get('/admin/users', {
+        params: { offset: currentOffset, limit: PAGE_SIZE },
+      });
+      const rows: User[] = response.data.data || response.data;
+      const totalCount: number = response.data.total ?? rows.length;
+      setTotal(totalCount);
+      setUsers((prev) => (append ? [...prev, ...rows] : rows));
+      setOffset(currentOffset + rows.length);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to load users');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchUsers(0, false);
+  }, [fetchUsers]);
 
   const handleRoleChange = async (userId: string, newRole: 'user' | 'admin') => {
     setUpdatingUserId(userId);
@@ -67,14 +83,14 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Manage Users</h1>
-        <span className="text-sm text-gray-500">{users.length} total users</span>
+        <span className="text-sm text-gray-500">{total} total users</span>
       </div>
 
       {error && (
         <Card>
           <div className="text-center py-4">
             <p className="text-red-600 mb-2">{error}</p>
-            <button onClick={fetchUsers} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            <button onClick={() => fetchUsers(0, false)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
               Try again
             </button>
           </div>
@@ -93,85 +109,104 @@ export default function AdminUsersPage() {
       )}
 
       {!error && users.length > 0 && (
-        <Card padding={false}>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Free Tests
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created At
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <Link href={`/admin/users/${user.id}`} className="group flex items-center gap-3 hover:opacity-80 transition-opacity">
-                        {user.photoUrl ? (
-                          <Image
-                            src={user.photoUrl}
-                            alt=""
-                            className="w-8 h-8 rounded-full object-cover"
-                            width={32}
-                            height={32}
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700 group-hover:bg-blue-200 transition-colors">
-                            {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                          {user.displayName || 'No name'}
-                        </span>
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600">{user.email}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <select
-                        value={user.role}
-                        onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin')}
-                        disabled={updatingUserId === user.id}
-                        className={`text-xs font-medium rounded-full px-3 py-1 border cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-200 ${user.role === 'admin'
-                          ? 'bg-purple-100 text-purple-800 border-purple-200'
-                          : 'bg-gray-100 text-gray-700 border-gray-200'
-                          } ${updatingUserId === user.id ? 'opacity-50 cursor-wait' : ''}`}
-                      >
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <Badge variant={user.freeTestsRemaining > 0 ? 'info' : 'default'}>
-                        {user.freeTestsRemaining}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-500">
-                        {formatDate(user.createdAt)}
-                      </span>
-                    </td>
+        <>
+          <Card padding={false}>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Free Tests
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created At
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {users.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <Link href={`/admin/users/${user.id}`} className="group flex items-center gap-3 hover:opacity-80 transition-opacity">
+                          {user.photoUrl ? (
+                            <Image
+                              src={user.photoUrl}
+                              alt=""
+                              className="w-8 h-8 rounded-full object-cover"
+                              width={32}
+                              height={32}
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700 group-hover:bg-blue-200 transition-colors">
+                              {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                            {user.displayName || 'No name'}
+                          </span>
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-gray-600">{user.email}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <select
+                          value={user.role}
+                          onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin')}
+                          disabled={updatingUserId === user.id}
+                          className={`text-xs font-medium rounded-full px-3 py-1 border cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-200 ${user.role === 'admin'
+                            ? 'bg-purple-100 text-purple-800 border-purple-200'
+                            : 'bg-gray-100 text-gray-700 border-gray-200'
+                            } ${updatingUserId === user.id ? 'opacity-50 cursor-wait' : ''}`}
+                        >
+                          <option value="user">User</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <Badge variant={user.freeTestsRemaining > 0 ? 'info' : 'default'}>
+                          {user.freeTestsRemaining}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-gray-500">
+                          {formatDate(user.createdAt)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* Load more */}
+          {users.length < total && (
+            <div className="flex justify-center">
+              <button
+                onClick={() => fetchUsers(offset, true)}
+                disabled={loadingMore}
+                className="px-6 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-wait transition-colors shadow-sm"
+              >
+                {loadingMore ? 'Loading…' : `Load more (${total - users.length} remaining)`}
+              </button>
+            </div>
+          )}
+
+          <p className="text-center text-xs text-gray-400">
+            Showing {users.length} of {total} users
+          </p>
+        </>
       )}
     </div>
   );

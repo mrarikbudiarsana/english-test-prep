@@ -36,7 +36,7 @@ export async function sendPaymentConfirmation(opts: {
     <div style="font-family:sans-serif;max-width:560px;margin:0 auto">
       <h2>Payment Confirmed!</h2>
       <p>Hi ${displayName},</p>
-      <p>Your <strong>${planType}</strong> subscription is now active. You have full access to all IELTS practice tests until <strong>${expiry}</strong>.</p>
+      <p>Your <strong>${planType}</strong> subscription is now active. You have full access to all TOEFL ITP practice tests until <strong>${expiry}</strong>.</p>
       <p><a href="${env.corsOrigin}/tests" style="background:#e4002b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none">Start Practising</a></p>
       <p style="color:#999;font-size:12px">If you did not make this purchase, please contact support immediately.</p>
     </div>
@@ -61,5 +61,5 @@ export async function sendResultsReady(opts: {
       <p><a href="${env.corsOrigin}/results/${attemptId}" style="background:#e4002b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none">View Results</a></p>
     </div>
   `;
-  await sendMail(to, 'Your IELTS results are ready', html);
+  await sendMail(to, 'Your TOEFL ITP results are ready', html);
 }

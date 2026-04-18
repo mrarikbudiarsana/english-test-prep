@@ -14,62 +14,22 @@ const SELECT_COLUMNS = `
   current_section      AS "currentSection",
   section_started_at   AS "sectionStartedAt",
   listening_raw        AS "listeningRaw",
-  listening_band       AS "listeningBand",
   listening_score      AS "listeningScore",
   reading_raw          AS "readingRaw",
-  reading_band         AS "readingBand",
   reading_score        AS "readingScore",
-  writing_raw          AS "writingRaw",
-  speaking_raw         AS "speakingRaw",
   structure_score      AS "structureScore",
-  writing_band         AS "writingBand",
-  speaking_band        AS "speakingBand",
-  overall_band         AS "overallBand",
   overall_score        AS "overallScore",
-  reading_score_30     AS "readingScore30",
-  listening_score_30   AS "listeningScore30",
-  writing_score_30     AS "writingScore30",
-  speaking_score_30    AS "speakingScore30",
-  overall_score_120    AS "overallScore120",
-  score_mapping_version AS "scoreMappingVersion",
-  cefr_level           AS "cefrLevel",
-  score_reportable     AS "scoreReportable",
-  valid_until          AS "validUntil",
-  writing_feedback     AS "writingFeedback",
-  speaking_feedback    AS "speakingFeedback",
-  reading_path         AS "readingPath",
-  listening_path       AS "listeningPath",
   created_at           AS "createdAt",
   updated_at           AS "updatedAt"
 `;
 
 const scoreFieldMap: Record<string, string> = {
   listeningRaw: 'listening_raw',
-  listeningBand: 'listening_band',
   listeningScore: 'listening_score',
   readingRaw: 'reading_raw',
-  readingBand: 'reading_band',
   readingScore: 'reading_score',
-  writingRaw: 'writing_raw',
-  speakingRaw: 'speaking_raw',
   structureScore: 'structure_score',
-  writingBand: 'writing_band',
-  speakingBand: 'speaking_band',
-  overallBand: 'overall_band',
   overallScore: 'overall_score',
-  readingScore30: 'reading_score_30',
-  listeningScore30: 'listening_score_30',
-  writingScore30: 'writing_score_30',
-  speakingScore30: 'speaking_score_30',
-  overallScore120: 'overall_score_120',
-  scoreMappingVersion: 'score_mapping_version',
-  cefrLevel: 'cefr_level',
-  scoreReportable: 'score_reportable',
-  validUntil: 'valid_until',
-  writingFeedback: 'writing_feedback',
-  speakingFeedback: 'speaking_feedback',
-  readingPath: 'reading_path',
-  listeningPath: 'listening_path',
 };
 
 // ---------- queries ----------
@@ -87,31 +47,11 @@ function transformAttemptRow(row: any) {
     currentSection: row.current_section,
     sectionStartedAt: row.section_started_at,
     listeningRaw: row.listening_raw,
-    listeningBand: row.listening_band,
     listeningScore: row.listening_score,
     readingRaw: row.reading_raw,
-    readingBand: row.reading_band,
     readingScore: row.reading_score,
-    writingRaw: row.writing_raw,
-    speakingRaw: row.speaking_raw,
     structureScore: row.structure_score,
-    writingBand: row.writing_band,
-    speakingBand: row.speaking_band,
-    overallBand: row.overall_band,
     overallScore: row.overall_score,
-    readingScore30: row.reading_score_30,
-    listeningScore30: row.listening_score_30,
-    writingScore30: row.writing_score_30,
-    speakingScore30: row.speaking_score_30,
-    overallScore120: row.overall_score_120,
-    scoreMappingVersion: row.score_mapping_version,
-    cefrLevel: row.cefr_level,
-    scoreReportable: row.score_reportable,
-    validUntil: row.valid_until,
-    writingFeedback: row.writing_feedback,
-    speakingFeedback: row.speaking_feedback,
-    readingPath: row.reading_path,
-    listeningPath: row.listening_path,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     test: row.test || null,
@@ -247,31 +187,11 @@ export async function updateScores(
   id: string,
   scores: Partial<{
     listeningRaw: number;
-    listeningBand: number;
     listeningScore: number;
     readingRaw: number;
-    readingBand: number;
     readingScore: number;
-    writingRaw: number;
-    speakingRaw: number;
     structureScore: number;
-    writingBand: number;
-    speakingBand: number;
-    overallBand: number;
     overallScore: number;
-    readingScore30: number;
-    listeningScore30: number;
-    writingScore30: number;
-    speakingScore30: number;
-    overallScore120: number;
-    scoreMappingVersion: string;
-    cefrLevel: string;
-    scoreReportable: boolean;
-    validUntil: string;
-    writingFeedback: any;
-    speakingFeedback: any;
-    readingPath: string;
-    listeningPath: string;
   }>,
 ) {
   const entries = Object.entries(scores).filter(([, v]) => v !== undefined);
@@ -284,12 +204,8 @@ export async function updateScores(
   for (const [key, value] of entries) {
     const column = scoreFieldMap[key];
     if (!column) continue;
-    const finalValue =
-      (key === 'writingFeedback' || key === 'speakingFeedback') && value !== null
-        ? JSON.stringify(value)
-        : value;
     setClauses.push(`${column} = $${paramIndex}`);
-    values.push(finalValue);
+    values.push(value);
     paramIndex++;
   }
 
@@ -343,24 +259,16 @@ export async function countCompletedByUserId(userId: string) {
 
 /**
  * Map exam type preference to actual test types in DB.
- * e.g., 'ielts' maps to ['academic', 'general_training']
  */
 const EXAM_TYPE_MAP: Record<string, string[]> = {
-  ielts: ['academic', 'general_training'],
-  toefl_ibt: ['toefl_ibt'],
   toefl_itp: ['toefl_itp'],
-  pte: ['pte_academic'],
 };
 
 export async function getStatsForUser(userId: string, examType?: string) {
-  // Build test type filter if examType is provided
-  const testTypes = examType ? EXAM_TYPE_MAP[examType] : null;
-  const testTypeFilter = testTypes
-    ? `AND t.test_type = ANY($2::text[])`
-    : '';
-  const queryParams = testTypes ? [userId, testTypes] : [userId];
+  const testTypes = examType ? EXAM_TYPE_MAP[examType] : ['toefl_itp'];
+  const testTypeFilter = `AND t.test_type = ANY($2::text[])`;
+  const queryParams = [userId, testTypes];
 
-  // Get completed attempts with test info
   const attemptsResult = await query(
     `SELECT
       a.id,
@@ -374,18 +282,11 @@ export async function getStatsForUser(userId: string, examType?: string) {
       a.current_section AS "currentSection",
       a.section_started_at AS "sectionStartedAt",
       a.listening_raw AS "listeningRaw",
-      a.listening_band AS "listeningBand",
       a.listening_score AS "listeningScore",
       a.reading_raw AS "readingRaw",
-      a.reading_band AS "readingBand",
       a.reading_score AS "readingScore",
       a.structure_score AS "structureScore",
-      a.writing_band AS "writingBand",
-      a.speaking_band AS "speakingBand",
-      a.overall_band AS "overallBand",
       a.overall_score AS "overallScore",
-      a.writing_feedback AS "writingFeedback",
-      a.speaking_feedback AS "speakingFeedback",
       a.created_at AS "createdAt",
       a.updated_at AS "updatedAt",
       t.title AS "testTitle",
@@ -401,49 +302,37 @@ export async function getStatsForUser(userId: string, examType?: string) {
 
   const completedAttempts = attemptsResult.rows;
 
-  // Calculate total completed (with exam type filter if provided)
-  let totalCompleted: number;
-  if (testTypes) {
-    const countResult = await query(
-      `SELECT COUNT(*) FROM attempts a
-       JOIN tests t ON a.test_id = t.id
-       WHERE a.user_id = $1 AND a.status = 'completed'
-       AND t.test_type = ANY($2::text[])`,
-      [userId, testTypes],
-    );
-    totalCompleted = parseInt(countResult.rows[0].count, 10);
-  } else {
-    totalCompleted = await countCompletedByUserId(userId);
-  }
+  const countResult = await query(
+    `SELECT COUNT(*) FROM attempts a
+     JOIN tests t ON a.test_id = t.id
+     WHERE a.user_id = $1 AND a.status = 'completed'
+     AND t.test_type = ANY($2::text[])`,
+    [userId, testTypes],
+  );
+  const totalCompleted = parseInt(countResult.rows[0].count, 10);
 
-  // Calculate averages
-  const validAttempts = completedAttempts.filter((a: any) => a.overallBand !== null || a.overallScore !== null);
-  const avgBand = validAttempts.length > 0
-    ? validAttempts.reduce((sum: number, a: any) => sum + (a.overallBand ?? a.overallScore ?? 0), 0) / validAttempts.length
+  const validAttempts = completedAttempts.filter((a: any) => a.overallScore !== null);
+  const avgScore = validAttempts.length > 0
+    ? validAttempts.reduce((sum: number, a: any) => sum + (a.overallScore ?? 0), 0) / validAttempts.length
     : null;
 
-  const bestBand = validAttempts.length > 0
-    ? Math.max(...validAttempts.map((a: any) => a.overallBand ?? a.overallScore ?? 0))
+  const bestScore = validAttempts.length > 0
+    ? Math.max(...validAttempts.map((a: any) => a.overallScore ?? 0))
     : null;
 
-  // Calculate section averages
-  // For TOEFL ITP, we use _score fields. For others, _band fields.
   const sectionAverages = {
-    listening: calculateSectionAverage(completedAttempts, 'listeningBand') || calculateSectionAverage(completedAttempts, 'listeningScore'),
-    reading: calculateSectionAverage(completedAttempts, 'readingBand') || calculateSectionAverage(completedAttempts, 'readingScore'),
-    writing: calculateSectionAverage(completedAttempts, 'writingBand'),
-    speaking: calculateSectionAverage(completedAttempts, 'speakingBand'),
+    listening: calculateSectionAverage(completedAttempts, 'listeningScore'),
+    reading: calculateSectionAverage(completedAttempts, 'readingScore'),
     structure: calculateSectionAverage(completedAttempts, 'structureScore'),
   };
 
   return {
     totalAttempts: totalCompleted,
-    averageBand: avgBand,
-    bestBand: bestBand,
+    averageBand: avgScore, // Renamed in UI via mapping if needed, but keeping field name for compatibility
+    bestBand: bestScore,
     recentAttempts: completedAttempts.map((a: any) => ({
       id: a.id,
       testTitle: a.testTitle,
-      overallBand: a.overallBand,
       overallScore: a.overallScore,
       status: a.status,
       completedAt: a.completedAt,
@@ -456,4 +345,43 @@ function calculateSectionAverage(attempts: any[], field: string): number | null 
   const valid = attempts.filter((a) => a[field] !== null);
   if (valid.length === 0) return null;
   return valid.reduce((sum, a) => sum + a[field], 0) / valid.length;
+}
+
+export async function findAllCompleted(offset: number = 0, limit: number = 50) {
+  const result = await query(
+    `SELECT
+        a.id,
+        a.user_id              AS "userId",
+        a.test_id              AS "testId",
+        a.mode,
+        a.status,
+        a.started_at           AS "startedAt",
+        a.completed_at         AS "completedAt",
+        a.listening_score      AS "listeningScore",
+        a.reading_score        AS "readingScore",
+        a.structure_score      AS "structureScore",
+        a.overall_score        AS "overallScore",
+        a.created_at           AS "createdAt",
+        t.title                AS "testTitle",
+        t.test_type            AS "testType",
+        u.display_name         AS "userName",
+        u.email                AS "userEmail",
+        u.photo_url            AS "userPhotoUrl"
+     FROM attempts a
+     JOIN tests t ON a.test_id = t.id
+     JOIN users u ON a.user_id = u.id
+     WHERE a.status = 'completed'
+     ORDER BY a.completed_at DESC NULLS LAST
+     OFFSET $1 LIMIT $2`,
+    [offset, limit],
+  );
+
+  const countResult = await query(
+    `SELECT COUNT(*) FROM attempts WHERE status = 'completed'`,
+  );
+
+  return {
+    rows: result.rows,
+    total: parseInt(countResult.rows[0].count, 10),
+  };
 }

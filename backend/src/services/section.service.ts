@@ -1,23 +1,6 @@
 import * as sectionModel from '../models/section.model';
 import * as testModel from '../models/test.model';
-import { NotFoundError, ValidationError } from '../middleware/errorHandler';
-
-const PTE_SECTION_FLOW = ['speaking', 'reading', 'listening'] as const;
-const PTE_DURATION_RULES: Record<string, { min: number; max: number }> = {
-  speaking: { min: 76, max: 84 },
-  reading: { min: 23, max: 30 },
-  listening: { min: 31, max: 39 },
-};
-
-function validatePteDuration(sectionType: string, durationMinutes: number) {
-  const rule = PTE_DURATION_RULES[sectionType];
-  if (!rule) return;
-  if (durationMinutes < rule.min || durationMinutes > rule.max) {
-    throw new ValidationError(
-      `PTE ${sectionType} duration must be between ${rule.min} and ${rule.max} minutes`,
-    );
-  }
-}
+import { NotFoundError } from '../middleware/errorHandler';
 
 /**
  * Get all sections for a given test, ordered by section_order.
@@ -83,23 +66,6 @@ export async function createSection(
   const allSections = await sectionModel.findByTestId(testId);
 
   let finalDuration = data.durationMinutes;
-
-  if (test.testType === 'pte_academic') {
-    const nextExpectedType = PTE_SECTION_FLOW[allSections.length];
-    if (!nextExpectedType) {
-      throw new ValidationError('PTE Academic supports exactly 3 sections: Speaking, Reading, Listening');
-    }
-    if (data.sectionType !== nextExpectedType) {
-      throw new ValidationError(
-        `Invalid PTE section order. Expected "${nextExpectedType}" as section ${allSections.length + 1}`,
-      );
-    }
-    const duplicateType = allSections.some((s) => s.sectionType === data.sectionType);
-    if (duplicateType) {
-      throw new ValidationError(`PTE section "${data.sectionType}" already exists`);
-    }
-    validatePteDuration(data.sectionType, finalDuration);
-  }
 
   // For TOEFL ITP: only the first section of each type (listening/structure/reading) gets duration
   if (test.testType === 'toefl_itp' && ['listening', 'structure', 'reading'].includes(data.sectionType)) {
@@ -174,34 +140,6 @@ export async function updateSection(
   const test = await testModel.findById(existing.testId);
   if (!test) {
     throw new NotFoundError('Test not found');
-  }
-
-  if (test.testType === 'pte_academic') {
-    const allSections = await sectionModel.findByTestId(existing.testId);
-    const resolvedType = data.sectionType ?? existing.sectionType;
-    const resolvedOrder = data.sectionOrder ?? existing.sectionOrder;
-
-    if (!PTE_SECTION_FLOW.includes(resolvedType as any)) {
-      throw new ValidationError('PTE Academic only supports speaking, reading, and listening sections');
-    }
-
-    const expectedTypeForOrder = PTE_SECTION_FLOW[resolvedOrder - 1];
-    if (!expectedTypeForOrder) {
-      throw new ValidationError('PTE Academic supports section order 1..3 only');
-    }
-    if (resolvedType !== expectedTypeForOrder) {
-      throw new ValidationError(
-        `PTE section order ${resolvedOrder} must be "${expectedTypeForOrder}"`,
-      );
-    }
-
-    const duplicate = allSections.some((s) => s.id !== existing.id && s.sectionType === resolvedType);
-    if (duplicate) {
-      throw new ValidationError(`PTE section "${resolvedType}" already exists`);
-    }
-
-    const durationToValidate = data.durationMinutes ?? existing.durationMinutes;
-    validatePteDuration(resolvedType, durationToValidate);
   }
 
   // For TOEFL ITP: manage duration automatically for listening/structure/reading

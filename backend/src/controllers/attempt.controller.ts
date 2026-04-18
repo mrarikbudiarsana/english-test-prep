@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as attemptService from '../services/attempt.service';
 import * as responseModel from '../models/response.model';
-import { ValidationError } from '../middleware/errorHandler';
-import { pteAnalyticsDebugContractSchema } from '../contracts/pteAnalyticsDebug.contract';
 
 export async function startAttempt(
   req: Request,
@@ -124,7 +122,7 @@ export async function submitTest(
 ): Promise<void> {
   try {
     const attemptId = req.params.attemptId as string;
-    const result = await attemptService.submitTest(attemptId);
+    const result = await attemptService.finalizeAttempt(attemptId);
     res.json({ data: result });
   } catch (error) {
     next(error);
@@ -145,67 +143,6 @@ export async function getResults(
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.json({ data: results });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function getToeflIbtScores(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const attemptId = req.params.attemptId as string;
-    // Admins can view any attempt; skip ownership check by omitting userId
-    const userId = req.user!.role === 'admin' ? undefined : req.user!.id;
-    const scores = await attemptService.getToeflIbtScores(attemptId, userId as string);
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.json({ data: scores });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function getToeflIbtReport(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const attemptId = req.params.attemptId as string;
-    // Admins can view any attempt; skip ownership check by omitting userId
-    const userId = req.user!.role === 'admin' ? undefined : req.user!.id;
-    const report = await attemptService.getToeflIbtReport(attemptId, userId as string);
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.json({ data: report });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function getPteAnalyticsDebug(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const attemptId = req.params.attemptId as string;
-    // Admins can view debug data for any attempt; skip ownership check by omitting userId
-    const userId = req.user!.role === 'admin' ? undefined : req.user!.id;
-    const payload = await attemptService.getPteAnalyticsDebug(attemptId, userId as string);
-    const parsed = pteAnalyticsDebugContractSchema.safeParse(payload);
-    if (!parsed.success) {
-      throw new ValidationError('PTE analytics debug payload failed contract validation');
-    }
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.json({ data: parsed.data });
   } catch (error) {
     next(error);
   }

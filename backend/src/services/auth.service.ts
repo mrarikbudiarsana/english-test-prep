@@ -73,7 +73,7 @@ export async function updateProfile(
 /**
  * Valid exam types for preference selection.
  */
-const VALID_EXAM_TYPES = ['ielts', 'toefl_ibt', 'toefl_itp', 'pte'];
+const VALID_EXAM_TYPES = ['toefl_itp'];
 
 /**
  * Update a user's preferred exam type.

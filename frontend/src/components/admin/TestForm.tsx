@@ -21,30 +21,20 @@ interface TestFormProps {
   loading?: boolean;
 }
 
-const testTypeOptions = [
-  { value: 'academic', label: 'IELTS Academic' },
-  { value: 'general_training', label: 'IELTS General Training' },
-  { value: 'toefl_ibt', label: 'TOEFL iBT' },
-  { value: 'toefl_itp', label: 'TOEFL ITP' },
-  { value: 'pte_academic', label: 'PTE Academic' },
-];
+const testTypeOptions = [{ value: 'toefl_itp', label: 'TOEFL ITP' }];
 
 export default function TestForm({ initialData, onSubmit, loading }: TestFormProps) {
   const [title, setTitle] = useState(initialData?.title || '');
   const [description, setDescription] = useState(initialData?.description || '');
-  const [testType, setTestType] = useState<TestType>(initialData?.testType || 'academic');
+  const [testType, setTestType] = useState<TestType>(initialData?.testType || 'toefl_itp');
   const [isFree, setIsFree] = useState(initialData?.isFree ?? false);
-  const [durationMinutes, setDurationMinutes] = useState<number>(initialData?.durationMinutes ?? 120);
+  const [durationMinutes, setDurationMinutes] = useState<number>(initialData?.durationMinutes ?? 115);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-    if (!testType) {
-      newErrors.testType = 'Test type is required';
-    }
+    if (!title.trim()) newErrors.title = 'Title is required';
+    if (!testType) newErrors.testType = 'Test type is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -61,7 +51,7 @@ export default function TestForm({ initialData, onSubmit, loading }: TestFormPro
         label="Test Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="e.g., IELTS Academic Practice Test 1"
+        placeholder="e.g., TOEFL ITP Practice Test 1"
         error={errors.title}
         required
       />
@@ -70,7 +60,7 @@ export default function TestForm({ initialData, onSubmit, loading }: TestFormPro
         label="Description"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder="A brief description of this practice test..."
+        placeholder="A brief description of this TOEFL ITP practice test..."
         rows={4}
       />
 
@@ -99,7 +89,7 @@ export default function TestForm({ initialData, onSubmit, loading }: TestFormPro
         />
         <div>
           <span className="text-sm font-medium text-gray-700">Free Test</span>
-          <p className="text-xs text-gray-500">Allow users to take this test without a subscription</p>
+          <p className="text-xs text-gray-500">Allow users to take this TOEFL ITP test without a subscription</p>
         </div>
       </label>
 

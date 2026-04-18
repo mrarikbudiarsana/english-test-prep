@@ -8,18 +8,7 @@ export type QuestionType =
   | 'yes_no_not_given'
   | 'completion'
   | 'matching'
-  | 'dropdown'
-  // PTE objective item types
-  | 'pte_mcq_single'
-  | 'pte_mcq_multiple'
-  | 'pte_reading_fill_blanks_dropdown'
-  | 'pte_reading_fill_blanks_drag_drop'
-  | 'pte_reorder_paragraph'
-  | 'pte_listening_fill_blanks'
-  | 'pte_highlight_correct_summary'
-  | 'pte_select_missing_word'
-  | 'pte_highlight_incorrect_words'
-  | 'pte_write_from_dictation';
+  | 'dropdown';
 
 export interface Question {
   id: string;

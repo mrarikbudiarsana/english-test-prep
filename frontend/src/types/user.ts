@@ -1,4 +1,4 @@
-export type ExamType = 'ielts' | 'toefl_ibt' | 'toefl_itp' | 'pte';
+export type ExamType = 'toefl_itp';
 
 export interface User {
   id: string;

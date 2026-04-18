@@ -5,54 +5,64 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 export default function Footer() {
+  const year = new Date().getFullYear();
+
   return (
-    <footer className="bg-white border-t border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer className="bg-[#063d61] text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+
+          {/* Brand */}
           <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <Image
-                src="https://scobvornehcncgsqngag.supabase.co/storage/v1/object/public/Public/Logo%20fix.svg"
-                alt="EnglishTest"
-                className="h-8 w-auto"
-                width={96}
-                height={32}
-                unoptimized
-              />
+            <div className="flex items-center gap-3 mb-4">
+              <Image src="/logo.png" alt="English with Arik" width={44} height={44} className="rounded-full" unoptimized />
+              <div>
+                <p className="font-extrabold text-white text-sm">ITP Ready</p>
+                <p className="text-[11px] text-blue-200">by English with Arik</p>
+              </div>
             </div>
-            <p className="text-gray-500 text-sm">
-              Practice for IELTS, TOEFL, and PTE with AI-powered feedback.
+            <p className="text-blue-200 text-sm leading-relaxed">
+              Authentic TOEFL ITP practice tests with official-style scoring. Your gateway to global success.
             </p>
           </div>
 
+          {/* Links */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Quick Links</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/tests" className="text-gray-500 hover:text-gray-700">
-                  Practice Tests
-                </Link>
-              </li>
-              <li>
-                <Link href="/subscription" className="text-gray-500 hover:text-gray-700">
-                  Pricing
-                </Link>
-              </li>
+            <h3 className="font-bold text-white mb-4 text-sm uppercase tracking-widest">Quick Links</h3>
+            <ul className="space-y-2.5 text-sm">
+              {[
+                { label: 'Practice Tests', href: '/tests' },
+                { label: 'Pricing & Plans', href: '/pricing' },
+                { label: 'Dashboard', href: '/dashboard' },
+                { label: 'Settings', href: '/settings' },
+              ].map(l => (
+                <li key={l.href}>
+                  <Link href={l.href} className="text-blue-200 hover:text-white transition-colors">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
+          {/* Support */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Support</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <span className="text-gray-500">contact@englishtest.com</span>
+            <h3 className="font-bold text-white mb-4 text-sm uppercase tracking-widest">Support</h3>
+            <ul className="space-y-2.5 text-sm text-blue-200">
+              <li>English with Arik</li>
+              <li>TOEFL ITP Level 1 Practice</li>
+              <li className="pt-2">
+                <a href="mailto:info@englishwitharik.com" className="hover:text-white transition-colors">
+                  info@englishwitharik.com
+                </a>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-400">
-          &copy; {new Date().getFullYear()} EnglishTest. All rights reserved.
+        <div className="mt-10 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-blue-300">
+          <p>© {year} English with Arik · ITP Ready. All rights reserved.</p>
+          <p>TOEFL ITP® is a registered trademark of ETS. This platform is not affiliated with ETS.</p>
         </div>
       </div>
     </footer>

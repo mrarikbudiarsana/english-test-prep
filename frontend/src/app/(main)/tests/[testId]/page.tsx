@@ -27,6 +27,16 @@ type AccessCheckResult = {
   requiredExamType?: string;
 };
 
+const TOEFL_ITP_FORMAT = {
+  totalQuestions: 140,
+  totalMinutes: 115,
+  sections: {
+    listening: { questions: 50, minutes: 35, parts: 3, note: 'Audio plays once only' },
+    structure: { questions: 40, minutes: 25, parts: 2, note: 'Sentence completion and error recognition' },
+    reading: { questions: 50, minutes: 55, parts: 1, note: 'Line-numbered academic passages' },
+  },
+};
+
 const sectionIcons: Record<string, React.ElementType> = {
   listening: HiVolumeUp,
   reading: HiBookOpen,
@@ -85,14 +95,10 @@ export default function TestOverviewPage() {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
 
-  const examName = test ? examNameFromTestType(test.testType) : 'English';
-  const fullSectionCount = test ? sectionCountForTestType(test.testType) : 4;
+  const examName = test ? examNameFromTestType(test.testType) : 'TOEFL ITP';
+  const fullSectionCount = test ? sectionCountForTestType(test.testType) : 3;
   const badgeLabel = test ? testTypeShortLabel(test.testType) : '';
-  const brandColor =
-    test?.testType === 'toefl_ibt' ? '#7B6FD4'
-      : test?.testType === 'toefl_itp' ? '#5848B8'
-        : test?.testType === 'pte_academic' ? '#0097A7'
-          : '#e4002b';
+  const brandColor = '#5848B8';
 
   useEffect(() => {
     async function fetchTest() {
@@ -311,7 +317,7 @@ export default function TestOverviewPage() {
         <p className="text-[#5a6c7d] mb-6 leading-relaxed">
           Focus on specific skills by practicing individual sections. Perfect for targeted improvement.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {(() => {
             const sectionOrder = test.testType === 'toefl_itp'
               ? ['listening', 'structure', 'reading'] as const
@@ -327,7 +333,12 @@ export default function TestOverviewPage() {
               const colors = sectionColors[type];
               const typeSections = sectionGroups[type] || [];
               const totalDuration = typeSections.reduce((sum, s) => sum + s.durationMinutes, 0);
-              const questionCount = type === 'listening' || type === 'reading' || type === 'structure' ? 40 : undefined; // Approximate for structure
+              const toeflMeta =
+                test.testType === 'toefl_itp' && type in TOEFL_ITP_FORMAT.sections
+                  ? TOEFL_ITP_FORMAT.sections[type as keyof typeof TOEFL_ITP_FORMAT.sections]
+                  : undefined;
+              const questionCount =
+                test.testType === 'toefl_itp' ? toeflMeta?.questions : undefined;
               const isAvailable = typeSections.length > 0;
               const displayedPartCount =
                 test.testType === 'toefl_itp'
@@ -361,6 +372,11 @@ export default function TestOverviewPage() {
                     {totalDuration} minutes
                     {questionCount && ` • ${questionCount} questions`}
                   </p>
+                  {test.testType === 'toefl_itp' && isAvailable && (
+                    <p className="mb-4 text-xs font-medium text-slate-500">
+                      {toeflMeta?.note}
+                    </p>
+                  )}
 
                   {access?.canAccess ? (
                     <button
@@ -402,6 +418,12 @@ export default function TestOverviewPage() {
                 <span className="text-[#3b82f6] font-bold">•</span>
                 <span>Ensure you have a stable internet connection before starting</span>
               </li>
+              {test.testType === 'toefl_itp' && (
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 font-bold">•</span>
+                  <span>Listening audio is not replayable, so use headphones and avoid background noise.</span>
+                </li>
+              )}
               <li className="flex items-start gap-2">
                 <span className="text-blue-500 font-bold">•</span>
                 <span>Find a quiet environment to minimize distractions</span>

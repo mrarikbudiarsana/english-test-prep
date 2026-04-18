@@ -79,7 +79,7 @@ export async function create(data: {
     `INSERT INTO subscriptions (user_id, plan_type, exam_type, status, starts_at, expires_at)
      VALUES ($1, $2, $3, 'pending', $4, $5)
      RETURNING ${SELECT_COLUMNS}`,
-    [data.userId, data.planType, data.examType ?? 'ielts', data.startsAt, data.expiresAt],
+    [data.userId, data.planType, data.examType ?? 'toefl_itp', data.startsAt, data.expiresAt],
   );
   return result.rows[0];
 }

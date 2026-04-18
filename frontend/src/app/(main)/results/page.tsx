@@ -6,10 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { Attempt, AttemptStatus, TestType } from '@/types/test';
 import { PaginatedResponse } from '@/types/api';
-import { formatDate, formatScore, getScoreColor, getScoreBgColor } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import { getTestTypesForExam, getExamConfig } from '@/config/examConfig';
-import { ExamType } from '@/types/user';
+import { formatDate } from '@/lib/utils';
+import { getExamConfig } from '@/config/examConfig';
 import {
   HiArrowLeft,
   HiChartBar,
@@ -24,7 +22,6 @@ type FilterStatus = 'all' | AttemptStatus;
 type SortBy = 'date' | 'score';
 
 export default function ResultsPage() {
-  const { user } = useAuth();
   const searchParams = useSearchParams();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,20 +31,11 @@ export default function ResultsPage() {
   const [sortBy, setSortBy] = useState<SortBy>('date');
   const [deletingAttemptId, setDeletingAttemptId] = useState<string | null>(null);
   const limit = 10;
-
-  // Determine config based on user preference or default to IELTS (preserves existing behavior)
-  const userExamType = user?.preferredExamType || 'ielts';
-  const { theme, scoreLabel, sections: examSections } = getTestTypesForExam(userExamType).length ? getExamConfig(userExamType) : getExamConfig('ielts');
-
-  const allowedTestTypes = useMemo(
-    () => (user?.preferredExamType ? getTestTypesForExam(user.preferredExamType) : []),
-    [user?.preferredExamType]
-  );
+  const userExamType = 'toefl_itp';
+  const { theme } = getExamConfig(userExamType);
+  const allowedTestTypes = useMemo(() => ['toefl_itp'], []);
   const queryTestType = searchParams.get('testType') as TestType | null;
-  const activeTestType =
-    queryTestType && allowedTestTypes.includes(queryTestType)
-      ? queryTestType
-      : null;
+  const activeTestType = queryTestType === 'toefl_itp' ? queryTestType : null;
 
   const fetchAttempts = useCallback(async () => {
     setLoading(true);
@@ -56,35 +44,25 @@ export default function ResultsPage() {
         params: {
           offset,
           limit,
-          examType: user?.preferredExamType,
+          examType: userExamType,
           ...(activeTestType ? { testType: activeTestType } : {}),
-        }
+        },
       });
 
       let filteredAttempts = res.data.data;
       const allowedSet = new Set(allowedTestTypes);
-      if (allowedSet.size > 0) {
-        filteredAttempts = filteredAttempts.filter((a) =>
-          a.test?.testType ? allowedSet.has(a.test.testType) : false
-        );
-      }
+      filteredAttempts = filteredAttempts.filter((attempt) =>
+        attempt.test?.testType ? allowedSet.has(attempt.test.testType) : false
+      );
 
-      // Filter by status
       if (filterStatus !== 'all') {
-        filteredAttempts = filteredAttempts.filter(a => a.status === filterStatus);
+        filteredAttempts = filteredAttempts.filter((attempt) => attempt.status === filterStatus);
       }
 
-      // Sort
       if (sortBy === 'date') {
-        filteredAttempts.sort((a, b) =>
-          new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
-        );
-      } else if (sortBy === 'score') {
-        filteredAttempts.sort((a, b) => {
-          const scoreA = a.overallBand ?? a.overallScore ?? 0;
-          const scoreB = b.overallBand ?? b.overallScore ?? 0;
-          return scoreB - scoreA;
-        });
+        filteredAttempts.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+      } else {
+        filteredAttempts.sort((a, b) => (b.overallScore ?? 0) - (a.overallScore ?? 0));
       }
 
       setAttempts(filteredAttempts);
@@ -94,7 +72,7 @@ export default function ResultsPage() {
     } finally {
       setLoading(false);
     }
-  }, [offset, filterStatus, sortBy, user?.preferredExamType, activeTestType, allowedTestTypes]);
+  }, [activeTestType, allowedTestTypes, filterStatus, offset, sortBy]);
 
   useEffect(() => {
     fetchAttempts();
@@ -108,7 +86,7 @@ export default function ResultsPage() {
     setDeletingAttemptId(attemptId);
     try {
       await api.delete(`/attempts/${attemptId}`);
-      setAttempts((prev) => prev.filter((a) => a.id !== attemptId));
+      setAttempts((prev) => prev.filter((attempt) => attempt.id !== attemptId));
       setTotal((prev) => Math.max(0, prev - 1));
     } catch {
       console.error('Failed to delete attempt');
@@ -133,42 +111,31 @@ export default function ResultsPage() {
       abandoned: 'Abandoned',
     };
 
-    return (
-      <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${styles[status]}`}>
-        {labels[status]}
-      </span>
-    );
+    return <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${styles[status]}`}>{labels[status]}</span>;
   }
 
   function getScoreChange(index: number) {
     if (index >= attempts.length - 1) return null;
-    const current = attempts[index].overallBand ?? attempts[index].overallScore;
-    const previous = attempts[index + 1].overallBand ?? attempts[index + 1].overallScore;
+    const current = attempts[index].overallScore;
+    const previous = attempts[index + 1].overallScore;
 
     if (current === null || current === undefined || previous === null || previous === undefined) return null;
 
     const change = current - previous;
-    if (Math.abs(change) < 0.1) return null;
-
-    return change;
+    return Math.abs(change) < 1 ? null : change;
   }
 
-  // Helper to get score display
   const getDisplayScore = (attempt: Attempt) => {
-    const val = attempt.overallBand ?? attempt.overallScore;
-    return val !== null && val !== undefined ? val : null;
+    const value = attempt.overallScore;
+    return value !== null && value !== undefined ? value : null;
   };
-
-  const getReviewText = (hasScore: boolean) => hasScore
-    ? (userExamType === 'toefl_itp' ? 'View Score Report' : 'Review Results')
-    : 'View Details';
 
   if (loading && attempts.length === 0) {
     return (
       <div className="max-w-6xl mx-auto space-y-6 animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-1/4" />
         <div className="h-16 bg-gray-200 rounded-xl" />
-        {[1, 2, 3].map(i => (
+        {[1, 2, 3].map((i) => (
           <div key={i} className="h-32 bg-gray-200 rounded-xl" />
         ))}
       </div>
@@ -177,35 +144,22 @@ export default function ResultsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center text-sm text-[#5a6c7d] hover:text-[#2c3e50] mb-3"
-          >
+          <Link href="/dashboard" className="inline-flex items-center text-sm text-[#5a6c7d] hover:text-[#2c3e50] mb-3">
             <HiArrowLeft className="w-4 h-4 mr-1" />
             Back to Dashboard
           </Link>
           <h1 className="text-3xl font-bold text-[#2c3e50]">Test Results</h1>
-          <p className="text-[#5a6c7d] mt-1">
-            Review your performance and track your progress over time
-          </p>
+          <p className="text-[#5a6c7d] mt-1">Review your TOEFL ITP performance and track your score over time.</p>
         </div>
       </div>
 
-      {/* Stats Overview */}
       {attempts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div
-            className="rounded-xl p-6 border border-[#e8ecef]"
-            style={{ backgroundColor: `${theme.secondary}50` }} // 50% opacity
-          >
+          <div className="rounded-xl p-6 border border-[#e8ecef]" style={{ backgroundColor: `${theme.secondary}50` }}>
             <div className="flex items-start justify-between mb-3">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center transition-colors"
-                style={{ backgroundColor: theme.secondary, color: theme.primary }}
-              >
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-colors" style={{ backgroundColor: theme.secondary, color: theme.primary }}>
                 <HiCheckCircle className="w-6 h-6" />
               </div>
             </div>
@@ -221,8 +175,8 @@ export default function ResultsPage() {
             </div>
             <p className="text-sm font-medium text-[#5a6c7d] mb-1">Highest Score</p>
             <p className="text-3xl font-bold text-[#2c3e50]">
-              {attempts.some(a => getDisplayScore(a) !== null)
-                ? Math.max(...attempts.map(a => Number(getDisplayScore(a) || 0))).toFixed(userExamType === 'ielts' ? 1 : 0)
+              {attempts.some((attempt) => getDisplayScore(attempt) !== null)
+                ? Math.max(...attempts.map((attempt) => Number(getDisplayScore(attempt) || 0))).toFixed(0)
                 : '-'}
             </p>
           </div>
@@ -236,17 +190,16 @@ export default function ResultsPage() {
             <p className="text-sm font-medium text-[#5a6c7d] mb-1">Average Score</p>
             <p className="text-3xl font-bold text-[#2c3e50]">
               {(() => {
-                const scoredAttempts = attempts.filter(a => getDisplayScore(a) !== null);
+                const scoredAttempts = attempts.filter((attempt) => getDisplayScore(attempt) !== null);
                 if (scoredAttempts.length === 0) return '-';
-                const sum = scoredAttempts.reduce((acc, a) => acc + Number(getDisplayScore(a)), 0);
-                return (sum / scoredAttempts.length).toFixed(userExamType === 'ielts' ? 1 : 0);
+                const sum = scoredAttempts.reduce((acc, attempt) => acc + Number(getDisplayScore(attempt)), 0);
+                return (sum / scoredAttempts.length).toFixed(0);
               })()}
             </p>
           </div>
         </div>
       )}
 
-      {/* Filters and Sort */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-white rounded-xl p-4 border border-[#e8ecef]">
         <div className="flex items-center gap-3">
           <HiFilter className="w-5 h-5 text-[#5a6c7d]" />
@@ -255,13 +208,12 @@ export default function ResultsPage() {
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterStatus === status
-                  ? 'text-white shadow-sm'
-                  : 'bg-[#f8f9fa] text-[#5a6c7d] hover:bg-[#e8ecef]'
-                  }`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  filterStatus === status ? 'text-white shadow-sm' : 'bg-[#f8f9fa] text-[#5a6c7d] hover:bg-[#e8ecef]'
+                }`}
                 style={filterStatus === status ? { backgroundColor: theme.primary } : {}}
               >
-                {status === 'all' ? 'All' : status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                {status === 'all' ? 'All' : status.replace('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())}
               </button>
             ))}
           </div>
@@ -281,19 +233,13 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      {/* Results List */}
       {attempts.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border border-[#e8ecef]">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 mx-auto border"
-            style={{ backgroundColor: theme.secondary, borderColor: `${theme.primary}33` }}
-          >
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 mx-auto border" style={{ backgroundColor: theme.secondary, borderColor: `${theme.primary}33` }}>
             <HiChartBar className="h-8 w-8" style={{ color: theme.primary }} />
           </div>
           <h3 className="text-xl font-bold text-[#2c3e50] mb-2">No test results yet</h3>
-          <p className="text-[#5a6c7d] mb-6">
-            Start practicing to track your progress and see detailed feedback
-          </p>
+          <p className="text-[#5a6c7d] mb-6">Start practicing to track your TOEFL ITP progress and see detailed feedback.</p>
           <Link
             href="/tests"
             className="inline-flex items-center px-6 py-3 text-white rounded-xl font-semibold transition-all shadow-lg"
@@ -307,83 +253,37 @@ export default function ResultsPage() {
           {attempts.map((attempt, index) => {
             const scoreChange = getScoreChange(index);
             const score = getDisplayScore(attempt);
-            const isToeflItp = attempt.test?.testType === 'toefl_itp';
-
-            // Determine border color for score badge
-            let scoreBorderColor = 'border-amber-300';
-            let scoreTextColor = 'text-[#5a6c7d]';
-            let scoreBgColor = '#f8f9fa';
-
-            if (score !== null) {
-              // For IELTS, logic uses band levels. For TOEFL, we might just use primary/theme colors or generic ranges
-              if (isToeflItp) {
-                scoreTextColor = theme.primary; // Dynamic text color
-                scoreBgColor = theme.secondary;
-                if (Number(score) >= 600) scoreBorderColor = 'border-emerald-300';
-                else if (Number(score) >= 500) scoreBorderColor = 'border-blue-300';
-              } else {
-                // Fallback to utils for IELTS/others
-                scoreBgColor = getScoreBgColor(Number(score), attempt.test?.testType);
-                // Actually getBandBgColor returns tailwind classes like 'bg-red-50'
-                // But since we want to respect the user's "Don't touch other tests", 
-                // we should probably stick to the util functions for IELTS. DANGER: check utils implementation? 
-                // The original code used: 
-                // attempt.overallBand ? `${getBandBgColor(attempt.overallBand)} ${attempt.overallBand >= 7 ? 'border-emerald-300' : ...}` : ...
-              }
-            }
 
             return (
-              <Link
-                key={attempt.id}
-                href={`/results/${attempt.id}`}
-                className="block bg-white rounded-xl border border-[#e8ecef] hover:shadow-lg transition-all group"
-                style={{ borderColor: 'transparent' }} // use hover effect class or just default
-              >
-                <div className="p-6 border border-[#e8ecef] rounded-xl hover:border-opacity-50 transition-colors"
-                  style={{ borderColor: '#e8ecef' }} // Using style to avoid overriding tailwind hover?
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${theme.primary}4D`; }} // 30%
+              <Link key={attempt.id} href={`/results/${attempt.id}`} className="block bg-white rounded-xl border border-[#e8ecef] hover:shadow-lg transition-all group">
+                <div
+                  className="p-6 border border-[#e8ecef] rounded-xl transition-colors"
+                  style={{ borderColor: '#e8ecef' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${theme.primary}4D`; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e8ecef'; }}
                 >
                   <div className="flex items-start justify-between gap-4">
-                    {/* Left: Score Badge */}
                     <div className="flex items-start gap-5">
                       <div
-                        className={`w-20 h-20 rounded-xl flex flex-col items-center justify-center font-bold transition-all border-2 ${!isToeflItp && score
-                            ? `${getScoreBgColor(Number(score), attempt.test?.testType)} ${attempt.test?.testType === 'pte_academic' ? (Number(score) >= 79 ? 'border-emerald-300' : Number(score) >= 65 ? 'border-blue-300' : 'border-amber-300') : (Number(score) >= 7 ? 'border-emerald-300' : Number(score) >= 5 ? 'border-blue-300' : 'border-amber-300')}`
-                            : 'bg-[#f8f9fa] border-[#e8ecef]'
-                          }`}
-                        style={
-                          isToeflItp && score ? {
-                            backgroundColor: theme.secondary,
-                            color: theme.primary,
-                            borderColor: Number(score) >= 600 ? '#86efac' : Number(score) >= 500 ? '#93c5fd' : '#fcd34d'
-                          } : { /* Handled by classes for IELTS */ }
-                        }
+                        className="w-20 h-20 rounded-xl flex flex-col items-center justify-center font-bold transition-all border-2 bg-[#f8f9fa]"
+                        style={score !== null ? {
+                          backgroundColor: theme.secondary,
+                          color: theme.primary,
+                          borderColor: Number(score) >= 600 ? '#86efac' : Number(score) >= 500 ? '#93c5fd' : '#fcd34d',
+                        } : { borderColor: '#e8ecef' }}
                       >
                         {score !== null ? (
                           <>
-                            <span
-                              className={`text-2xl ${!isToeflItp && score ? getScoreColor(Number(score), attempt.test?.testType) : ''}`}
-                              style={isToeflItp ? { color: theme.primary } : {}}
-                            >
-                              {isToeflItp && !attempt.overallScore && attempt.status === 'completed'
-                                ? score
-                                : (isToeflItp
-                                  ? score
-                                  : formatScore(Number(score), attempt.test?.testType === 'pte_academic' ? 1 : 0.5))}
-                            </span>
-                            <span className="text-xs text-[#5a6c7d] font-medium">
-                              {isToeflItp ? 'Score' : 'Overall'}
-                            </span>
+                            <span className="text-2xl" style={{ color: theme.primary }}>{score}</span>
+                            <span className="text-xs text-[#5a6c7d] font-medium">Score</span>
                           </>
                         ) : (
                           <span className="text-[#5a6c7d] text-xs text-center px-2">
-                            {attempt.status === 'scoring' ? 'Scoring...' : 'No score'}
+                            {'No score'}
                           </span>
                         )}
                       </div>
 
-                      {/* Test Info */}
                       <div className="flex-1">
                         <div className="flex items-start gap-3 mb-2">
                           <h3
@@ -395,16 +295,11 @@ export default function ResultsPage() {
                             {attempt.test?.title || 'Untitled Test'}
                           </h3>
                           {scoreChange !== null && (
-                            <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg ${scoreChange > 0
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200'
-                              }`}>
-                              {scoreChange > 0 ? (
-                                <HiTrendingUp className="w-3 h-3" />
-                              ) : (
-                                <HiTrendingDown className="w-3 h-3" />
-                              )}
-                              {Math.abs(Number(scoreChange)).toFixed(1)}
+                            <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg ${
+                              scoreChange > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                            }`}>
+                              {scoreChange > 0 ? <HiTrendingUp className="w-3 h-3" /> : <HiTrendingDown className="w-3 h-3" />}
+                              {Math.abs(Number(scoreChange)).toFixed(0)}
                             </span>
                           )}
                         </div>
@@ -414,55 +309,35 @@ export default function ResultsPage() {
                             <HiClock className="w-4 h-4" />
                             {formatDate(attempt.completedAt || attempt.startedAt)}
                           </span>
-                          <span className="text-[#e8ecef]">•</span>
+                          <span className="text-[#e8ecef]">|</span>
                           <span className="capitalize">{attempt.mode?.replace('_', ' ')}</span>
                           {attempt.practiceSectionType && (
                             <>
-                              <span className="text-[#e8ecef]">•</span>
+                              <span className="text-[#e8ecef]">|</span>
                               <span className="capitalize">{attempt.practiceSectionType}</span>
                             </>
                           )}
                         </div>
 
-                        {/* Section Scores */}
                         {score !== null && (
-                          <div className="grid grid-cols-4 gap-3">
-                            {isToeflItp ? (
-                              <>
-                                <div className="bg-[#f8f9fa] rounded-lg p-2 text-center border border-[#e8ecef]">
-                                  <p className="text-xs text-[#5a6c7d] font-medium mb-0.5">L</p>
-                                  <p className="text-base font-bold text-[#5a6c7d]">{attempt.listeningScore}</p>
-                                </div>
-                                <div className="bg-[#f8f9fa] rounded-lg p-2 text-center border border-[#e8ecef]">
-                                  <p className="text-xs text-[#5a6c7d] font-medium mb-0.5">S</p>
-                                  <p className="text-base font-bold text-[#5a6c7d]">{attempt.structureScore}</p>
-                                </div>
-                                <div className="bg-[#f8f9fa] rounded-lg p-2 text-center border border-[#e8ecef]">
-                                  <p className="text-xs text-[#5a6c7d] font-medium mb-0.5">R</p>
-                                  <p className="text-base font-bold text-[#5a6c7d]">{attempt.readingScore}</p>
-                                </div>
-                              </>
-                            ) : (
-                              [
-                                { label: 'L', score: attempt.listeningBand },
-                                { label: 'R', score: attempt.readingBand },
-                                { label: 'W', score: attempt.writingBand },
-                                { label: 'S', score: attempt.speakingBand },
-                              ].map((section, i) => (
-                                <div key={i} className="bg-[#f8f9fa] rounded-lg p-2 text-center border border-[#e8ecef]">
-                                  <p className="text-xs text-[#5a6c7d] font-medium mb-0.5">{section.label}</p>
-                                  <p className={`text-base font-bold ${section.score ? getScoreColor(section.score, attempt.test?.testType) : 'text-[#5a6c7d]'}`}>
-                                    {formatScore(Number(section.score), attempt.test?.testType === 'pte_academic' ? 1 : 0.5)}
-                                  </p>
-                                </div>
-                              ))
-                            )}
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="bg-[#f8f9fa] rounded-lg p-2 text-center border border-[#e8ecef]">
+                              <p className="text-xs text-[#5a6c7d] font-medium mb-0.5">L</p>
+                              <p className="text-base font-bold text-[#5a6c7d]">{attempt.listeningScore}</p>
+                            </div>
+                            <div className="bg-[#f8f9fa] rounded-lg p-2 text-center border border-[#e8ecef]">
+                              <p className="text-xs text-[#5a6c7d] font-medium mb-0.5">S</p>
+                              <p className="text-base font-bold text-[#5a6c7d]">{attempt.structureScore}</p>
+                            </div>
+                            <div className="bg-[#f8f9fa] rounded-lg p-2 text-center border border-[#e8ecef]">
+                              <p className="text-xs text-[#5a6c7d] font-medium mb-0.5">R</p>
+                              <p className="text-base font-bold text-[#5a6c7d]">{attempt.readingScore}</p>
+                            </div>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Right: Status */}
                     <div className="flex flex-col items-end gap-3">
                       {getStatusBadge(attempt.status)}
                       {attempt.status === 'in_progress' && (
@@ -481,12 +356,9 @@ export default function ResultsPage() {
                           {deletingAttemptId === attempt.id ? 'Deleting...' : 'Delete'}
                         </button>
                       )}
-                      <button
-                        className="text-sm font-semibold flex items-center gap-1 transition-colors"
-                        style={{ color: theme.primary }}
-                      >
-                        {getReviewText(!!score)}
-                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                      <button className="text-sm font-semibold flex items-center gap-1 transition-colors" style={{ color: theme.primary }}>
+                        {score !== null ? 'View Score Report' : 'View Details'}
+                        <span className="group-hover:translate-x-1 transition-transform">-&gt;</span>
                       </button>
                     </div>
                   </div>
@@ -497,7 +369,6 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {/* Pagination */}
       {total > limit && (
         <div className="flex items-center justify-center gap-2 pt-6">
           <button
@@ -507,9 +378,7 @@ export default function ResultsPage() {
           >
             Previous
           </button>
-          <span className="text-sm text-[#5a6c7d] px-4">
-            Showing {offset + 1}-{Math.min(offset + limit, total)} of {total}
-          </span>
+          <span className="text-sm text-[#5a6c7d] px-4">Showing {offset + 1}-{Math.min(offset + limit, total)} of {total}</span>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}

@@ -22,7 +22,6 @@ export interface DashboardStats {
   recentAttempts: Array<{
     id: string;
     testTitle: string;
-    overallBand: number | null;
     overallScore: number | null;
     status: string;
     completedAt: string | null;
@@ -30,16 +29,14 @@ export interface DashboardStats {
   sectionAverages: {
     listening: number | null;
     reading: number | null;
-    writing: number | null;
-    speaking: number | null;
+    structure: number | null;
   };
 }
 
 export interface ProgressData {
   dates: string[];
-  overallBands: number[];
-  listeningBands: number[];
-  readingBands: number[];
-  writingBands: number[];
-  speakingBands: number[];
+  overallScores: number[];
+  listeningScores: number[];
+  readingScores: number[];
+  structureScores: number[];
 }

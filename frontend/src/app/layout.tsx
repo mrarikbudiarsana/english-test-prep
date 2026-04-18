@@ -1,19 +1,14 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from 'react-hot-toast';
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
+import MigrationBanner from "@/components/layout/MigrationBanner";
 
 export const metadata: Metadata = {
-  title: "EnglishTest - IELTS, TOEFL, and PTE Practice Platform",
-  description: "Practice for IELTS, TOEFL, and PTE with AI-powered feedback and scoring.",
+  title: "ITP Ready — TOEFL ITP Practice Tests by English with Arik",
+  description: "Authentic TOEFL ITP Level 1 practice tests with Listening, Structure & Written Expression, and Reading Comprehension. Official-style scoring on the 310–677 scale.",
   icons: {
-    icon: 'https://scobvornehcncgsqngag.supabase.co/storage/v1/object/public/Public/Logo%20Round.png',
+    icon: '/logo.png',
   },
 };
 
@@ -24,9 +19,27 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased bg-gray-50`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="antialiased" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+        <MigrationBanner />
         <AuthProvider>
-          <Toaster position="top-center" />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                borderRadius: '12px',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSize: '14px',
+              },
+            }}
+          />
           {children}
         </AuthProvider>
       </body>

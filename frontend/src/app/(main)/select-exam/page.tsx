@@ -1,27 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { ExamType } from '@/types/user';
-import { examConfigs, getAllExamTypes } from '@/config/examConfig';
-import { HiOutlineCheckCircle, HiOutlineArrowRight } from 'react-icons/hi';
+import { examConfigs } from '@/config/examConfig';
+import { HiOutlineArrowRight } from 'react-icons/hi';
 
 export default function SelectExamPage() {
   const router = useRouter();
   const { user, updateExamPreference } = useAuth();
-  const [selectedExam, setSelectedExam] = useState<ExamType | null>(
-    user?.preferredExamType || null
-  );
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const config = examConfigs.toefl_itp;
+
+  useEffect(() => {
+    if (user?.preferredExamType === 'toefl_itp') {
+      router.replace('/dashboard');
+    }
+  }, [router, user?.preferredExamType]);
 
   const handleSelectExam = async () => {
-    if (!selectedExam) return;
-
     setIsLoading(true);
     try {
-      await updateExamPreference(selectedExam);
-      router.push('/dashboard');
+      await updateExamPreference('toefl_itp');
+      router.replace('/dashboard');
     } catch (error) {
       console.error('Failed to update exam preference:', error);
     } finally {
@@ -29,97 +30,70 @@ export default function SelectExamPage() {
     }
   };
 
-  const examTypes = getAllExamTypes();
-
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
-      <div className="max-w-4xl w-full">
+      <div className="max-w-3xl w-full">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-3">
-            Choose Your Exam
+            TOEFL ITP Setup
           </h1>
           <p className="text-gray-600 text-lg">
-            Select the exam you&apos;re preparing for. You can change this anytime.
+            This platform now focuses only on TOEFL ITP. Continue to set your account to the TOEFL ITP track.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          {examTypes.map((examType) => {
-            const config = examConfigs[examType];
-            const isSelected = selectedExam === examType;
+        <div
+          className="rounded-3xl border-2 bg-white p-8 shadow-sm mb-10"
+          style={{
+            borderColor: config.theme.border,
+            boxShadow: `0 10px 30px ${config.theme.primary}12`,
+          }}
+        >
+          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 bg-gradient-to-br ${config.theme.gradient}`}>
+            <span className="text-white font-bold text-lg">{config.shortName.charAt(0)}</span>
+          </div>
 
-            return (
-              <button
-                key={examType}
-                onClick={() => setSelectedExam(examType)}
-                className="relative p-6 rounded-2xl border-2 text-left transition-all duration-200 bg-white hover:shadow-md"
-                style={{
-                  borderColor: isSelected ? config.theme.primary : '#e5e7eb',
-                  backgroundColor: isSelected ? config.theme.heroTint1 : 'white',
-                  boxShadow: isSelected ? `0 4px 20px ${config.theme.primary}20` : undefined,
-                }}
+          <h3 className="text-2xl font-semibold text-gray-900 mb-2">{config.name}</h3>
+          <p className="text-gray-600 mb-5">{config.description}</p>
+
+          <div className="flex flex-wrap gap-2 mb-6">
+            {config.sections.map((section) => (
+              <span
+                key={section.key}
+                className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium"
+                style={{ backgroundColor: config.theme.heroTint1, color: config.theme.primary }}
               >
-                {isSelected && (
-                  <div className="absolute top-4 right-4">
-                    <HiOutlineCheckCircle className="w-6 h-6" style={{ color: config.theme.primary }} />
-                  </div>
-                )}
+                <section.icon className="w-4 h-4 mr-1.5" />
+                {section.label}
+              </span>
+            ))}
+          </div>
 
-                <div
-                  className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 bg-gradient-to-br ${config.theme.gradient}`}
-                >
-                  <span className="text-white font-bold text-lg">
-                    {config.shortName.charAt(0)}
-                  </span>
-                </div>
-
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {config.name}
-                </h3>
-
-                <p className="text-gray-600 text-sm mb-4">
-                  {config.description}
-                </p>
-
-                <div className="flex flex-wrap gap-2">
-                  {config.sections.map((section) => (
-                    <span
-                      key={section.key}
-                      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
-                    >
-                      <section.icon className="w-3.5 h-3.5 mr-1" />
-                      {section.label}
-                    </span>
-                  ))}
-                </div>
-
-                <div
-                  className="mt-4 pt-4 border-t"
-                  style={{ borderColor: isSelected ? config.theme.border : '#f3f4f6' }}
-                >
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">{config.scoreLabel}</span>
-                    <span className="font-medium" style={{ color: isSelected ? config.theme.primary : '#111827' }}>
-                      {config.scoreRange.min} – {config.scoreRange.max}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <p className="text-sm text-gray-500 mb-1">{config.scoreLabel}</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {config.scoreRange.min} - {config.scoreRange.max}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <p className="text-sm text-gray-500 mb-1">Format</p>
+              <p className="text-lg font-semibold text-gray-900">3 sections, 140 questions</p>
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-center">
           <button
             onClick={handleSelectExam}
-            disabled={!selectedExam || isLoading}
+            disabled={isLoading}
             className="inline-flex items-center px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200"
             style={
-              selectedExam && !isLoading
+              !isLoading
                 ? {
-                    backgroundColor: examConfigs[selectedExam].theme.primary,
+                    backgroundColor: config.theme.primary,
                     color: 'white',
-                    boxShadow: `0 8px 24px ${examConfigs[selectedExam].theme.primary}40`,
+                    boxShadow: `0 8px 24px ${config.theme.primary}40`,
                   }
                 : { backgroundColor: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed' }
             }
@@ -132,14 +106,7 @@ export default function SelectExamPage() {
                   fill="none"
                   viewBox="0 0 24 24"
                 >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path
                     className="opacity-75"
                     fill="currentColor"

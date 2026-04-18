@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useMemo } from 'react';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { cn } from '@/lib/utils';
 
 interface AudioPlayerProps {
   src: string;
@@ -80,66 +81,75 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled =
   const durationLabel = durationDisplay === '--:--' ? 'loading...' : durationDisplay;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <div className="flex items-center gap-4">
+    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-3 sm:p-4">
+      <div className="flex items-center gap-4 sm:gap-6">
         {/* Play/Pause Button */}
         <button
           onClick={handlePlayPause}
           disabled={disabled || !isLoaded || !canPlay}
-          className={`
-            flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors
-            ${disabled || !isLoaded || !canPlay
-              ? 'cursor-not-allowed bg-gray-100 text-gray-400'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-            }
-          `}
-          title={disabled ? 'Audio is disabled during review' : !canPlay ? 'Audio has already been played' : isPlaying ? 'Pause' : 'Play'}
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-all duration-300 shadow-sm",
+            disabled || !isLoaded || !canPlay
+              ? 'cursor-not-allowed bg-slate-50 text-slate-300'
+              : 'bg-[#08507f] text-white hover:bg-[#064066] hover:shadow-md hover:scale-105 active:scale-95'
+          )}
+          title={disabled ? 'Audio is disabled' : !canPlay ? 'Finished' : isPlaying ? 'Pause' : 'Play'}
         >
           {isPlaying ? (
             <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-              <rect x="6" y="4" width="4" height="16" rx="1" />
-              <rect x="14" y="4" width="4" height="16" rx="1" />
+              <rect x="6" y="4" width="4" height="16" rx="1.5" />
+              <rect x="14" y="4" width="4" height="16" rx="1.5" />
             </svg>
           ) : (
-            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
+            <svg className="h-5 w-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M7 4v16l13-8z" />
             </svg>
           )}
         </button>
 
+        {/* Info & Title */}
+        <div className="hidden md:block shrink-0 border-r border-slate-100 pr-4">
+          <h4 className="text-sm font-semibold text-[#08507f]">Audio Question</h4>
+          <p className="text-[10px] text-slate-500 font-medium">Plays once</p>
+        </div>
+
         {/* Progress Section */}
-        <div className="flex flex-1 flex-col gap-1.5">
-          {/* Progress Bar */}
+        <div className="flex-1 flex flex-col gap-1.5 min-w-0">
           <div
-            className={`group relative h-2 w-full rounded-full bg-gray-200 ${disableScrubbing ? '' : 'cursor-pointer'}`}
+            className={cn(
+              "group relative h-2.5 w-full rounded-full bg-slate-100",
+              (disabled || disableScrubbing) ? 'cursor-default' : 'cursor-pointer'
+            )}
             onClick={handleProgressClick}
           >
             <div
-              className="h-full rounded-full bg-blue-500"
+              className="h-full rounded-full bg-[#08507f] transition-all duration-300"
               style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
             />
-            <div
-              className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 shadow transition-opacity group-hover:opacity-100"
-              style={{ left: `${progress}%`, marginLeft: '-7px' }}
-            />
           </div>
-
-          {/* Time Display */}
-          <div className="flex justify-between text-xs text-gray-500 font-mono">
-            <span>{formatTime(currentTime)}</span>
-            <span>{durationLabel}</span>
+          <div className="flex items-center justify-between text-[11px] font-bold font-mono tracking-tight text-slate-500 tabular-nums">
+            <span className="flex items-center gap-2">
+              <span className="md:hidden text-slate-400 font-semibold uppercase tracking-tighter">Audio Question</span>
+              {formatTime(currentTime)}
+            </span>
+            <span className={cn(durationLabel === 'loading...' ? 'text-slate-300 font-medium' : 'text-slate-500')}>
+              {durationLabel}
+            </span>
           </div>
         </div>
+
+        {/* Status Badge */}
+        {!canPlay && !disabled && (
+          <div className="hidden sm:flex shrink-0 items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg text-[11px] font-bold text-emerald-700 border border-emerald-100/50 animate-in fade-in zoom-in duration-300">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
+            FINISHED
+          </div>
+        )}
       </div>
 
-      {/* Play Once Notice */}
-      {playOnce && !canPlay && (
-        <p className="mt-2 text-xs text-amber-600">
-          This audio can only be played once, as in the real exam.
-        </p>
-      )}
+      {/* Flagged/Disabled Notice (Minimal) */}
       {disabled && (
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-3 text-[10px] text-slate-400 font-medium italic border-t border-slate-50 pt-2">
           Audio playback is disabled during review.
         </p>
       )}

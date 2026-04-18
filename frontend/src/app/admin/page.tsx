@@ -5,6 +5,13 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { 
+  HiUsers, 
+  HiClipboardList, 
+  HiChartBar, 
+  HiCurrencyDollar,
+  HiPlus
+} from 'react-icons/hi';
 
 interface AdminDashboardStats {
   totalTests: number;
@@ -36,12 +43,12 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+        <h1 className="text-2xl font-bold text-[#08507f]">Admin Overview</h1>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
-              <Skeleton variant="text" width="60%" className="mb-2" />
-              <Skeleton variant="text" height={40} width="40%" />
+              <Skeleton className="h-4 w-24 mb-2" />
+              <Skeleton className="h-10 w-20" />
             </Card>
           ))}
         </div>
@@ -52,13 +59,13 @@ export default function AdminDashboardPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+        <h1 className="text-2xl font-bold text-[#08507f]">Admin Overview</h1>
         <Card>
           <div className="text-center py-8">
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={fetchStats}
-              className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+              className="text-[#08507f] hover:underline font-medium text-sm"
             >
               Try again
             </button>
@@ -72,111 +79,113 @@ export default function AdminDashboardPage() {
     {
       label: 'Total Tests',
       value: stats?.totalTests ?? 0,
-      icon: (
-        <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-        </svg>
-      ),
+      icon: <HiClipboardList className="w-6 h-6 text-white" />,
       href: '/admin/tests',
       linkText: 'Manage Tests',
-      bgColor: 'bg-blue-50',
+      colorClass: 'bg-[#08507f]',
     },
     {
-      label: 'Total Users',
+      label: 'Registered Users',
       value: stats?.totalUsers ?? 0,
-      icon: (
-        <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-        </svg>
-      ),
+      icon: <HiUsers className="w-6 h-6 text-white" />,
       href: '/admin/users',
       linkText: 'Manage Users',
-      bgColor: 'bg-green-50',
+      colorClass: 'bg-orange-500',
     },
     {
-      label: 'Total Attempts',
+      label: 'Test Attempts',
       value: stats?.totalAttempts ?? 0,
-      icon: (
-        <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-        </svg>
-      ),
-      href: '/admin/tests',
+      icon: <HiChartBar className="w-6 h-6 text-white" />,
+      href: '/admin/results',
       linkText: 'View Activity',
-      bgColor: 'bg-purple-50',
+      colorClass: 'bg-slate-700',
     },
   ];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-[#08507f]">Platform Overview</h1>
+        <p className="text-sm text-slate-500 mt-1">Management dashboard for ITP Ready institutional tests.</p>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {statCards.map((card) => (
-          <Card key={card.label}>
+          <div key={card.label} className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">{card.label}</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">
-                  {card.value.toLocaleString()}
-                </p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{card.label}</p>
+                <div className="flex items-baseline gap-1 mt-2">
+                  <p className="text-4xl font-extrabold text-slate-900 tracking-tight">
+                    {card.value.toLocaleString()}
+                  </p>
+                </div>
               </div>
-              <div className={`p-3 rounded-lg ${card.bgColor}`}>{card.icon}</div>
+              <div className={`p-3 rounded-xl ${card.colorClass} shadow-lg shadow-black/5`}>
+                {card.icon}
+              </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="mt-4 pt-4 border-t border-slate-50 flex justify-between items-center">
               <Link
                 href={card.href}
-                className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                className="text-sm font-bold text-[#08507f] hover:text-[#08507f]/80 transition-colors"
               >
-                {card.linkText} &rarr;
+                {card.linkText}
               </Link>
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="space-y-3">
+
+      <div className="grid grid-cols-1 gap-8">
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-slate-800">Quick Operations</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Link
               href="/admin/tests/new"
-              className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors"
+              className="group flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-[#08507f] to-[#0a629b] text-white shadow-lg shadow-blue-900/10 hover:-translate-y-0.5 transition-all"
             >
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              <span className="text-sm font-medium text-blue-700">Create New Test</span>
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition-colors">
+                  <HiPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-bold">Create New Mock Test</p>
+                  <p className="text-xs text-blue-100/70">Start building a new TOEFL ITP set</p>
+                </div>
+              </div>
+              <HiPlus className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
-            <Link
-              href="/admin/tests"
-              className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-            >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-              </svg>
-              <span className="text-sm font-medium text-gray-700">View All Tests</span>
-            </Link>
+
             <Link
               href="/admin/users"
-              className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-              </svg>
-              <span className="text-sm font-medium text-gray-700">Manage Users</span>
+              <div className="p-2 rounded-lg bg-orange-50 text-orange-600">
+                <HiUsers className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-slate-800 text-sm">Review New Registrations</p>
+                <p className="text-xs text-slate-400">Manage student access and roles</p>
+              </div>
             </Link>
+
             <Link
               href="/admin/pricing"
-              className="flex items-center gap-3 p-3 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
+              className="flex items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
             >
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-sm font-medium text-green-700">Manage Pricing</span>
+              <div className="p-2 rounded-lg bg-green-50 text-green-600">
+                <HiCurrencyDollar className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-slate-800 text-sm">Subscription Plans</p>
+                <p className="text-xs text-slate-400">Configure institutional access levels</p>
+              </div>
             </Link>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );

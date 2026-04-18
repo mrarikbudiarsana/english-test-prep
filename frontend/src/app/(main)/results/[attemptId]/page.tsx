@@ -11,7 +11,6 @@ type Props = {
 type ShareInfo = {
   testTitle?: string;
   testType?: string;
-  overallBand?: number;
   overallScore?: number;
   completedAt?: string;
   isPartialTest?: boolean;
@@ -42,8 +41,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const testTitle = shareInfo.testTitle || 'English Practice Test';
   const isToeflItp = shareInfo.testType === 'toefl_itp';
-  const isBandScale = usesBandScale(shareInfo.testType || 'academic');
-  const examName = examNameFromTestType(shareInfo.testType || 'academic');
+  const isBandScale = usesBandScale(shareInfo.testType || 'toefl_itp');
+  const examName = examNameFromTestType(shareInfo.testType || 'toefl_itp');
   const isPartialTest = shareInfo.isPartialTest && shareInfo.singleSection;
 
   // For partial tests, use skill-specific score and messaging
@@ -55,17 +54,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (isPartialTest && shareInfo.singleSection) {
     skillLabel = shareInfo.singleSection.label;
     score = shareInfo.singleSection.score.toString();
-    const partialScorePrefix = isBandScale ? 'Band ' : '';
-    ogTitle = `My ${skillLabel} Score: ${partialScorePrefix}${score}`;
-    description = `I scored ${partialScorePrefix}${score} on ${examName} ${skillLabel} practice! Check it out!`;
+    ogTitle = `My ${skillLabel} Score: ${score}`;
+    description = `I scored ${score} on ${examName} ${skillLabel} practice! Check it out!`;
   } else {
     skillLabel = 'Overall';
-    score = isToeflItp
-      ? ((shareInfo.overallScore ?? shareInfo.overallBand) ? (shareInfo.overallScore ?? shareInfo.overallBand)!.toString() : '-')
-      : (shareInfo.overallBand ? shareInfo.overallBand.toString() : '-');
+    score = shareInfo.overallScore ? shareInfo.overallScore.toString() : '-';
     ogTitle = `My Result: ${testTitle}`;
-    const fullScorePrefix = isBandScale ? 'Band ' : '';
-    description = `I scored ${fullScorePrefix}${score} on my ${examName} practice test! Check it out!`;
+    description = `I scored ${score} on my ${examName} practice test! Check it out!`;
   }
 
   const date = shareInfo.completedAt ? new Date(shareInfo.completedAt).toLocaleDateString() : new Date().toLocaleDateString();

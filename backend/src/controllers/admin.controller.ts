@@ -87,63 +87,6 @@ export async function publishTest(
   }
 }
 
-export async function setToeflIbtBlueprint(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const testId = req.params.testId as string;
-    const blueprint = req.body?.blueprint ?? req.body;
-    const test = await adminService.setToeflIbtBlueprint(testId, blueprint);
-    res.json({ data: test });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function validateToeflIbtBlueprint(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const testId = req.params.testId as string;
-    const result = await adminService.validateToeflIbtBlueprint(testId);
-    res.json({ data: result });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function validatePteBlueprint(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const testId = req.params.testId as string;
-    const result = await adminService.validatePteBlueprint(testId);
-    res.json({ data: result });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function validatePtePublish(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const testId = req.params.testId as string;
-    const result = await adminService.validatePtePublish(testId);
-    res.json({ data: result });
-  } catch (error) {
-    next(error);
-  }
-}
-
 // ---------- Section CRUD ----------
 
 export async function createSection(
@@ -261,36 +204,6 @@ export async function bulkCreateQuestions(
   }
 }
 
-export async function bulkCreateIELTSQuestions(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const sectionId = req.params.sectionId as string;
-    const { questions } = req.body;
-    const result = await adminService.bulkCreateIELTSQuestions(sectionId, questions);
-    res.status(201).json({ data: result });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function bulkCreateToeflIbtQuestions(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const sectionId = req.params.sectionId as string;
-    const { questions } = req.body;
-    const result = await adminService.bulkCreateToeflIbtQuestions(sectionId, questions);
-    res.status(201).json({ data: result });
-  } catch (error) {
-    next(error);
-  }
-}
-
 // ---------- Users ----------
 
 export async function getUsers(
@@ -300,7 +213,7 @@ export async function getUsers(
 ): Promise<void> {
   try {
     const offset = parseInt(req.query.offset as string) || 0;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const limit = parseInt(req.query.limit as string) || 50;
     const result = await adminService.getUsers(offset, limit);
     res.json({ data: result.rows, total: result.total, offset, limit });
   } catch (error) {
@@ -373,6 +286,23 @@ export async function getDashboardStats(
   try {
     const stats = await adminService.getDashboardStats();
     res.json({ data: stats });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ---------- Results ----------
+
+export async function getAllResults(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const result = await adminService.getAllResults(offset, limit);
+    res.json({ data: result.rows, total: result.total, offset, limit });
   } catch (error) {
     next(error);
   }

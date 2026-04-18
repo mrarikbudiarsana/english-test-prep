@@ -15,10 +15,6 @@ router.post('/tests', adminController.createTest);
 router.put('/tests/:testId', adminController.updateTest);
 router.delete('/tests/:testId', adminController.deleteTest);
 router.post('/tests/:testId/publish', adminController.publishTest);
-router.post('/tests/:testId/blueprint', adminController.setToeflIbtBlueprint);
-router.get('/tests/:testId/blueprint/validate', adminController.validateToeflIbtBlueprint);
-router.get('/tests/:testId/pte-blueprint/validate', adminController.validatePteBlueprint);
-router.get('/tests/:testId/pte-publish/validate', adminController.validatePtePublish);
 
 // Section CRUD
 router.post('/tests/:testId/sections', adminController.createSection);
@@ -34,10 +30,6 @@ router.post('/sections/:sectionId/questions', adminController.createQuestion);
 // Bulk question creation (TOEFL ITP only)
 router.post('/sections/:sectionId/questions/bulk', adminController.bulkCreateQuestions);
 
-// Bulk question creation (IELTS only)
-router.post('/sections/:sectionId/questions/bulk-ielts', adminController.bulkCreateIELTSQuestions);
-// Bulk question creation (TOEFL iBT only)
-router.post('/sections/:sectionId/questions/bulk-toefl-ibt', adminController.bulkCreateToeflIbtQuestions);
 router.put('/tests/:testId/sections/:sectionId/questions/:questionId', adminController.updateQuestion);
 router.put('/questions/:questionId', adminController.updateQuestion);
 router.delete('/tests/:testId/sections/:sectionId/questions/:questionId', adminController.deleteQuestion);
@@ -51,5 +43,8 @@ router.get('/users/:userId/attempts', adminController.getUserAttempts);
 
 // Dashboard stats
 router.get('/dashboard/stats', adminController.getDashboardStats);
+
+// Results (all completed attempts)
+router.get('/results', adminController.getAllResults);
 
 export default router;

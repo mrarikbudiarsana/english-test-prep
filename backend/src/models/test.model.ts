@@ -2,7 +2,7 @@ import { query } from '../config/database';
 
 // ---------- helpers ----------
 
-export type TestType = 'academic' | 'general_training' | 'toefl_ibt' | 'toefl_itp' | 'pte_academic';
+export type TestType = 'toefl_itp';
 
 const fieldMap: Record<string, string> = {
   title: 'title',
@@ -122,11 +122,7 @@ export async function create(data: {
   const deliveryModel = data.deliveryModel ?? 'legacy';
   
   const durationMap: Record<string, number> = {
-    academic: 165,
-    general_training: 165,
-    toefl_ibt: 117,
     toefl_itp: 115,
-    pte_academic: 120,
   };
   const durationMinutes = data.durationMinutes ?? durationMap[data.testType] ?? 120;
 

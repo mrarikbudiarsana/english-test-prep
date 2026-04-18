@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { MCQData } from '@/types/test';
 
 interface MultipleChoiceProps {
@@ -119,9 +120,9 @@ export default function MultipleChoice({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {multiSelect && (
-        <p className="text-xs text-gray-500 italic mb-2">
+        <p className="mb-2 text-xs italic text-gray-500">
           {expectedAnswers
             ? `Select ${expectedAnswers === 2 ? 'TWO' : expectedAnswers === 3 ? 'THREE' : expectedAnswers} answers`
             : 'Select all that apply'}
@@ -130,45 +131,56 @@ export default function MultipleChoice({
       {options.map((option) => {
         const optionKey = option.key || (option as any).id;
         const status = getOptionStatus(optionKey);
+        const selected = isSelected(optionKey);
 
         return (
           <label
             key={optionKey}
-            className={`
-              flex cursor-pointer items-start gap-3 transition-colors
-              ${readOnly ? 'cursor-default' : ''}
-              ${getOptionStyle(optionKey)}
-              ${status ? 'p-2 -ml-2' : ''} 
-            `}
+            className={cn(
+              "group relative flex items-center gap-4 rounded-xl border p-4 transition-all duration-200",
+              readOnly ? 'cursor-default' : 'cursor-pointer hover:border-[#08507f]/30 hover:bg-slate-50/50',
+              status === 'correct'
+                ? 'border-green-500 bg-green-50/50 shadow-sm'
+                : status === 'incorrect'
+                  ? 'border-red-500 bg-red-50/50 shadow-sm'
+                  : status === 'missed'
+                    ? 'border-amber-400 bg-amber-50/50'
+                    : selected
+                      ? 'border-[#08507f] bg-blue-50/30 ring-1 ring-[#08507f]'
+                      : 'border-slate-200 bg-white'
+            )}
           >
-            {/* Radio / Checkbox */}
-            <div className="pt-0.5">
-              {multiSelect ? (
-                <input
-                  type="checkbox"
-                  checked={isSelected(optionKey)}
-                  onChange={() => handleMultiSelect(optionKey)}
-                  disabled={readOnly}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-default"
-                />
-              ) : (
-                <input
-                  type="radio"
-                  checked={isSelected(optionKey)}
-                  onChange={() => handleSingleSelect(optionKey)}
-                  disabled={readOnly}
-                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-default"
-                />
-              )}
+            {/* Custom Circular Indicator */}
+            <div className="flex shrink-0 items-center justify-center">
+              <div className={cn(
+                "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all duration-200",
+                selected 
+                  ? "border-[#08507f] bg-[#08507f]" 
+                  : "border-slate-300 bg-white group-hover:border-[#08507f]/50"
+              )}>
+                {selected && (
+                  <div className={cn(
+                    "rounded-full bg-white",
+                    multiSelect ? "h-2 w-2" : "h-2 w-2"
+                  )} />
+                )}
+              </div>
+              {/* Hidden native input for accessibility */}
+              <input
+                type={multiSelect ? "checkbox" : "radio"}
+                checked={selected}
+                onChange={() => multiSelect ? handleMultiSelect(optionKey) : handleSingleSelect(optionKey)}
+                disabled={readOnly}
+                className="sr-only"
+              />
             </div>
 
             {/* Option Text */}
-            <div className="flex flex-1 items-start justify-between gap-2">
-              <span className="text-base text-black leading-relaxed not-italic font-normal">
-                <span className="mr-2 font-normal text-black">
-                  {optionKey}.
-                </span>
-                {/* Simple rich text rendering for options (supports <u>) */}
+            <div className="flex flex-1 items-center justify-between gap-2 overflow-hidden">
+              <span className={cn(
+                "text-[15px] sm:text-[16px] leading-relaxed font-normal transition-colors",
+                selected ? "text-[#08507f]" : "text-slate-700"
+              )}>
                 {(() => {
                   const normalizedText = normalizeOptionText(option.text, optionKey);
                   const parts = normalizedText.split(/(<u>.*?<\/u>)/g);
@@ -176,7 +188,7 @@ export default function MultipleChoice({
                     <span>
                       {parts.map((part, i) => {
                         if (part.startsWith('<u>') && part.endsWith('</u>')) {
-                          return <u key={i}>{part.slice(3, -4)}</u>;
+                          return <u key={i} className="decoration-[#08507f] decoration-2 font-normal">{part.slice(3, -4)}</u>;
                         }
                         return <span key={i}>{part}</span>;
                       })}
@@ -185,19 +197,19 @@ export default function MultipleChoice({
                 })()}
               </span>
 
-              {/* Status Icon */}
+              {/* Status Indicator (Review Mode) */}
               {status === 'correct' && (
-                <svg className="h-5 w-5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                </div>
               )}
               {status === 'incorrect' && (
-                <svg className="h-5 w-5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-500 text-white">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                </div>
               )}
               {status === 'missed' && (
-                <span className="shrink-0 text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-1 rounded">
                   Correct
                 </span>
               )}

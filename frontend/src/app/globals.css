@@ -1,97 +1,77 @@
 @import "tailwindcss";
 
-.line-label {
-  color: #9ca3af;
-  font-size: 0.75rem;
-  user-select: none;
-}
-
+/* ── ITP Ready Brand Tokens ─────────────────────────────────── */
 :root {
-  /* Primary Brand */
-  --color-ielts-red: #e4002b;
+  --brand-navy:       #08507f;
+  --brand-navy-dark:  #063d61;
+  --brand-navy-light: #e8f4fd;
+  --brand-orange:     #f59e0b;
+  --brand-orange-dark:#d97706;
 
-  /* Backgrounds */
-  --color-background: #fafbfc;
-  --color-background-secondary: #f5f7f9;
-  --color-background-tertiary: #f0f9ff;
-
-  /* Text */
-  --color-foreground: #2c3e50;
-  --color-foreground-secondary: #5a6c7d;
-
-  /* Borders & Dividers */
-  --color-border: #e8ecef;
-
-  /* Accents */
-  --color-red-soft: #ffe5ea;
-  --color-blue-soft: #e8f4f8;
-
-  /* Status */
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
+  --color-background: #f8fafc;
+  --color-foreground: #020617;
+  --color-border:     #e2e8f0;
+  --color-success:    #059669;
+  --color-warning:    #d97706;
 }
 
 @theme inline {
-  /* Brand Colors */
-  --color-primary: #e4002b;
-  --color-red: #e4002b;
-
-  /* Backgrounds */
-  --color-background: #fafbfc;
-  --color-bg-secondary: #f5f7f9;
-  --color-bg-tertiary: #f0f9ff;
-
-  /* Text Colors */
-  --color-foreground: #2c3e50;
-  --color-text-secondary: #5a6c7d;
-
-  /* Borders */
-  --color-border: #e8ecef;
-
-  /* Soft Accents */
-  --color-red-soft: #ffe5ea;
-  --color-blue-soft: #e8f4f8;
-
-  /* Status Colors */
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-
-  /* Fonts */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary:       #08507f;
+  --color-primary-dark:  #063d61;
+  --color-primary-light: #e8f4fd;
+  --color-brand-orange:  #f59e0b;
+  --color-background:    #f8fafc;
+  --color-foreground:    #020617;
+  --color-border:        #e2e8f0;
+  --color-success:       #059669;
+  --color-warning:       #d97706;
+  --font-sans: 'Inter', system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Adjust backgrounds for dark mode */
-    --color-background: #1a1a1a;
-    --color-background-secondary: #242424;
-    --color-background-tertiary: #2a2a2a;
-
-    /* Adjust text for dark mode */
-    --color-foreground: #e5e7eb;
-    --color-foreground-secondary: #9ca3af;
-
-    /* Borders in dark mode */
-    --color-border: #374151;
-
-    /* Soft accents adjusted for dark mode */
-    --color-red-soft: #4a1520;
-    --color-blue-soft: #1e3a5f;
-  }
+/* ── Base ───────────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
 }
 
-/* ========================================
-   TOEFL ITP Reading Passage Styles
-   ======================================== */
+/* ── Selection ─────────────────────────────────────────────── */
+::selection {
+  background: var(--brand-navy-light);
+  color: var(--brand-navy);
+}
 
-/* Passage Title - shows question range like "Questions 1-10" */
+/* ── Scrollbars ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ── Section label ─────────────────────────────────────────── */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--brand-navy);
+}
+
+/* ── TOEFL ITP Reading Passage ─────────────────────────────── */
 .toefl-itp-passage-title {
   font-size: 1.25rem;
   font-weight: 700;
@@ -101,7 +81,6 @@ body {
   border-bottom: 1px solid #d1d5db;
 }
 
-/* Passage wrapper - contains line numbers and text */
 .toefl-itp-passage-content {
   position: relative;
   overflow-x: auto;
@@ -111,7 +90,6 @@ body {
   color: #1f2937;
 }
 
-/* Strict line-locked layout for plain-text TOEFL ITP passages */
 .toefl-itp-passage-content .toefl-line-grid {
   min-width: 42rem;
   width: max-content;
@@ -151,43 +129,32 @@ body {
   text-indent: 2em;
 }
 
-/* Legacy HTML passages (backward compatibility) */
 .toefl-itp-passage-content .toefl-passage {
   white-space: pre-wrap;
   line-height: 1.6;
 }
 
-/* Text selection highlight */
 .toefl-itp-passage-content ::selection {
   background-color: #bfdbfe;
 }
 
-/* User highlight marks */
 .toefl-itp-passage-content mark {
   background-color: #fef08a;
   border-radius: 2px;
   padding: 0 2px;
 }
 
-/* ========================================
-   TOEFL ITP Question Panel Styles
-   ======================================== */
+/* ── TOEFL ITP Question Panel ─────────────────────────────── */
+.toefl-itp-question-panel { background-color: #f8fafc; }
 
-/* Question panel background */
-.toefl-itp-question-panel {
-  background-color: #f8fafc;
-}
-
-/* Question card container */
 .toefl-itp-question-card {
   background: white;
   border-radius: 0.5rem;
   border: 1px solid #e2e8f0;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-/* Question number badge */
 .toefl-itp-question-badge {
   display: inline-flex;
   align-items: center;
@@ -198,23 +165,10 @@ body {
   border-radius: 0.5rem;
   font-size: 0.9375rem;
   font-weight: 700;
-  background-color: #2563eb;
+  background-color: var(--brand-navy);
   color: white;
 }
 
-/* Question text styling */
-.toefl-itp-question-text {
-  font-size: 1rem;
-  line-height: 1.6;
-  color: #1e293b;
-}
-
-/* Question card container */
-.toefl-itp-question-card {
-  /* Uses default sans-serif font to match other sections */
-}
-
-/* MCQ option styling for TOEFL ITP */
 .toefl-itp-option {
   display: flex;
   align-items: flex-start;
@@ -233,8 +187,8 @@ body {
 }
 
 .toefl-itp-option.selected {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--brand-navy);
+  background: var(--brand-navy-light);
 }
 
 .toefl-itp-option-letter {
@@ -252,7 +206,13 @@ body {
 }
 
 .toefl-itp-option.selected .toefl-itp-option-letter {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--brand-navy);
+  border-color: var(--brand-navy);
   color: white;
+}
+
+.line-label {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  user-select: none;
 }

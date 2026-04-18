@@ -6,6 +6,7 @@ interface QuestionNavigatorProps {
     currentIndex: number;
     onSelect: (index: number) => void;
     answeredIndices?: Set<number>;
+    flaggedIndices?: Set<number>;
     allowNavigation: boolean; // If false, bubbles are display-only (or only future disabled? usually disabled entirely for "cannot go back")
     startIndex?: number; // For display number offset
     orientation?: 'horizontal' | 'vertical';
@@ -17,6 +18,7 @@ interface QuestionNavigatorProps {
     previousLabel?: string;
     nextLabel?: string;
     pageSize?: number;
+    hideActions?: boolean;
 }
 
 export default function QuestionNavigator({
@@ -24,6 +26,7 @@ export default function QuestionNavigator({
     currentIndex,
     onSelect,
     answeredIndices = new Set(),
+    flaggedIndices = new Set(),
     allowNavigation,
     startIndex = 1,
     orientation = 'horizontal',
@@ -35,6 +38,7 @@ export default function QuestionNavigator({
     previousLabel = 'Previous',
     nextLabel = 'Next',
     pageSize = 50,
+    hideActions = false,
 }: QuestionNavigatorProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [gridPage, setGridPage] = useState(1);
@@ -66,6 +70,8 @@ export default function QuestionNavigator({
         [pageStart, pageEnd]
     );
 
+    const answeredCount = answeredIndices.size;
+
     // Keep page synced only when current question is outside the visible page.
     useEffect(() => {
         if (variant !== 'grid') return;
@@ -94,9 +100,9 @@ export default function QuestionNavigator({
 
     if (variant === 'grid') {
         return (
-            <div className="w-full rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+            <div className="w-full">
                 {totalPages > 1 && (
-                    <div className="mb-2 flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-2 py-1.5">
+                    <div className="mb-4 flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-2 py-1.5">
                         <button
                             onClick={() => setGridPage((p) => Math.max(1, p - 1))}
                             disabled={gridPage <= 1}
@@ -107,10 +113,10 @@ export default function QuestionNavigator({
                                     : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
                             )}
                         >
-                            Previous Page
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
                         </button>
-                        <span className="text-xs font-medium text-gray-600">
-                            Page {gridPage} / {totalPages}
+                        <span className="text-xs font-bold text-gray-600 uppercase tracking-tight">
+                            Questions {pageStart + 1} - {pageEnd}
                         </span>
                         <button
                             onClick={() => setGridPage((p) => Math.min(totalPages, p + 1))}
@@ -122,62 +128,51 @@ export default function QuestionNavigator({
                                     : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
                             )}
                         >
-                            Next Page
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
                         </button>
                     </div>
                 )}
 
-                <div className="pr-1">
-                    <div className="grid grid-cols-5 justify-items-center gap-2">
-                        {visibleIndices.map((idx) => {
-                            const isCurrent = idx === currentIndex;
-                            const isAnswered = answeredIndices.has(idx);
-                            const displayNumber = startIndex + idx;
-                            const isClickable = allowNavigation;
+                <div className="grid grid-cols-6 gap-2">
+                    {visibleIndices.map((idx) => {
+                        const isCurrent = idx === currentIndex;
+                        const isAnswered = answeredIndices.has(idx);
+                        const isFlagged = flaggedIndices.has(idx);
+                        const displayNumber = startIndex + idx;
+                        const isClickable = allowNavigation;
 
-                            return (
-                                <button
-                                    key={idx}
-                                    data-question-index={idx}
-                                    onClick={() => isClickable && onSelect(idx)}
-                                    disabled={!isClickable}
-                                    className={getNumberTileClass(displayNumber, isCurrent, isAnswered, isClickable)}
-                                >
-                                    {displayNumber}
-                                </button>
-                            );
-                        })}
-                    </div>
+                        return (
+                            <button
+                                key={idx}
+                                data-question-index={idx}
+                                onClick={() => isClickable && onSelect(idx)}
+                                disabled={!isClickable}
+                                className={cn(
+                                    "flex items-center justify-center rounded-sm border-2 text-[13px] font-semibold transition-all duration-150 h-10 w-full",
+                                    isCurrent
+                                        ? isFlagged
+                                            ? "bg-white border-[#f59e0b] text-[#f59e0b] shadow-md ring-2 ring-[#f59e0b]/20"
+                                            : "bg-white border-blue-500 text-blue-600 shadow-sm"
+                                        : isFlagged
+                                            ? "bg-[#f59e0b] border-[#f59e0b] text-white shadow-sm"
+                                            : isAnswered
+                                                ? "bg-blue-600 border-blue-600 text-white"
+                                                : "bg-white border-gray-200 text-gray-400 hover:border-gray-300",
+                                    !isClickable && !isCurrent && "cursor-default opacity-50",
+                                    !isClickable && isCurrent && "cursor-default"
+                                )}
+                            >
+                                {displayNumber}
+                            </button>
+                        );
+                    })}
                 </div>
 
-                {(onPrevious || onNext) && (
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                        <button
-                            onClick={onPrevious}
-                            disabled={!onPrevious || isFirst || !allowNavigation}
-                            className={cn(
-                                "h-10 rounded-lg border text-sm font-medium transition-colors",
-                                (!onPrevious || isFirst || !allowNavigation)
-                                    ? "text-gray-300 border-gray-100 bg-gray-50 cursor-not-allowed"
-                                    : "text-gray-700 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300"
-                            )}
-                        >
-                            {previousLabel}
-                        </button>
-                        <button
-                            onClick={onNext}
-                            disabled={!onNext || isLast}
-                            className={cn(
-                                "h-10 rounded-lg border px-2 text-sm font-medium transition-colors leading-tight shadow-sm",
-                                (!onNext || isLast)
-                                    ? "text-gray-300 border-gray-100 bg-gray-50 cursor-not-allowed shadow-none"
-                                    : "text-white border-blue-600 bg-blue-600 hover:bg-blue-700"
-                            )}
-                        >
-                            {nextLabel}
-                        </button>
-                    </div>
-                )}
+                <div className="mt-8 text-center">
+                    <p className="text-[13px] font-semibold text-[#08507f] opacity-80">
+                        {answeredCount} of {totalQuestions} answered
+                    </p>
+                </div>
             </div>
         );
     }

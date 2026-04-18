@@ -6,236 +6,309 @@ import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import {
-  HiAcademicCap,
-  HiLightningBolt,
-  HiChartBar,
-  HiClock,
-  HiBookOpen,
-  HiCheck,
-  HiGlobeAlt,
-} from 'react-icons/hi';
 
-export default function LandingPage() {
+/* ── tiny inline icons ────────────────────────────────────── */
+const IconCheck = () => (
+  <svg width="20" height="20" style={{ flexShrink: 0 }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+  </svg>
+);
+const IconHeadphones = () => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 7.5A8.25 8.25 0 0120.25 7.5M3 14.25v1.5A2.25 2.25 0 005.25 18H7.5v-4.5H5.25A2.25 2.25 0 003 15.75v-1.5zm18 0v1.5A2.25 2.25 0 0118.75 18H16.5v-4.5h2.25A2.25 2.25 0 0121 15.75v-1.5z" />
+  </svg>
+);
+const IconPencil = () => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+  </svg>
+);
+const IconBook = () => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+  </svg>
+);
+const IconChart = () => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+  </svg>
+);
+const IconClock = () => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+const IconUser = () => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+  </svg>
+);
+
+/* ── data ─────────────────────────────────────────────────── */
+const SECTIONS = [
+  {
+    icon: <IconHeadphones />,
+    name: 'Listening Comprehension',
+    color: 'bg-blue-50 text-blue-700 border-blue-100',
+    iconBg: 'bg-blue-100 text-blue-700',
+    parts: ['Part A — Short Conversations (30 Qs)', 'Part B — Longer Conversations (8 Qs)', 'Part C — Talks & Lectures (12 Qs)'],
+    stats: '50 questions · 35 minutes',
+    scaled: '31–68',
+  },
+  {
+    icon: <IconPencil />,
+    name: 'Structure & Written Expression',
+    color: 'bg-teal-50 text-teal-700 border-teal-100',
+    iconBg: 'bg-teal-100 text-teal-700',
+    parts: ['Part 1 — Structure (15 Qs)', 'Part 2 — Written Expression (25 Qs)'],
+    stats: '40 questions · 25 minutes',
+    scaled: '31–68',
+  },
+  {
+    icon: <IconBook />,
+    name: 'Reading Comprehension',
+    color: 'bg-violet-50 text-violet-700 border-violet-100',
+    iconBg: 'bg-violet-100 text-violet-700',
+    parts: ['Multiple reading passages', 'Academic & informational texts', 'Inference & vocabulary questions'],
+    stats: '50 questions · 55 minutes',
+    scaled: '31–67',
+  },
+];
+
+const STEPS = [
+  { n: '01', title: 'Create your account', body: 'Sign up free in under a minute. No credit card required to start.' },
+  { n: '02', title: 'Choose a test', body: 'Pick from our library of full-length TOEFL ITP practice tests.' },
+  { n: '03', title: 'Take the test', body: 'Realistic exam conditions — timer, audio controls, no going back in Listening.' },
+  { n: '04', title: 'See your score', body: 'Instantly receive your Listening, Structure, and Reading scaled scores (310–677).' },
+];
+
+const FEATURES = [
+  { icon: <IconChart />, title: 'Real Score Scale', body: 'Get your total scaled score on the official 310–677 TOEFL ITP scale, plus section breakdowns.' },
+  { icon: <IconClock />, title: 'Timed Conditions', body: 'Practice under authentic exam timing. Audio plays only once, just like the real test.' },
+  { icon: <IconBook />, title: 'Line-Numbered Passages', body: 'Reading sections display line numbers for easy reference, matching the official paper format.' },
+];
+
+/* ── component ────────────────────────────────────────────── */
+export default function HomePage() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen flex flex-col bg-[#f8fafc]">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="relative bg-white overflow-hidden pt-10 pb-16 md:pt-16 md:pb-24 lg:pt-24 lg:pb-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-            <div className="max-w-2xl text-center lg:text-left mx-auto lg:mx-0">
-              <div className="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold text-blue-800 bg-blue-100 mb-6">
-                <span className="flex h-2 w-2 rounded-full bg-blue-600 mr-2"></span>
-                Now supporting TOEFL & PTE
+      {/* ═══ HERO ═══════════════════════════════════════════ */}
+      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #063d61 0%, #08507f 50%, #0a6aad 100%)' }}>
+        {/* decorative dots */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full opacity-10 pointer-events-none" style={{ background: 'radial-gradient(circle, #f59e0b, transparent 70%)', transform: 'translate(30%, -40%)' }} />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* left */}
+            <div className="text-white">
+              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm font-semibold mb-8">
+                <span className="w-2 h-2 rounded-full bg-[#f59e0b] animate-pulse" />
+                TOEFL ITP Simulations
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 mb-6 leading-[1.1]">
-                Master Your English <br className="hidden lg:block" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-                  Proficiency Exams
-                </span>
+
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] mb-6">
+                Prepare for<br />
+                <span style={{ color: '#f59e0b' }}>TOEFL ITP</span><br />
+                with Confidence
               </h1>
-              <p className="text-lg sm:text-xl text-slate-600 mb-8 leading-relaxed">
-                The complete platform for IELTS, TOEFL, and PTE preparation.
-                Get AI-powered feedback, realistic practice tests, and track your
-                progress to your target score.
+
+              <p className="text-lg text-blue-100 mb-10 max-w-lg leading-relaxed">
+                Full-length practice tests that mirror the real TOEFL ITP exam — sectioned into Listening, Structure &amp; Written Expression, and Reading Comprehension with authentic scoring.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+
+              <div className="flex flex-col sm:flex-row gap-4 mb-10">
                 <Link
-                  href={user ? '/tests' : '/register'}
-                  className="inline-flex justify-center items-center px-8 py-4 text-base font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600"
+                  href={user ? '/dashboard' : '/register'}
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold text-[#08507f] bg-white hover:bg-blue-50 transition-all shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  {user ? 'Browse Dashboard' : 'Start Free Practice'}
+                  {user ? 'Go to Dashboard' : 'Start Free Practice'}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </Link>
                 <Link
-                  href="/subscription"
-                  className="inline-flex justify-center items-center px-8 py-4 text-base font-bold text-slate-700 bg-white border-2 border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-200"
+                  href="/pricing"
+                  className="inline-flex items-center justify-center px-8 py-4 rounded-xl font-bold text-white border-2 border-white/30 hover:bg-white/10 transition-all"
                 >
                   View Plans
                 </Link>
               </div>
-              <div className="mt-8 flex items-center justify-center lg:justify-start gap-6 text-sm text-slate-500">
-                <div className="flex items-center gap-2">
-                  <HiCheck className="w-5 h-5 text-green-500" />
-                  <span>Free practice tests</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <HiCheck className="w-5 h-5 text-green-500" />
-                  <span>Instant AI scores</span>
-                </div>
+
+              {/* trust row */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-blue-100">
+                {['Free tests included', 'No credit card needed', 'Instant score results'].map(t => (
+                  <span key={t} className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-[#f59e0b]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>
+                    {t}
+                  </span>
+                ))}
               </div>
             </div>
 
-            <div className="relative lg:h-[600px] w-full flex items-center justify-center">
-              <div className="relative w-full aspect-[4/3] lg:aspect-auto lg:h-full rounded-3xl overflow-hidden shadow-2xl ring-1 ring-slate-900/5 bg-slate-100">
-                <Image
-                  src="/landing-hero.png"
-                  alt="Students studying nicely"
-                  className="w-full h-full object-cover"
-                  width={1200}
-                  height={900}
-                  priority
-                />
-
-                {/* Floating badge branding element */}
-                <div className="absolute bottom-8 left-8 right-8 bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-white/50 hidden sm:block">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <HiAcademicCap className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-900">Official Exam Format</div>
-                      <div className="text-sm text-slate-500">Practice with real test simulations</div>
-                    </div>
+            {/* right — score card mockup */}
+            <div className="hidden lg:flex items-center justify-center">
+              <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-white/50">
+                <div className="flex items-center gap-3 mb-6">
+                  <Image src="/logo.png" alt="English with Arik" width={44} height={44} className="rounded-full" unoptimized />
+                  <div>
+                    <p className="font-bold text-slate-900 text-sm">ITP Ready</p>
+                    <p className="text-xs text-slate-500">by English with Arik</p>
                   </div>
                 </div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Total Scaled Score</p>
+                <div className="text-7xl font-black tracking-tight mb-1" style={{ color: '#08507f' }}>567</div>
+                <p className="text-sm text-slate-500 mb-6">out of 677</p>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Listening', raw: 47, scaled: 56, max: 68 },
+                    { label: 'Structure', raw: 34, scaled: 58, max: 68 },
+                    { label: 'Reading', raw: 43, scaled: 55, max: 67 },
+                  ].map(s => (
+                    <div key={s.label}>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="font-medium text-slate-700">{s.label}</span>
+                        <span className="font-bold text-slate-900">{s.scaled}</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${(s.scaled / s.max) * 100}%`, background: 'linear-gradient(90deg, #08507f, #2563eb)' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+                  <span className="text-xs text-slate-400">Practice result · TOEFL ITP Level 1</span>
+                </div>
               </div>
-
-              {/* Decorative elements */}
-              <div className="absolute -z-10 top-10 -right-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl" />
-              <div className="absolute -z-10 -bottom-10 -left-10 w-72 h-72 bg-indigo-400/20 rounded-full blur-3xl" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Supported Exams Section */}
-      <section className="py-20 lg:py-32 bg-white">
+      {/* ═══ DISCLAIMER NOTICE BAR ══════════════════════════ */}
+      <div className="bg-amber-50 border-y border-amber-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-center gap-3">
+          <svg width="18" height="18" style={{ flexShrink: 0, color: '#d97706' }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+          <p className="text-sm text-amber-800">
+            <span className="font-bold">Practice platform only — no certificate is issued.</span>
+            {' '}Results cannot be used for university admissions, job applications, or any official purpose.
+          </p>
+        </div>
+      </div>
+
+      {/* ═══ HOW IT WORKS ════════════════════════════════════ */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
-              Comprehensive Support for Major Exams
-            </h2>
-            <p className="text-lg text-slate-600">
-              Whether you're targeting university admission or migration, we have the right preparation tools for you.
-            </p>
+          <div className="text-center mb-14">
+            <p className="section-label mb-3">How it works</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">Four steps to your score</h2>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                title: 'IELTS',
-                subtitle: 'Academic & General',
-                desc: 'Complete practice for Listening, Reading, Writing, and Speaking with band score predictions.',
-                color: 'blue',
-                icon: HiAcademicCap,
-                features: ['Band 0-9 Scoring', 'Task 1 & 2 Feedback', '4 Sections'],
-              },
-              {
-                title: 'TOEFL iBT',
-                subtitle: 'New 2026 Format',
-                desc: 'Adaptive testing experience mirroring the latest TOEFL iBT format including the new Writing task.',
-                color: 'indigo',
-                icon: HiGlobeAlt,
-                features: ['0-120 Score Scale', 'Adaptive Reading', 'Integrated Tasks'],
-              },
-              {
-                title: 'TOEFL ITP',
-                subtitle: 'Level 1',
-                desc: 'Standardized paper-based style testing for institutional use. Focus on Structure & Reading.',
-                color: 'rose',
-                icon: HiBookOpen,
-                features: ['Structure & Written', 'Reading Comp', 'Listening'],
-              },
-              {
-                title: 'PTE Academic',
-                subtitle: 'Computer-Based',
-                desc: 'Fast, AI-scored practice for the Pearson Test of English with integrated skill questions.',
-                color: 'orange',
-                icon: HiLightningBolt,
-                features: ['AI Speech Scoring', 'Integrated Skills', 'Fast Results'],
-              },
-            ].map((exam) => (
-              <div
-                key={exam.title}
-                className="group relative bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-xl hover:border-transparent transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className={`w-14 h-14 rounded-2xl bg-${exam.color}-50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                  <exam.icon className={`w-7 h-7 text-${exam.color}-600`} />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {STEPS.map((step, i) => (
+              <div key={step.n} className="relative">
+                {i < STEPS.length - 1 && (
+                  <div className="hidden lg:block absolute top-8 left-full w-full h-px bg-slate-200 z-0" style={{ width: 'calc(100% - 2rem)', left: '60%' }} />
+                )}
+                <div className="relative z-10">
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white mb-5" style={{ background: 'linear-gradient(135deg, #08507f, #0a6aad)' }}>
+                    {step.n}
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">{step.title}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">{step.body}</p>
                 </div>
-
-                <h3 className="text-xl font-bold text-slate-900">{exam.title}</h3>
-                <p className={`text-sm font-semibold text-${exam.color}-600 mb-3`}>{exam.subtitle}</p>
-                <p className="text-slate-600 text-sm mb-6 leading-relaxed">
-                  {exam.desc}
-                </p>
-
-                <ul className="space-y-2 border-t border-slate-100 pt-6">
-                  {exam.features.map((feature) => (
-                    <li key={feature} className="flex items-start text-sm text-slate-500 gap-2">
-                      <HiCheck className={`w-5 h-5 text-${exam.color}-500 flex-shrink-0`} />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-20 bg-slate-50">
+      {/* ═══ TEST SECTIONS ═══════════════════════════════════ */}
+      <section className="py-20 bg-[#f8fafc]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
-                <HiChartBar className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Analytics & Tracking</h3>
-              <p className="text-slate-600">
-                Visualize your progress with detailed charts. Identify weak areas and track your improvement over time across all test sections.
-              </p>
-            </div>
+          <div className="text-center mb-14">
+            <p className="section-label mb-3">What's covered</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">All three TOEFL ITP sections</h2>
+            <p className="mt-4 text-slate-500 max-w-2xl mx-auto">
+              140 questions across three sections, 115 minutes total — exactly matching the TOEFL ITP Level 1 format.
+            </p>
+          </div>
 
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
-                <HiLightningBolt className="w-6 h-6 text-purple-600" />
+          <div className="grid lg:grid-cols-3 gap-8">
+            {SECTIONS.map(s => (
+              <div key={s.name} className={`card p-8 border ${s.color.split(' ').slice(2).join(' ')} hover:shadow-md transition-shadow`}>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 ${s.iconBg}`}>
+                  {s.icon}
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-1">{s.name}</h3>
+                <p className="text-sm font-medium text-slate-400 mb-5">{s.stats}</p>
+                <ul className="space-y-2.5 mb-6">
+                  {s.parts.map(p => (
+                    <li key={p} className="flex items-start gap-2.5 text-sm text-slate-600">
+                      <IconCheck />
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+                <div className="pt-4 border-t border-slate-100">
+                  <p className="text-xs text-slate-400">Scaled score range: <span className="font-bold text-slate-600">{s.scaled}</span></p>
+                </div>
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">AI-Powered Feedback</h3>
-              <p className="text-slate-600">
-                Get instant, detailed feedback on your Writing and Speaking. Our AI analyzes your response for grammar, vocabulary, and coherence.
-              </p>
-            </div>
+            ))}
+          </div>
 
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
-                <HiClock className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Realistic Simulation</h3>
-              <p className="text-slate-600">
-                Practice under exam conditions with strict timers and authentic styling for IELTS, TOEFL, and PTE interfaces.
-              </p>
+          {/* total score */}
+          <div className="mt-10 text-center">
+            <div className="inline-block bg-white rounded-2xl border border-slate-200 shadow-sm px-10 py-5">
+              <p className="text-sm text-slate-400 mb-1">Total Scaled Score Range</p>
+              <p className="text-4xl font-black" style={{ color: '#08507f' }}>310 – 677</p>
+              <p className="text-xs text-slate-400 mt-1">TOEFL ITP Level 1</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 bg-slate-900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl -translate-x-1/2 translate-y-1/2"></div>
+      {/* ═══ FEATURES ════════════════════════════════════════ */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-3 gap-8">
+            {FEATURES.map(f => (
+              <div key={f.title} className="p-8 rounded-3xl bg-[#f8fafc] border border-slate-100">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 text-white" style={{ background: 'linear-gradient(135deg, #08507f, #2563eb)' }}>
+                  {f.icon}
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-3">{f.title}</h3>
+                <p className="text-slate-500 leading-relaxed text-sm">{f.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-6">
-            Ready to achieve your target score?
+      {/* ═══ CTA ═════════════════════════════════════════════ */}
+      <section className="py-24 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #063d61 0%, #08507f 100%)' }}>
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="relative max-w-4xl mx-auto px-4 text-center">
+          <div className="flex items-center justify-center mb-8">
+            <Image src="/logo.png" alt="English with Arik" width={72} height={72} className="rounded-full shadow-lg" unoptimized />
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-6 leading-tight">
+            Want to master<br />
+            <span style={{ color: '#f59e0b' }}>TOEFL ITP with a teacher?</span>
           </h2>
-          <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
-            Join thousands of students practicing with our AI-powered platform today.
+          <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
+            Join the TOEFL ITP course by English with Arik — structured lessons, expert guidance, and full practice tests to get you to your target score.
           </p>
-          <Link
-            href={user ? '/tests' : '/register'}
-            className="inline-flex justify-center items-center px-10 py-5 text-lg font-bold text-blue-600 bg-white rounded-2xl hover:bg-blue-50 transition-all shadow-xl hover:shadow-2xl hover:scale-105"
+          <a
+            href="https://englishwitharik.com/toefl-itp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-3 px-10 py-5 rounded-2xl font-bold text-[#08507f] bg-white hover:bg-yellow-50 transition-all shadow-xl hover:shadow-2xl hover:scale-105 active:scale-[0.98]"
           >
-            {user ? 'Go to Dashboard' : 'Start Your Free Trial'}
-          </Link>
-          <p className="mt-6 text-sm text-slate-400">
-            No credit card required for free tests.
-          </p>
+            Join the TOEFL ITP Course
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+          </a>
         </div>
       </section>
 

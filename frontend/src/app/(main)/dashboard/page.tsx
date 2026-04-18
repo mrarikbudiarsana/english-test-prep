@@ -5,31 +5,48 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardStats } from '@/types/api';
-import { formatDate, formatScore, getScoreColor, getScoreBgColor } from '@/lib/utils';
-import {
-  HiClipboardList,
-  HiStar,
-  HiClock,
-  HiFire,
-  HiLightBulb,
-  HiChartBar,
-  HiCheckCircle,
-  HiArrowRight,
-  HiBadgeCheck,
-  HiChatAlt2,
-  HiMail,
-} from 'react-icons/hi';
-import { FaWhatsapp } from 'react-icons/fa';
+import { formatDate, formatScore } from '@/lib/utils';
 import { DashboardCharts } from './DashboardCharts';
-import { getExamConfig } from '@/config/examConfig';
 
+const NAVY = '#08507f';
+const NAVY_DARK = '#063d61';
+const NAVY_LIGHT = '#e8f4fd';
+
+/* ── helpers ────────────────────────────────────────────────── */
+function scaledScore(raw: number | null | undefined): string {
+  if (raw === null || raw === undefined) return '—';
+  return Math.round(Number(raw)).toString();
+}
+
+/* ── tiny icons ─────────────────────────────────────────────── */
+const IconTests = () => <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>;
+const IconStar = () => <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>;
+const IconChart = () => <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>;
+const IconArrow = () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>;
+const IconClock = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+const IconBadge = () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>;
+
+/* ── stat card ──────────────────────────────────────────────── */
+function StatCard({ label, value, sub, icon, accent }: { label: string; value: string; sub?: string; icon: React.ReactNode; accent: string; }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-md transition-shadow">
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: accent + '20', color: accent }}>
+        {icon}
+      </div>
+      <p className="text-sm text-slate-500 font-medium mb-0.5">{label}</p>
+      <p className="text-3xl font-extrabold" style={{ color: NAVY }}>{value}</p>
+      {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
+    </div>
+  );
+}
+
+/* ── main component ─────────────────────────────────────────── */
 export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<{ planType: string; status: string; expiresAt: string } | null>(null);
 
-  // Calculate tier
   const tier = (() => {
     if (!subscription || subscription.status !== 'active') return 'free';
     if (subscription.planType === 'monthly') return 'starter';
@@ -37,476 +54,145 @@ export default function DashboardPage() {
     return 'free';
   })();
 
-  // Get exam config based on user's preference
-  const examType = user?.preferredExamType || 'ielts';
-  const examConfig = getExamConfig(examType);
-  const scoreTestTypeForColors =
-    examType === 'pte' ? 'pte_academic' :
-      examType === 'toefl_itp' ? 'toefl_itp' :
-        undefined;
-
   useEffect(() => {
-    async function fetchStats() {
+    async function fetchData() {
       try {
-        // Fetch stats filtered by exam type
-        const res = await api.get(`/dashboard/stats?examType=${examType}`);
-        setStats(res.data);
-      } catch {
-        console.error('Failed to fetch dashboard stats');
-      } finally {
-        setLoading(false);
-      }
+        const [statsRes, subRes] = await Promise.allSettled([
+          api.get('/dashboard/stats?examType=toefl_itp'),
+          api.get('/subscriptions/current'),
+        ]);
+        if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
+        if (subRes.status === 'fulfilled') setSubscription(subRes.value.data?.data);
+      } catch {}
+      finally { setLoading(false); }
     }
-    async function fetchSubscription() {
-      try {
-        const res = await api.get('/subscriptions/current');
-        setSubscription(res.data.data);
-      } catch {
-        // no active subscription — that's fine
-      }
-    }
-    fetchStats();
-    fetchSubscription();
-  }, [examType]);
+    fetchData();
+  }, []);
+
+  const totalTests = stats?.totalAttempts || 0;
+  const avgScore = stats?.averageBand;
+  const bestScore = stats?.bestBand;
 
   if (loading) {
     return (
-      <div className="space-y-8 animate-pulse">
-        <div className="h-10 bg-slate-100 rounded-lg w-1/3" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-40 bg-slate-100 rounded-2xl" />
-          ))}
+      <div className="space-y-6 animate-pulse">
+        <div className="h-40 bg-slate-100 rounded-3xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {[1,2,3].map(i => <div key={i} className="h-36 bg-slate-100 rounded-2xl" />)}
         </div>
-        <div className="h-96 bg-slate-100 rounded-2xl" />
+        <div className="h-80 bg-slate-100 rounded-2xl" />
       </div>
     );
   }
 
-  const totalTests = stats?.totalAttempts || 0;
-  const avgBand = stats?.averageBand;
-  const bestBand = stats?.bestBand;
-
-  // Calculate streak (mock for now - should come from backend)
-  const currentStreak = Math.min(totalTests, 7);
-  const weeklyGoal = 5;
-  const weeklyProgress = Math.min(totalTests % 10, weeklyGoal);
-
-  const t = examConfig.theme;
-
   return (
-    <div className="space-y-8 pb-12 max-w-[1600px] mx-auto">
-      {/* Hero Section */}
-      <div
-        className="relative overflow-hidden rounded-3xl p-8 md:p-10 border"
-        style={{ background: `linear-gradient(135deg, white, ${t.heroTint1}, ${t.heroTint2})`, borderColor: t.border }}
-      >
-        <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl -z-0 opacity-40" style={{ backgroundColor: t.blob1 }} />
-        <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full blur-3xl -z-0 opacity-30" style={{ backgroundColor: t.blob2 }} />
+    <div className="space-y-6 pb-12 max-w-6xl mx-auto">
+
+      {/* ── Hero banner ───────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-3xl p-8 md:p-10 text-white" style={{ background: `linear-gradient(135deg, ${NAVY_DARK} 0%, ${NAVY} 60%, #0a6aad 100%)` }}>
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-10 pointer-events-none" style={{ background: 'radial-gradient(circle, #f59e0b, transparent 70%)', transform: 'translate(30%,-40%)' }} />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <p className="text-sm font-medium mb-2 tracking-wide uppercase" style={{ color: t.primary }}>Welcome back</p>
-            <h1 className="text-4xl md:text-5xl font-bold text-[#2c3e50] mb-3">
-              {user?.displayName?.split(' ')[0] || 'Student'}
+            <p className="text-blue-200 text-sm font-semibold uppercase tracking-widest mb-2">Welcome back</p>
+            <h1 className="text-3xl md:text-4xl font-extrabold mb-2">
+              {user?.displayName?.split(' ')[0] || 'Student'} 👋
             </h1>
-            <p className="text-[#5a6c7d] text-lg max-w-xl leading-relaxed">
-              Your {examConfig.name} goal is within reach. Track your progress and improve your performance step by step.
+            <p className="text-blue-100 max-w-lg">
+              Your TOEFL ITP practice dashboard. Keep going — every test brings you closer to your target score.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link
-              href="/tests"
-              className="group px-6 py-3.5 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-              style={{ backgroundColor: t.primary }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = t.primaryDark)}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = t.primary)}
-            >
-              Start Practice
-              <HiArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+            <Link href="/tests" className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-[#08507f] bg-white hover:bg-blue-50 transition-all shadow-lg text-sm">
+              Start Practice <IconArrow />
             </Link>
-            <Link
-              href="/results"
-              className="px-6 py-3.5 bg-white/80 backdrop-blur text-[#2c3e50] rounded-xl hover:bg-white font-semibold transition-all border border-[#e8ecef] flex items-center justify-center"
-            >
-              View Results
-            </Link>
-          </div>
-          {subscription ? (
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl w-fit">
-              <HiBadgeCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-emerald-800 capitalize">{subscription.planType} Plan</p>
-                <p className="text-xs text-emerald-600">Expires {formatDate(subscription.expiresAt)}</p>
-              </div>
-            </div>
-          ) : (
-            <Link
-              href="/pricing"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl w-fit hover:opacity-90 transition-all border"
-              style={{ backgroundColor: t.heroTint1, borderColor: t.border }}
-            >
-              <HiBadgeCheck className="w-5 h-5 flex-shrink-0" style={{ color: t.primary }} />
-              <div>
-                <p className="text-sm font-semibold text-gray-800">Free Plan</p>
-                <p className="text-xs" style={{ color: t.primary }}>Upgrade for full access →</p>
-              </div>
-            </Link>
-          )}
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Stat 1 - branded with exam color */}
-        <div
-          className="backdrop-blur p-6 rounded-2xl border hover:shadow-lg transition-all duration-300 group"
-          style={{ backgroundColor: `${t.stat1Bg}80`, borderColor: `${t.border}80` }}
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"
-              style={{ backgroundColor: t.secondary, color: t.primary }}
-            >
-              <HiClipboardList className="w-6 h-6" />
-            </div>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-600 mb-1">Tests Completed</p>
-            <h3 className="text-3xl font-bold" style={{ color: t.primary }}>{totalTests}</h3>
-          </div>
-        </div>
-
-        <StatCard
-          title="Average Estimated Score"
-          value={avgBand ? displayScore(avgBand, examConfig.scorePrecision) : '-'}
-          subtitle={avgBand ? examConfig.scoreLabel : 'No data'}
-          icon={<HiChartBar className="w-6 h-6" />}
-          gradient="from-[#3b82f6] to-[#2563eb]"
-          bgColor="bg-blue-50/50"
-          iconBg="bg-blue-50"
-          iconColor="text-blue-600"
-        />
-        <StatCard
-          title="Best Estimated Score"
-          value={bestBand ? displayScore(bestBand, examConfig.scorePrecision) : '-'}
-          subtitle={bestBand ? examConfig.scoreLabel : 'No data'}
-          icon={<HiStar className="w-6 h-6" />}
-          gradient="from-amber-500 to-yellow-500"
-          bgColor="bg-amber-50/50"
-          iconBg="bg-amber-100"
-          iconColor="text-amber-600"
-        />
-        <StatCard
-          title="Study Streak"
-          value={currentStreak}
-          subtitle={currentStreak > 0 ? `${currentStreak} days 🔥` : 'Start today!'}
-          icon={<HiFire className="w-6 h-6" />}
-          gradient="from-emerald-500 to-teal-500"
-          bgColor="bg-emerald-50/50"
-          iconBg="bg-emerald-100"
-          iconColor="text-emerald-600"
-        />
-      </div>
-
-      {/* Weekly Goal Progress */}
-      <div className="rounded-2xl p-6 border" style={{ background: `linear-gradient(135deg, ${t.heroTint1}, white)`, borderColor: t.border }}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-bold text-[#2c3e50] flex items-center gap-2">
-              <HiCheckCircle className="w-5 h-5" style={{ color: t.primary }} />
-              Weekly Goal
-            </h3>
-            <p className="text-sm text-[#5a6c7d] mt-1">Complete {weeklyGoal} practice tests this week</p>
-          </div>
-          <div className="text-right">
-            <p className="text-3xl font-bold" style={{ color: t.primary }}>{weeklyProgress}/{weeklyGoal}</p>
-            <p className="text-xs text-[#5a6c7d] font-medium">tests completed</p>
-          </div>
-        </div>
-        <div className="w-full rounded-full h-3 overflow-hidden border" style={{ backgroundColor: t.secondary, borderColor: t.border }}>
-          <div
-            className="h-full rounded-full transition-all duration-500 shadow-sm"
-            style={{ width: `${(weeklyProgress / weeklyGoal) * 100}%`, backgroundColor: t.progressBar }}
-          />
-        </div>
-      </div>
-
-      {/* Charts Section */}
-      <div className="w-full">
-        <DashboardCharts
-          recentAttempts={stats?.recentAttempts || []}
-          sectionAverages={stats?.sectionAverages || {}}
-          examType={examType}
-          tier={tier}
-        />
-      </div>
-
-      {/* Bottom Grid - Recent Activity & Tips */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-
-        {/* Recent Activity */}
-        <div className="xl:col-span-2 bg-white rounded-2xl border border-[#e8ecef] overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-[#e8ecef] flex justify-between items-center bg-gradient-to-r from-[#f8f9fa] to-white">
-            <h3 className="text-lg font-bold text-[#2c3e50] flex items-center gap-2">
-              <HiClock className="w-5 h-5 text-[#5a6c7d]" />
-              Recent Activity
-            </h3>
-            <Link href="/results" className="text-sm font-semibold transition-colors hover:opacity-70" style={{ color: t.primary }}>
-              View All →
-            </Link>
-          </div>
-          <div className="p-3">
-            {stats?.recentAttempts && stats.recentAttempts.length > 0 ? (
-              <div className="space-y-2">
-                {stats.recentAttempts.slice(0, 5).map((attempt) => (
-                  <Link
-                    key={attempt.id}
-                    href={`/results/${attempt.id}`}
-                    className="flex items-center justify-between p-4 rounded-xl transition-all group border border-transparent"
-                    style={{ ['--hover-bg' as any]: `${t.secondary}50` }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = `${t.secondary}50`;
-                      e.currentTarget.style.borderColor = `${t.primary}30`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '';
-                      e.currentTarget.style.borderColor = 'transparent';
-                    }}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`px-3 py-1 rounded-full text-sm font-bold ${getScoreBgColor(attempt.overallBand ?? attempt.overallScore ?? 0, scoreTestTypeForColors)} ${getScoreColor(attempt.overallBand ?? attempt.overallScore ?? 0, scoreTestTypeForColors)}`}>
-                        {displayScore(attempt.overallBand ?? attempt.overallScore, examConfig.scorePrecision)}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-[#2c3e50] transition-colors">
-                          {attempt.testTitle}
-                        </p>
-                        <p className="text-sm text-slate-500 flex items-center gap-2 mt-0.5">
-                          <HiClock className="w-3.5 h-3.5" />
-                          {attempt.completedAt ? formatDate(attempt.completedAt) : 'In progress'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span
-                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border"
-                        style={{ color: t.primary, backgroundColor: t.secondary, borderColor: t.border }}
-                      >
-                        {examConfig.shortName}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
+            {subscription ? (
+              <div className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/15 border border-white/20 text-sm">
+                <IconBadge />
+                <span className="font-semibold capitalize">{subscription.planType} Plan</span>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 border" style={{ backgroundColor: t.secondary, borderColor: t.border }}>
-                  <HiClock className="h-8 w-8 opacity-60" style={{ color: t.primary }} />
-                </div>
-                <p className="text-[#2c3e50] font-semibold text-lg">No tests taken yet</p>
-                <p className="text-sm text-[#5a6c7d] mt-2 max-w-xs mx-auto">
-                  Start your first practice test to track your progress and see analytics.
-                </p>
-                <Link
-                  href="/tests"
-                  className="mt-6 px-5 py-2.5 text-white text-sm font-semibold rounded-xl transition-all shadow-lg hover:opacity-90"
-                  style={{ backgroundColor: t.primary }}
-                >
-                  Browse Tests
-                </Link>
-              </div>
+              <Link href="/pricing" className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-sm font-semibold hover:bg-white/20 transition-all">
+                Upgrade Plan
+              </Link>
             )}
           </div>
         </div>
+      </div>
 
-        {/* Right Column: Tips & Support */}
-        <div className="space-y-6">
-          {/* Study Tips */}
-          <div className="bg-white rounded-2xl border border-[#e8ecef] p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-[#2c3e50] mb-5 flex items-center gap-2">
-              <HiLightBulb className="w-5 h-5 text-amber-500" />
-              Study Tips
-            </h3>
-            <div className="space-y-4">
-              <TipCard
-                title="Practice Reading Daily"
-                description="Consistency is key. Even 20 minutes a day can significantly improve your score."
-                color="from-blue-500 to-blue-600"
-                bgColor="bg-blue-50/50"
-              />
-              <TipCard
-                title="Time Management"
-                description="Practice under timed conditions to build speed and confidence."
-                color="from-amber-500 to-orange-500"
-                bgColor="bg-amber-50/50"
-              />
-              <TipCard
-                title="Review Mistakes"
-                description="Learn from your errors. Each mistake is a learning opportunity."
-                color="from-emerald-500 to-teal-500"
-                bgColor="bg-emerald-50/50"
-              />
+      {/* ── Stats ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <StatCard label="Tests Completed" value={totalTests.toString()} sub="full TOEFL ITP tests" icon={<IconTests />} accent={NAVY} />
+        <StatCard label="Average Score" value={avgScore ? scaledScore(avgScore) : '—'} sub="scaled score (310–677)" icon={<IconChart />} accent="#2563eb" />
+        <StatCard label="Best Score" value={bestScore ? scaledScore(bestScore) : '—'} sub="your personal best" icon={<IconStar />} accent="#d97706" />
+      </div>
 
-              {/* Quick Action */}
-              <div className="pt-4 mt-4 border-t border-[#e8ecef]">
-                <Link
-                  href="/tests"
-                  className="block p-4 rounded-xl border transition-all group bg-gradient-to-br from-[#f8f9fa] to-white hover:opacity-90"
-                  style={{ borderColor: t.border }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${t.secondary}40`; e.currentTarget.style.borderColor = `${t.primary}50`; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.borderColor = t.border; }}
-                >
-                  <p className="font-semibold text-[#2c3e50] mb-1">
-                    Try a Full Mock Test
-                  </p>
-                  <p className="text-sm text-[#5a6c7d] mb-3">
-                    Simulate real exam conditions with a complete {examConfig.name} test.
-                  </p>
-                  <div className="flex items-center text-sm font-semibold" style={{ color: t.primary }}>
-                    Start Now <HiArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+      {/* ── Charts + Recent activity ──────────────────────────── */}
+      <DashboardCharts
+        recentAttempts={stats?.recentAttempts || []}
+        sectionAverages={stats?.sectionAverages || {}}
+        examType="toefl_itp"
+        tier={tier}
+      />
+
+      {/* ── Recent tests ─────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="font-bold text-slate-900">Recent Tests</h2>
+          <Link href="/results" className="text-sm font-semibold hover:underline" style={{ color: NAVY }}>View all →</Link>
+        </div>
+
+        {stats?.recentAttempts && stats.recentAttempts.length > 0 ? (
+          <div className="divide-y divide-slate-100">
+            {stats.recentAttempts.slice(0, 6).map(attempt => (
+              <Link key={attempt.id} href={`/results/${attempt.id}`} className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors group">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center font-extrabold text-sm text-white shrink-0" style={{ background: `linear-gradient(135deg, ${NAVY_DARK}, ${NAVY})` }}>
+                    {attempt.overallScore ? Math.round(Number(attempt.overallScore)) : '—'}
                   </div>
-                </Link>
-              </div>
+                  <div>
+                    <p className="font-semibold text-slate-900 text-sm">{attempt.testTitle}</p>
+                    <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                      <IconClock />
+                      {attempt.completedAt ? formatDate(attempt.completedAt) : 'In progress'}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{ backgroundColor: NAVY_LIGHT, color: NAVY }}>
+                  TOEFL ITP
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: NAVY_LIGHT }}>
+              <IconTests />
             </div>
+            <p className="font-bold text-slate-900 text-lg mb-1">No tests yet</p>
+            <p className="text-slate-500 text-sm mb-6 max-w-xs">Take your first full TOEFL ITP practice test and start tracking your progress.</p>
+            <Link href="/tests" className="px-6 py-3 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-all" style={{ background: `linear-gradient(135deg, ${NAVY_DARK}, ${NAVY})` }}>
+              Browse Tests
+            </Link>
           </div>
-
-          {/* Support Widget */}
-          <div className="bg-white rounded-2xl border border-[#e8ecef] p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-[#2c3e50] mb-4 flex items-center gap-2">
-              <HiChatAlt2 className="w-5 h-5 text-emerald-500" />
-              Expert Support
-            </h3>
-
-            {tier === 'free' ? (
-              <div className="text-center py-2">
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <HiMail className="w-6 h-6" />
-                </div>
-                <p className="text-[#2c3e50] font-semibold mb-1">Need help?</p>
-                <p className="text-sm text-[#5a6c7d] mb-4">Upgrade to Starter or Pro for personalized email and priority support.</p>
-                <Link
-                  href="/pricing"
-                  className="block w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 shadow-sm"
-                  style={{ backgroundColor: t.primary }}
-                >
-                  View Plans
-                </Link>
-              </div>
-            ) : tier === 'starter' ? (
-              <div>
-                <p className="text-sm text-[#5a6c7d] mb-4">
-                  Connect with other students and share tips in our exclusive group.
-                </p>
-                <a
-                  href="https://chat.whatsapp.com/starter-group-link"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 shadow-sm"
-                  style={{ backgroundColor: '#25D366' }}
-                >
-                  <FaWhatsapp className="w-5 h-5" />
-                  Join WhatsApp Group
-                </a>
-              </div>
-            ) : (
-              <div>
-                <p className="text-sm text-[#5a6c7d] mb-4">
-                  As a Pro member, you get priority access to our expert tutors.
-                </p>
-                <div className="space-y-3">
-                  <a
-                    href="https://wa.me/6281234567890"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-[#25D366] hover:bg-[#20bd5a] transition-all shadow-sm"
-                  >
-                    <FaWhatsapp className="w-5 h-5" />
-                    WhatsApp Priority
-                  </a>
-                  <a
-                    href="mailto:priority@englishtests.com"
-                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
-                  >
-                    <HiMail className="w-5 h-5 text-slate-500" />
-                    Email Support
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  subtitle,
-  icon,
-  gradient,
-  bgColor,
-  iconBg,
-  iconColor
-}: {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ReactNode;
-  gradient: string;
-  bgColor: string;
-  iconBg: string;
-  iconColor: string;
-}) {
-  return (
-    <div className={`${bgColor} backdrop-blur p-6 rounded-2xl border border-slate-200/50 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 group`}>
-      <div className="flex items-start justify-between mb-4">
-        <div className={`${iconBg} ${iconColor} w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
-          {icon}
-        </div>
-      </div>
-      <div>
-        <p className="text-sm font-medium text-slate-600 mb-1">{title}</p>
-        <h3 className={`text-3xl font-bold bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
-          {value}
-        </h3>
-        {subtitle && (
-          <p className="text-xs font-medium text-slate-500 mt-1">{subtitle}</p>
         )}
       </div>
-    </div>
-  );
-}
 
-function TipCard({
-  title,
-  description,
-  color,
-  bgColor
-}: {
-  title: string;
-  description: string;
-  color: string;
-  bgColor: string;
-}) {
-  return (
-    <div className={`${bgColor} p-4 rounded-xl border border-slate-200/50 hover:border-slate-300 transition-all`}>
-      <div className="flex items-start gap-3">
-        <div className={`w-1.5 h-1.5 rounded-full bg-gradient-to-r ${color} mt-2 flex-shrink-0`} />
-        <div>
-          <h4 className="font-semibold text-slate-800 mb-1 text-sm">{title}</h4>
-          <p className="text-xs text-slate-600 leading-relaxed">{description}</p>
-        </div>
+      {/* ── Study tips ────────────────────────────────────────── */}
+      <div className="grid sm:grid-cols-3 gap-5">
+        {[
+          { title: 'Listening Strategy', tip: 'Audio plays only once in the real test. Practice not rewinding — it builds focus.', color: '#2563eb' },
+          { title: 'Structure Tip', tip: 'For Written Expression, eliminate obviously wrong choices first before selecting your answer.', color: NAVY },
+          { title: 'Reading Speed', tip: 'Skim the passage first, then read questions carefully. You don\'t need to read every word.', color: '#7c3aed' },
+        ].map(t => (
+          <div key={t.title} className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-sm transition-shadow">
+            <div className="w-2 h-2 rounded-full mb-4" style={{ backgroundColor: t.color }} />
+            <h3 className="font-bold text-slate-900 text-sm mb-2">{t.title}</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">{t.tip}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
-}
-
-function displayScore(score: any, precision: number) {
-  if (score === null || score === undefined) return '-';
-  const numScore = Number(score);
-  return formatScore(numScore, precision);
 }
