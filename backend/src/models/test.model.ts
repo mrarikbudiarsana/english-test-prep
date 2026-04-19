@@ -33,11 +33,19 @@ const SELECT_COLUMNS = `
 // ---------- queries ----------
 
 export async function findById(id: string) {
-  const result = await query(
-    `SELECT ${SELECT_COLUMNS} FROM tests WHERE id = $1`,
-    [id],
-  );
-  return result.rows[0] || null;
+  try {
+    const result = await query(
+      `SELECT ${SELECT_COLUMNS} FROM tests WHERE id = $1`,
+      [id],
+    );
+    return result.rows[0] || null;
+  } catch (err) {
+    // If it's a malformed UUID error (code 22P02), return null instead of throwing 500
+    if ((err as any).code === '22P02') {
+      return null;
+    }
+    throw err;
+  }
 }
 
 export async function findAll(

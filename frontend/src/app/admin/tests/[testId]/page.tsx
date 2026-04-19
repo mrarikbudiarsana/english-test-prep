@@ -78,9 +78,9 @@ export default function AdminEditTestPage() {
   const handleSectionSubmit = async (sectionData: any) => {
     try {
       if (editingSection) {
-        const response = await api.put(`/admin/tests/${testId}/sections/${editingSection.id}`, sectionData);
+        const response = await api.put(`/admin/sections/${editingSection.id}`, sectionData);
         const updated = response.data.data || response.data;
-        setSections((prev) => prev.map((section) => section.id === editingSection.id ? updated : section).sort((a, b) => a.sectionOrder - b.sectionOrder));
+        setSections((prev) => prev.map((section) => section.id === editingSection.id ? updated : section).sort((a: Section, b: Section) => a.sectionOrder - b.sectionOrder));
       } else {
         const response = await api.post(`/admin/tests/${testId}/sections`, sectionData);
         const created = response.data.data || response.data;
@@ -98,7 +98,7 @@ export default function AdminEditTestPage() {
     if (!window.confirm('Delete this section? This cannot be undone.')) return;
     setDeletingSectionId(sectionId);
     try {
-      await api.delete(`/admin/tests/${testId}/sections/${sectionId}`);
+      await api.delete(`/admin/sections/${sectionId}`);
       setSections((prev) => prev.filter((section) => section.id !== sectionId));
     } catch (err: any) {
       alert(err.response?.data?.error || 'Failed to delete section');

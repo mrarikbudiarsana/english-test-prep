@@ -37,7 +37,17 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ): void {
-  console.error('Error:', err);
+  // Enhanced logging for production debugging
+  const errorDetails = {
+    name: err.name,
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    timestamp: new Date().toISOString(),
+  };
+
+  console.error('[errorHandler] Detailed Error:', JSON.stringify(errorDetails));
 
   if (err instanceof AppError) {
     res.status(err.statusCode).json({ error: err.message });
@@ -46,7 +56,7 @@ export function errorHandler(
 
   res.status(500).json({
     error: 'Internal server error',
-    message: err.message,
+    message: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred',
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 }
