@@ -304,7 +304,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                                 >
                                     <p className="mb-1 text-xs font-bold text-[#08507f] uppercase tracking-wider">{section.label}</p>
                                     <p className="text-3xl font-bold text-slate-800">
-                                        {section.score}
+                                        {section.score != null ? Math.round(section.score) : '-'}
                                     </p>
                                     <p className="text-xs text-slate-400 mt-1 capitalize">{section.type.substring(0, 1)} Scale</p>
                                 </div>

@@ -12,7 +12,7 @@ export function formatTime(seconds: number): string {
 
 export function formatScore(score: number | null, precision: number = 1): string {
   if (score === null || score === undefined) return '-';
-  if (precision === 1) {
+  if (precision <= 1) {
     return Math.round(score).toString();
   }
   const rounded = Math.round(score * 2) / 2;

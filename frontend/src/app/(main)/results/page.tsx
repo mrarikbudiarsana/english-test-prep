@@ -10,12 +10,8 @@ import { formatDate } from '@/lib/utils';
 import { getExamConfig } from '@/config/examConfig';
 import {
   HiArrowLeft,
-  HiChartBar,
   HiClock,
-  HiCheckCircle,
   HiFilter,
-  HiTrendingUp,
-  HiTrendingDown,
 } from 'react-icons/hi';
 
 type FilterStatus = 'all' | AttemptStatus;
@@ -155,50 +151,62 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      {attempts.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="rounded-xl p-6 border border-[#e8ecef]" style={{ backgroundColor: `${theme.secondary}50` }}>
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-colors" style={{ backgroundColor: theme.secondary, color: theme.primary }}>
-                <HiCheckCircle className="w-6 h-6" />
-              </div>
-            </div>
-            <p className="text-sm font-medium text-[#5a6c7d] mb-1">Total Tests</p>
-            <p className="text-3xl font-bold text-[#2c3e50]">{total}</p>
-          </div>
+      {attempts.length > 0 && (() => {
+        const completedAttempts = attempts.filter(a => a.status === 'completed');
+        const fullTests   = completedAttempts.filter(a => !a.practiceSectionType);
+        const sectionTests = completedAttempts.filter(a =>  a.practiceSectionType);
 
-          <div className="bg-emerald-50/50 rounded-xl p-6 border border-[#e8ecef]">
-            <div className="flex items-start justify-between mb-3">
-              <div className="bg-emerald-100 text-emerald-600 w-12 h-12 rounded-xl flex items-center justify-center">
-                <HiTrendingUp className="w-6 h-6" />
-              </div>
-            </div>
-            <p className="text-sm font-medium text-[#5a6c7d] mb-1">Highest Score</p>
-            <p className="text-3xl font-bold text-[#2c3e50]">
-              {attempts.some((attempt) => getDisplayScore(attempt) !== null)
-                ? Math.max(...attempts.map((attempt) => Number(getDisplayScore(attempt) || 0))).toFixed(0)
-                : '-'}
-            </p>
-          </div>
+        const highest = (list: Attempt[]) => {
+          const scored = list.filter(a => getDisplayScore(a) !== null);
+          if (!scored.length) return '-';
+          return Math.round(Math.max(...scored.map(a => Number(getDisplayScore(a))))).toString();
+        };
+        const average = (list: Attempt[]) => {
+          const scored = list.filter(a => getDisplayScore(a) !== null);
+          if (!scored.length) return '-';
+          return Math.round(scored.reduce((s, a) => s + Number(getDisplayScore(a)), 0) / scored.length).toString();
+        };
 
-          <div className="bg-amber-50/50 rounded-xl p-6 border border-[#e8ecef]">
-            <div className="flex items-start justify-between mb-3">
-              <div className="bg-amber-100 text-amber-600 w-12 h-12 rounded-xl flex items-center justify-center">
-                <HiChartBar className="w-6 h-6" />
+        const StatBlock = ({
+          label, count, high, avg, accent,
+        }: { label: string; count: number; high: string; avg: string; accent: string }) => (
+          <div className="rounded-xl border border-[#e8ecef] bg-white overflow-hidden">
+            <div className="px-5 py-3 border-b border-[#e8ecef] flex items-center gap-2" style={{ backgroundColor: `${accent}18` }}>
+              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: accent }}>{label}</span>
+              <span className="ml-auto text-xs font-semibold text-[#5a6c7d]">{count} test{count !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="grid grid-cols-2 divide-x divide-[#e8ecef]">
+              <div className="px-5 py-4">
+                <p className="text-xs font-medium text-[#5a6c7d] mb-1">Highest Score</p>
+                <p className="text-2xl font-bold text-[#2c3e50]">{high}</p>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-xs font-medium text-[#5a6c7d] mb-1">Average Score</p>
+                <p className="text-2xl font-bold text-[#2c3e50]">{avg}</p>
               </div>
             </div>
-            <p className="text-sm font-medium text-[#5a6c7d] mb-1">Average Score</p>
-            <p className="text-3xl font-bold text-[#2c3e50]">
-              {(() => {
-                const scoredAttempts = attempts.filter((attempt) => getDisplayScore(attempt) !== null);
-                if (scoredAttempts.length === 0) return '-';
-                const sum = scoredAttempts.reduce((acc, attempt) => acc + Number(getDisplayScore(attempt)), 0);
-                return (sum / scoredAttempts.length).toFixed(0);
-              })()}
-            </p>
           </div>
-        </div>
-      )}
+        );
+
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <StatBlock
+              label="Full Practice"
+              count={fullTests.length}
+              high={highest(fullTests)}
+              avg={average(fullTests)}
+              accent={theme.primary}
+            />
+            <StatBlock
+              label="Section Practice"
+              count={sectionTests.length}
+              high={highest(sectionTests)}
+              avg={average(sectionTests)}
+              accent="#0e7490"
+            />
+          </div>
+        );
+      })()}
 
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-white rounded-xl p-4 border border-[#e8ecef]">
         <div className="flex items-center gap-3">
