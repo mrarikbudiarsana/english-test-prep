@@ -180,7 +180,7 @@ export default function QuestionRenderer({
                 "flex shrink-0 items-center justify-center rounded-md border text-sm font-bold transition-colors duration-200",
                 String(num).length > 2 ? "h-8 px-2 min-w-[2.5rem]" : "h-8 w-8",
                 isActive
-                  ? "bg-blue-600 border-blue-600 text-white shadow-sm ring-2 ring-blue-100 ring-offset-1"
+                  ? "bg-[#08507f] border-[#08507f] text-white shadow-sm ring-2 ring-[#e8f4fd] ring-offset-1"
                   : "bg-white border-gray-300 text-gray-700 hover:border-gray-400"
               )}
             >

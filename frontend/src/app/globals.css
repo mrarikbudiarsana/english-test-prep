@@ -91,8 +91,7 @@ body {
 }
 
 .toefl-itp-passage-content .toefl-line-grid {
-  min-width: 42rem;
-  width: max-content;
+  width: 100%;
 }
 
 .toefl-itp-passage-content .toefl-line-row {

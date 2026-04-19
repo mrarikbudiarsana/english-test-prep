@@ -219,7 +219,7 @@ export default function SectionEditor({ existingSections = [], initialData, onSu
                 { value: '5', label: 'Passage 5' },
               ]}
             />
-            <Input label="Passage Title" value={passageTitle} onChange={(e) => setPassageTitle(e.target.value)} placeholder="e.g., The History of Aviation" />
+            <Input label="Passage Title (optional)" value={passageTitle} onChange={(e) => setPassageTitle(e.target.value)} placeholder="Leave blank if the passage has no title" />
           </div>
           <Textarea label="Passage Text" value={passageText} onChange={(e) => setPassageText(e.target.value)} placeholder="Enter the full reading passage here..." rows={10} />
           <p className="text-xs text-green-700">Paste plain text exactly as the source and keep manual line breaks where line references should point.</p>

@@ -66,6 +66,8 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     setHasPlayed(false);
     setIsLoaded(false);
     setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
     playingRef.current = false;
 
     const handleLoadedMetadata = () => {

@@ -98,7 +98,7 @@ export default function TestOverviewPage() {
   const examName = test ? examNameFromTestType(test.testType) : 'TOEFL ITP';
   const fullSectionCount = test ? sectionCountForTestType(test.testType) : 3;
   const badgeLabel = test ? testTypeShortLabel(test.testType) : '';
-  const brandColor = '#5848B8';
+  const brandColor = '#08507f';
 
   useEffect(() => {
     async function fetchTest() {
@@ -187,52 +187,40 @@ export default function TestOverviewPage() {
       {/* Back Button */}
       <Link
         href="/tests"
-        className="inline-flex items-center gap-2 text-[#5a6c7d] font-semibold transition-colors group"
-        style={{ color: '#5a6c7d' }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = brandColor; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = '#5a6c7d'; }}
+        className="inline-flex items-center gap-2 text-slate-500 text-sm font-semibold transition-colors hover:text-[#08507f] group"
       >
-        <HiChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+        <HiChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to Tests
       </Link>
 
-      {/* Hero Section with Gradient Background */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-white via-[#f8f9fa] to-[#f0f9ff] rounded-3xl p-8 md:p-10 border border-[#e8ecef] shadow-lg shadow-[#e8ecef]/50">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[#e8f4f8]/40 rounded-full blur-3xl -z-0" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#ffe5ea]/30 rounded-full blur-3xl -z-0" />
-
-        <div className="relative z-10">
-          {/* Badges */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <span
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold shadow-sm text-white"
-              style={{ backgroundColor: brandColor }}
-            >
-              <HiAcademicCap className="w-4 h-4" />
-              {badgeLabel}
+      {/* Hero */}
+      <div className="rounded-xl border border-slate-200 bg-white p-8" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        {/* Badges */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#e8f4fd] text-[#08507f] text-xs font-bold uppercase tracking-wide">
+            <HiAcademicCap className="w-3.5 h-3.5" />
+            {badgeLabel}
+          </span>
+          {test.isFree && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wide">
+              <HiLockOpen className="w-3.5 h-3.5" />
+              Free
             </span>
-            {test.isFree && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-xl text-sm font-bold shadow-sm">
-                <HiLockOpen className="w-4 h-4" />
-                Free
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur text-[#2c3e50] rounded-xl text-sm font-semibold border border-[#e8ecef]">
-              <HiClock className="w-4 h-4" />
-              {test.durationMinutes} minutes
-            </span>
-          </div>
-
-          {/* Title & Description */}
-          <h1 className="text-3xl md:text-4xl font-bold text-[#2c3e50] mb-3">
-            {test.title}
-          </h1>
-          {test.description && (
-            <p className="text-[#5a6c7d] text-lg max-w-2xl leading-relaxed">
-              {test.description}
-            </p>
           )}
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold">
+            <HiClock className="w-3.5 h-3.5" />
+            {test.durationMinutes} minutes
+          </span>
         </div>
+
+        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">
+          {test.title}
+        </h1>
+        {test.description && (
+          <p className="text-slate-500 text-base max-w-2xl leading-relaxed">
+            {test.description}
+          </p>
+        )}
       </div>
 
       {error && (
@@ -245,22 +233,22 @@ export default function TestOverviewPage() {
       )}
 
       {/* Start Full Test Card */}
-      <div className="bg-white rounded-2xl border-2 border-[#e8ecef] p-8 shadow-sm hover:shadow-lg transition-all">
-        <div className="flex items-start gap-4 mb-6">
+      <div className="rounded-xl border border-slate-200 bg-white p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="flex items-start gap-4 mb-5">
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg"
-            style={{ backgroundColor: access?.canAccess ? brandColor : '#94a3b8', boxShadow: `0 10px 25px ${access?.canAccess ? brandColor : '#94a3b8'}33` }}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+            style={{ backgroundColor: access?.canAccess ? '#08507f' : '#94a3b8' }}
           >
             {access?.canAccess ? (
-              <HiPlay className="w-7 h-7 text-white" />
+              <HiPlay className="w-5 h-5 text-white" />
             ) : (
-              <HiLockClosed className="w-7 h-7 text-white" />
+              <HiLockClosed className="w-5 h-5 text-white" />
             )}
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-[#2c3e50] mb-2">Full Test</h2>
-            <p className="text-[#5a6c7d] leading-relaxed">
-              Take the complete {examName} test with all {fullSectionCount} sections in order. Timer will run for each section to simulate real exam conditions.
+            <h2 className="text-lg font-bold text-slate-900 mb-1">Full Test</h2>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Take the complete {examName} test with all {fullSectionCount} sections in order. Timer runs for each section to simulate real exam conditions.
             </p>
           </div>
         </div>
@@ -268,30 +256,29 @@ export default function TestOverviewPage() {
         {access?.canAccess ? (
           <>
             {access.reason === 'has_free_tests' && (
-              <p className="text-sm text-amber-600 mb-4 flex items-center gap-2">
-                <HiSparkles className="w-4 h-4" />
+              <p className="text-sm text-amber-600 mb-4 flex items-center gap-1.5">
+                <HiSparkles className="w-3.5 h-3.5" />
                 This will use 1 of your {access.freeTestsRemaining} free tests remaining
               </p>
             )}
             <button
               onClick={() => handleStartTest('full')}
               disabled={starting}
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all shadow-lg hover:shadow-xl"
-              style={{ backgroundColor: brandColor, boxShadow: `0 10px 25px ${brandColor}33` }}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#08507f] text-white text-sm font-bold hover:bg-[#063d61] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <HiPlay className="w-6 h-6 group-hover:scale-110 transition-transform" />
-              {starting ? 'Starting...' : 'Start Full Test'}
+              <HiPlay className="w-4 h-4" />
+              {starting ? 'Starting…' : 'Start Full Test'}
             </button>
           </>
         ) : (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <HiLockClosed className="w-5 h-5 text-amber-600" />
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100">
+                <HiLockClosed className="w-4 h-4 text-amber-600" />
               </div>
               <div>
-                <h3 className="font-bold text-amber-800 mb-1">Premium Test</h3>
-                <p className="text-sm text-amber-700">
+                <h3 className="text-sm font-bold text-slate-800 mb-0.5">Premium Test</h3>
+                <p className="text-xs text-slate-500">
                   Subscribe to access this test or use your free tests.
                   {access?.freeTestsRemaining === 0 && ' You have no free tests remaining.'}
                 </p>
@@ -299,10 +286,10 @@ export default function TestOverviewPage() {
             </div>
             <Link
               href="/pricing"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg hover:shadow-xl"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-sm font-bold hover:bg-[#d97706] transition-colors"
             >
-              <HiSparkles className="w-5 h-5" />
-              View Subscription Plans
+              <HiSparkles className="w-3.5 h-3.5" />
+              View Plans
             </Link>
           </div>
         )}
@@ -310,11 +297,11 @@ export default function TestOverviewPage() {
 
       {/* Section Practice */}
       <div>
-        <div className="flex items-center gap-3 mb-5">
-          <HiSparkles className="w-6 h-6" style={{ color: brandColor }} />
-          <h2 className="text-2xl font-bold text-[#2c3e50]">Practice by Section</h2>
+        <div className="flex items-center gap-2.5 mb-2">
+          <HiSparkles className="w-5 h-5 text-[#08507f]" />
+          <h2 className="text-xl font-bold text-slate-900">Practice by Section</h2>
         </div>
-        <p className="text-[#5a6c7d] mb-6 leading-relaxed">
+        <p className="text-slate-500 text-sm mb-5 leading-relaxed">
           Focus on specific skills by practicing individual sections. Perfect for targeted improvement.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -348,32 +335,33 @@ export default function TestOverviewPage() {
               return (
                 <div
                   key={type}
-                  className={`group bg-white rounded-2xl border-2 p-6 transition-all ${isAvailable
-                    ? `${colors.border} hover:shadow-lg hover:border-opacity-100 border-opacity-30`
-                    : 'border-slate-200 opacity-60'
-                    }`}
+                  className={`group rounded-xl border bg-white p-5 transition-all duration-200 ${
+                    isAvailable
+                      ? 'border-slate-200 hover:border-[#08507f] hover:shadow-md'
+                      : 'border-slate-200 opacity-60'
+                  }`}
+                  style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`w-12 h-12 ${colors.iconBg} rounded-xl flex items-center justify-center ${isAvailable ? 'group-hover:scale-110' : ''} transition-transform`}>
-                      <Icon className={`w-6 h-6 ${colors.text}`} />
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${colors.iconBg}`}>
+                      <Icon className={`w-5 h-5 ${colors.text}`} />
                     </div>
                     {isAvailable && (
-                      <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">
+                      <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-500 rounded-md text-[10px] font-bold uppercase tracking-wide">
                         {displayedPartCount} {displayedPartCount === 1 ? 'part' : 'parts'}
                       </span>
                     )}
                   </div>
 
-                  <h3 className="text-lg font-bold text-slate-800 mb-2">
+                  <h3 className="text-base font-bold text-slate-900 mb-1">
                     {sectionTypeLabel(type)}
                   </h3>
-                  <p className="text-sm text-slate-600 mb-4 flex items-center gap-2">
-                    <HiClock className="w-4 h-4" />
-                    {totalDuration} minutes
-                    {questionCount && ` • ${questionCount} questions`}
+                  <p className="text-xs text-slate-500 mb-1 flex items-center gap-1.5">
+                    <HiClock className="w-3.5 h-3.5" />
+                    {totalDuration} min{questionCount && ` · ${questionCount} questions`}
                   </p>
                   {test.testType === 'toefl_itp' && isAvailable && (
-                    <p className="mb-4 text-xs font-medium text-slate-500">
+                    <p className="mb-4 text-[11px] text-slate-400">
                       {toeflMeta?.note}
                     </p>
                   )}
@@ -382,19 +370,20 @@ export default function TestOverviewPage() {
                     <button
                       onClick={() => handleStartTest('section_practice', type)}
                       disabled={starting || !isAvailable}
-                      className={`w-full px-5 py-2.5 rounded-xl font-semibold transition-all ${isAvailable
-                        ? `${colors.text} ${colors.light} hover:bg-gradient-to-r hover:${colors.bg} hover:text-white border-2 ${colors.border}`
-                        : 'bg-slate-100 text-slate-400 border-2 border-slate-200 cursor-not-allowed'
-                        }`}
+                      className={`mt-3 w-full py-2 rounded-lg text-sm font-semibold transition-colors ${
+                        isAvailable
+                          ? 'bg-[#e8f4fd] text-[#08507f] hover:bg-[#08507f] hover:text-white border border-[#08507f]/20'
+                          : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                      }`}
                     >
                       {isAvailable ? 'Practice' : 'Not Available'}
                     </button>
                   ) : (
                     <Link
                       href="/pricing"
-                      className="w-full px-5 py-2.5 rounded-xl font-semibold transition-all bg-slate-100 text-slate-500 border-2 border-slate-200 flex items-center justify-center gap-2 hover:bg-slate-200"
+                      className="mt-3 flex w-full items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
                     >
-                      <HiLockClosed className="w-4 h-4" />
+                      <HiLockClosed className="w-3.5 h-3.5" />
                       Upgrade to Practice
                     </Link>
                   )}
@@ -406,35 +395,33 @@ export default function TestOverviewPage() {
       </div>
 
       {/* Tips Section */}
-      <div className="bg-gradient-to-br from-[#e8f4f8] to-white rounded-2xl p-6 border border-[#e8ecef]">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-[#e8f4f8] rounded-xl flex items-center justify-center flex-shrink-0">
-            💡
+      <div className="rounded-xl border border-slate-200 bg-white p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#e8f4fd] text-[#08507f]">
+            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
           </div>
-          <div>
-            <h3 className="font-bold text-[#2c3e50] mb-2">Preparation Tips</h3>
-            <ul className="text-sm text-[#5a6c7d] space-y-2 leading-relaxed">
-              <li className="flex items-start gap-2">
-                <span className="text-[#3b82f6] font-bold">•</span>
-                <span>Ensure you have a stable internet connection before starting</span>
-              </li>
-              {test.testType === 'toefl_itp' && (
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-500 font-bold">•</span>
-                  <span>Listening audio is not replayable, so use headphones and avoid background noise.</span>
-                </li>
-              )}
-              <li className="flex items-start gap-2">
-                <span className="text-blue-500 font-bold">•</span>
-                <span>Find a quiet environment to minimize distractions</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-500 font-bold">•</span>
-                <span>For best results, simulate real exam conditions</span>
-              </li>
-            </ul>
-          </div>
+          <h3 className="text-sm font-bold text-slate-800">Before You Begin</h3>
         </div>
+        <ul className="space-y-1.5 text-xs text-slate-500 leading-relaxed">
+          <li className="flex items-start gap-2">
+            <span className="mt-px text-[#08507f] font-black">·</span>
+            <span>Ensure you have a stable internet connection before starting</span>
+          </li>
+          {test.testType === 'toefl_itp' && (
+            <li className="flex items-start gap-2">
+              <span className="mt-px text-[#08507f] font-black">·</span>
+              <span>Listening audio is not replayable — use headphones and avoid background noise</span>
+            </li>
+          )}
+          <li className="flex items-start gap-2">
+            <span className="mt-px text-[#08507f] font-black">·</span>
+            <span>Find a quiet environment to minimize distractions</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-px text-[#08507f] font-black">·</span>
+            <span>For best results, simulate real exam conditions</span>
+          </li>
+        </ul>
       </div>
     </div>
   );

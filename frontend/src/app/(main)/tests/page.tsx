@@ -18,28 +18,26 @@ import {
 import { getExamConfig } from '@/config/examConfig';
 
 const TOEFL_ITP_SECTION_PREVIEW = [
-  { label: 'Listening', detail: '50 questions | 35 min', icon: HiOutlineVolumeUp },
-  { label: 'Structure', detail: '40 questions | 25 min', icon: HiOutlineTemplate },
-  { label: 'Reading', detail: '50 questions | 55 min', icon: HiBookOpen },
+  { label: 'Listening',  detail: '50 questions · 35 min', icon: HiOutlineVolumeUp },
+  { label: 'Structure',  detail: '40 questions · 25 min', icon: HiOutlineTemplate  },
+  { label: 'Reading',   detail: '50 questions · 55 min', icon: HiBookOpen          },
 ];
 
 export default function TestCatalogPage() {
   const { user } = useAuth();
-  const [tests, setTests] = useState<Test[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [tests, setTests]           = useState<Test[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const examConfig = getExamConfig('toefl_itp');
 
   useEffect(() => {
     async function fetchTests() {
       try {
-        const response = await api.get('/tests');
-        const result = response.data;
-        const testsArray = result?.rows || [];
+        const response   = await api.get('/tests');
+        const testsArray = response.data?.rows || [];
         setTests(Array.isArray(testsArray) ? testsArray : []);
-      } catch (err) {
-        console.error('Error fetching tests:', err);
+      } catch {
         setError('Failed to load tests');
       } finally {
         setLoading(false);
@@ -48,145 +46,154 @@ export default function TestCatalogPage() {
     fetchTests();
   }, []);
 
-  const filteredTests = tests.filter((test) => {
-    const matchesSearch = test.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (test.description && test.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesSearch && test.testType === 'toefl_itp';
-  });
+  const filteredTests = tests.filter((t) =>
+    t.testType === 'toefl_itp' &&
+    (t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase())))
+  );
 
-  const freeTests = filteredTests.filter((test) => test.isFree);
-  const premiumTests = filteredTests.filter((test) => !test.isFree);
+  const freeTests    = filteredTests.filter((t) => t.isFree);
+  const premiumTests = filteredTests.filter((t) => !t.isFree);
 
   if (loading) {
     return (
-      <div className="space-y-8 animate-pulse max-w-[1600px] mx-auto">
-        <div className="flex justify-between items-center">
-          <div className="h-10 bg-slate-100 rounded w-1/4" />
-          <div className="h-10 bg-slate-100 rounded w-1/4" />
-        </div>
+      <div className="space-y-8 animate-pulse max-w-6xl mx-auto">
+        <div className="h-48 bg-slate-100 rounded-xl" />
+        <div className="h-12 bg-slate-100 rounded-lg w-full" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="bg-slate-100 rounded-2xl h-72" />
-          ))}
+          {[1, 2, 3, 4].map((i) => <div key={i} className="bg-slate-100 rounded-xl h-64" />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 pb-12 max-w-[1600px] mx-auto">
-      <div className="relative overflow-hidden bg-gradient-to-br from-white via-[#f8f9fa] to-[#f0f9ff] rounded-3xl p-8 md:p-10 border border-[#e8ecef]">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[#e8f4f8]/40 rounded-full blur-3xl -z-0" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#efeafb] rounded-full blur-3xl -z-0" />
+    <div className="space-y-8 pb-12 max-w-6xl mx-auto">
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-3">
-            <HiBookOpen className="w-6 h-6 text-[#08507f]" />
-            <p className="text-sm font-semibold text-[#08507f] tracking-wide uppercase">Practice Library</p>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-[#2c3e50] mb-4">Choose Your Test</h1>
-          <p className="text-[#5a6c7d] text-lg max-w-2xl">
-            Select from our TOEFL ITP practice tests designed to help you improve your estimated score.
-          </p>
+      {/* ── Page header ──────────────────────────────────────── */}
+      <div className="rounded-xl border border-slate-200 bg-white p-8" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <HiBookOpen className="w-4 h-4 text-[#08507f]" />
+          <p className="text-xs font-bold uppercase tracking-widest text-[#08507f]">Practice Library</p>
+        </div>
+        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">
+          Choose Your Test
+        </h1>
+        <p className="text-slate-500 text-base max-w-2xl leading-relaxed">
+          Select from our{' '}
+          <span className="font-semibold text-[#08507f]">TOEFL ITP</span>{' '}
+          practice tests designed to help you improve your estimated score.
+        </p>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {TOEFL_ITP_SECTION_PREVIEW.map((section) => {
-              const Icon = section.icon;
-              return (
-                <div key={section.label} className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-4 backdrop-blur-sm">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f4fd] text-[#08507f]">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <p className="font-semibold text-[#2c3e50]">{section.label}</p>
-                  <p className="text-sm text-[#5a6c7d]">{section.detail}</p>
+        {/* Section overview pills */}
+        <div className="mt-6 flex flex-wrap gap-3">
+          {TOEFL_ITP_SECTION_PREVIEW.map((section) => {
+            const Icon = section.icon;
+            return (
+              <div
+                key={section.label}
+                className="inline-flex items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5"
+              >
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#e8f4fd] text-[#08507f]">
+                  <Icon className="h-4 w-4" />
                 </div>
-              );
-            })}
-          </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{section.label}</p>
+                  <p className="text-[11px] text-slate-500">{section.detail}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
+      {/* ── Free-tests remaining banner ───────────────────────── */}
       {user && (
-        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/50 rounded-2xl p-5 flex items-center justify-between shadow-sm">
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-6 py-4" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-              <HiLockOpen className="w-6 h-6 text-emerald-600" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
+              <HiLockOpen className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide">Free Access</p>
-              <p className="text-slate-800 font-semibold">
-                <span className="text-2xl text-emerald-600">{user.freeTestsRemaining}</span> tests remaining this month
+              <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-600">Free Access</p>
+              <p className="text-sm font-semibold text-slate-800">
+                <span className="text-lg font-extrabold text-emerald-600">{user.freeTestsRemaining}</span>{' '}
+                tests remaining this month
               </p>
             </div>
           </div>
           <Link
             href="/pricing"
-            className="hidden sm:block px-5 py-2.5 bg-white text-emerald-700 rounded-xl hover:bg-emerald-50 font-semibold transition-all border border-emerald-200 hover:border-emerald-300"
+            className="hidden sm:inline-flex items-center px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
           >
             Upgrade Plan
           </Link>
         </div>
       )}
 
+      {/* ── Search ───────────────────────────────────────────── */}
       <div className="relative">
-        <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
           placeholder={`Search ${examConfig.name} tests...`}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-[#e8ecef] focus:border-[#08507f]/50 focus:ring-2 focus:ring-[#e8f4fd] focus:outline-none transition-all bg-white text-[#2c3e50] placeholder:text-[#5a6c7d]/50"
+          className="w-full pl-11 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm placeholder:text-slate-400 focus:border-[#08507f] focus:ring-2 focus:ring-[#e8f4fd] focus:outline-none transition-all"
         />
       </div>
 
-
+      {/* ── Error ────────────────────────────────────────────── */}
       {error && (
-        <div className="p-5 bg-red-50 border border-red-200 rounded-2xl text-red-700 font-medium flex items-center gap-3">
-          <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">!</div>
+        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+          <span className="shrink-0 font-bold">!</span>
           {error}
         </div>
       )}
 
+      {/* ── Empty state ───────────────────────────────────────── */}
       {filteredTests.length === 0 && !error ? (
-        <div className="text-center py-20 bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl border-2 border-dashed border-slate-200">
-          <HiAcademicCap className="mx-auto h-20 w-20 text-slate-300 mb-6" />
-          <h3 className="text-2xl font-bold text-slate-800 mb-2">No TOEFL ITP tests found</h3>
-          <p className="text-slate-500 mb-6">Try adjusting your search query.</p>
+        <div className="text-center py-20 rounded-xl border border-dashed border-slate-200 bg-white">
+          <HiAcademicCap className="mx-auto h-14 w-14 text-slate-300 mb-4" />
+          <h3 className="text-lg font-bold text-slate-700 mb-1">No tests found</h3>
+          <p className="text-slate-500 text-sm mb-5">Try adjusting your search query.</p>
           <button
             onClick={() => setSearchQuery('')}
-            className="px-6 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all"
+            className="px-5 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
           >
             Clear Search
           </button>
         </div>
       ) : (
         <>
+          {/* Free tests */}
           {freeTests.length > 0 && (
-            <div className="space-y-5">
-              <div className="flex items-center gap-3">
-                <HiSparkles className="w-6 h-6 text-emerald-600" />
-                <h2 className="text-2xl font-bold text-slate-800">Free Tests</h2>
-                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-sm font-semibold rounded-full">{freeTests.length}</span>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2.5">
+                <HiSparkles className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-xl font-bold text-slate-900">Free Tests</h2>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold">
+                  {freeTests.length}
+                </span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {freeTests.map((test) => (
-                  <TestCard key={test.id} test={test} />
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {freeTests.map((test) => <TestCard key={test.id} test={test} />)}
               </div>
             </div>
           )}
 
+          {/* Premium tests */}
           {premiumTests.length > 0 && (
-            <div className="space-y-5">
-              <div className="flex items-center gap-3">
-                <HiAcademicCap className="w-6 h-6 text-[#08507f]" />
-                <h2 className="text-2xl font-bold text-[#2c3e50]">Premium Tests</h2>
-                <span className="px-3 py-1 bg-[#e8f4fd] text-[#08507f] text-sm font-semibold rounded-full">{premiumTests.length}</span>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2.5">
+                <HiAcademicCap className="w-5 h-5 text-[#08507f]" />
+                <h2 className="text-xl font-bold text-slate-900">Premium Tests</h2>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#e8f4fd] border border-[#08507f]/10 text-[#08507f] text-xs font-bold">
+                  {premiumTests.length}
+                </span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {premiumTests.map((test) => (
-                  <TestCard key={test.id} test={test} />
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {premiumTests.map((test) => <TestCard key={test.id} test={test} />)}
               </div>
             </div>
           )}
@@ -197,78 +204,66 @@ export default function TestCatalogPage() {
 }
 
 function TestCard({ test }: { test: Test }) {
-  const theme = {
-    primary: '#08507f',
-    secondary: '#e8f4fd',
-    border: '#cbd5e1',
-    label: 'TOEFL ITP',
-    abbr: 'T',
-  };
-  const metadata = ['3 sections', '140 questions', '310-677 scale'];
+  const metadata = ['3 Sections', '140 Questions', '310–677 Scale'];
 
   return (
     <Link
       href={`/tests/${test.id}`}
-      className="group relative bg-white rounded-2xl border-2 transition-all duration-300 overflow-hidden hover:shadow-xl flex flex-col"
-      style={{ borderColor: theme.border }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = theme.primary; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = theme.border; }}
+      className="group flex flex-col rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:border-[#08507f] hover:shadow-md overflow-hidden"
+      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
     >
-      <div className="h-2" style={{ backgroundColor: theme.primary }} />
+      {/* Navy top accent */}
+      <div className="h-1 w-full bg-[#08507f]" />
 
-      <div className="p-6 flex flex-col flex-1">
+      <div className="flex flex-col flex-1 p-5">
+        {/* Avatar + badge row */}
         <div className="flex items-start justify-between mb-4">
           <div
-            className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg group-hover:scale-110 transition-transform"
-            style={{ backgroundColor: theme.primary }}
+            className="flex h-12 w-12 items-center justify-center rounded-lg text-white text-lg font-extrabold"
+            style={{ background: 'linear-gradient(135deg, #08507f 0%, #063d61 100%)' }}
           >
-            {theme.abbr}
+            T
           </div>
           {test.isFree ? (
-            <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm">
-              FREE
+            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold uppercase tracking-wide">
+              Free
             </span>
           ) : (
-            <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#fff8ed] border border-[#f59e0b]/30 text-[#b45309] text-[11px] font-bold uppercase tracking-wide">
               <HiSparkles className="w-3 h-3" />
-              PRO
+              Pro
             </span>
           )}
         </div>
 
-        <h3 className="text-lg font-bold text-[#2c3e50] transition-colors mb-2 line-clamp-2 min-h-[3.5rem]">{test.title}</h3>
+        {/* Title */}
+        <h3 className="text-base font-bold text-slate-900 mb-3 line-clamp-2 min-h-[2.75rem] group-hover:text-[#08507f] transition-colors">
+          {test.title}
+        </h3>
 
-        {test.description && (
-          <p className="text-[#5a6c7d] text-sm mb-6 line-clamp-2 flex-grow leading-relaxed">{test.description}</p>
-        )}
-
-        <div className="mb-5 flex flex-wrap gap-2">
+        {/* Metadata chips */}
+        <div className="flex flex-wrap gap-1.5 mb-4">
           {metadata.map((item) => (
             <span
               key={item}
-              className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide"
-              style={{ backgroundColor: theme.secondary, color: theme.primary }}
+              className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-[#e8f4fd] text-[#08507f]"
             >
               {item}
             </span>
           ))}
         </div>
 
-        <div className="pt-4 mt-auto border-t flex items-center justify-between" style={{ borderColor: theme.border }}>
-          <div className="flex items-center gap-2 text-[#5a6c7d]">
-            <HiClock className="w-4 h-4" />
-            <span className="text-sm font-semibold">{test.durationMinutes} min</span>
+        {/* Footer */}
+        <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <HiClock className="w-3.5 h-3.5" />
+            <span className="text-xs font-semibold">{test.durationMinutes} min</span>
           </div>
-          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: theme.primary }}>
-            {theme.label}
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[#08507f]">
+            TOEFL ITP
           </span>
         </div>
       </div>
-
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none -z-10"
-        style={{ backgroundColor: theme.secondary }}
-      />
     </Link>
   );
 }

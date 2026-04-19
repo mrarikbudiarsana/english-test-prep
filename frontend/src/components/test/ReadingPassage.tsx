@@ -101,7 +101,7 @@ function ReadingPassage({
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-8 py-6">
         <TextHighlighter enabled={highlightEnabled}>
-          {title && (
+          {title && title.trim() && (
             <h2 className={variant === 'toefl_itp'
               ? "toefl-itp-passage-title"
               : "text-xl font-bold text-gray-900 mb-6"

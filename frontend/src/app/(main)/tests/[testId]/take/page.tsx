@@ -676,7 +676,7 @@ function TestTakingContent() {
                   <div className={cn("w-full flex flex-col items-center justify-center min-h-[400px] transition-all duration-300", isDirectionsTransitioning ? 'opacity-0 scale-[0.98]' : 'opacity-100')}>
                     <div className="w-full max-w-5xl text-center">
                       <h2 className="text-4xl font-bold text-slate-900 mb-6">{currentSectionPart?.title || 'Directions'}</h2>
-                      <div className="prose prose-slate prose-lg mx-auto text-slate-600 mb-12 leading-relaxed font-medium">{currentSectionPart?.instructions}</div>
+                      <div className="prose prose-slate prose-lg mx-auto text-slate-600 mb-12 leading-relaxed">{currentSectionPart?.instructions}</div>
                       <button onClick={exitDirectionsView} className="rounded-lg bg-[#08507f] px-8 py-2.5 font-bold text-white text-sm hover:bg-[#064066] hover:shadow-md active:translate-y-0 transition-all uppercase tracking-widest">
                         Continue to Questions
                       </button>
@@ -710,7 +710,7 @@ function TestTakingContent() {
                 <div className="flex-1 flex items-center justify-center px-8 py-8">
                   <div className="w-full max-w-3xl text-center">
                     <h2 className="text-4xl font-bold text-slate-900 mb-8">Reading Comprehension</h2>
-                    <div className="text-left text-slate-600 mb-12 whitespace-pre-wrap leading-relaxed font-semibold text-lg">{currentSectionPart?.instructions}</div>
+                    <div className="text-left text-slate-600 mb-12 whitespace-pre-wrap leading-relaxed text-lg">{currentSectionPart?.instructions}</div>
                     <button onClick={exitDirectionsView} className="rounded-lg bg-[#08507f] px-8 py-2.5 font-bold text-white text-sm hover:bg-[#064066] hover:shadow-md active:translate-y-0 transition-all uppercase tracking-widest">Begin Reading Section</button>
                   </div>
                 </div>
@@ -724,8 +724,16 @@ function TestTakingContent() {
                       <span className="text-sm text-slate-500">{answeredCount} / {questions.length} answered</span>
                       <button
                         onClick={() => setIsToeflReadingProgressOpen(prev => !prev)}
-                        className="text-sm font-medium text-[#08507f] hover:underline"
+                        className={cn(
+                          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all border',
+                          isToeflReadingProgressOpen
+                            ? 'bg-[#08507f] text-white border-[#08507f] shadow-sm'
+                            : 'bg-white text-[#08507f] border-[#08507f]/30 hover:bg-[#e8f4fd] hover:border-[#08507f]'
+                        )}
                       >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h8" />
+                        </svg>
                         {isToeflReadingProgressOpen ? 'Hide Progress' : 'Show Progress'}
                       </button>
                     </div>
@@ -734,7 +742,7 @@ function TestTakingContent() {
                   {/* Two-column area fills remaining height */}
                   <div className="flex flex-1 overflow-hidden">
                     {/* Left — passage */}
-                    <div className="flex flex-col w-[45%] border-r border-slate-200 overflow-hidden">
+                    <div className="flex flex-col w-1/2 border-r border-slate-200 overflow-hidden">
                       {/* Questions range label */}
                       {(() => {
                         const partQs = questions.filter(q => q.sectionId === currentSectionPart?.id);
@@ -749,7 +757,7 @@ function TestTakingContent() {
                           </div>
                         );
                       })()}
-                      <div className="flex-1 overflow-y-auto">
+                      <div className="flex-1 overflow-auto">
                         <ReadingPassage
                           title={currentSectionPart?.passageTitle || ''}
                           content={currentSectionPart?.passageText || ''}
@@ -759,8 +767,8 @@ function TestTakingContent() {
                       </div>
                     </div>
 
-                    {/* Right — current question */}
-                    <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Right — current question (relative so sidebar can overlay) */}
+                    <div className="flex-1 flex flex-col overflow-hidden relative">
                       <div className="flex-1 overflow-y-auto px-6 py-4">
                         {currentQuestion && (
                           <QuestionRenderer
@@ -772,6 +780,33 @@ function TestTakingContent() {
                           />
                         )}
                       </div>
+
+                      {/* Reading progress — overlays the question panel, doesn't push passage */}
+                      {isToeflReadingProgressOpen && (
+                        <div className="absolute inset-y-0 right-0 w-64 bg-white border-l border-slate-200 shadow-lg flex flex-col overflow-y-auto z-10">
+                          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+                            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Progress</h3>
+                            <button
+                              onClick={() => setIsToeflReadingProgressOpen(false)}
+                              className="text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          </div>
+                          <div className="p-5">
+                            <QuestionNavigator
+                              totalQuestions={questions.length}
+                              currentIndex={currentQuestionIndex}
+                              onSelect={idx => selectQuestionIndex(idx)}
+                              answeredIndices={new Set(questions.map((q, i) => state.answers[q.id] ? i : -1).filter(i => i !== -1))}
+                              flaggedIndices={new Set(questions.map((q, i) => state.flaggedQuestions.has(q.id) ? i : -1).filter(i => i !== -1))}
+                              allowNavigation
+                              variant="grid"
+                              hideActions
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>
@@ -780,8 +815,8 @@ function TestTakingContent() {
           )}
         </main>
 
-        {/* Right: Progress Sidebar — always shown for non-reading; for reading, toggled via passage bar */}
-        {(state.currentSectionType !== 'reading' || isToeflReadingProgressOpen) && (
+        {/* Right: Progress Sidebar — non-reading sections only */}
+        {state.currentSectionType !== 'reading' && (
           <aside className="w-[280px] shrink-0 bg-[#f9fafb] p-6 overflow-y-auto flex flex-col border-l border-slate-100">
             <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-6 text-center">Question Progress</h3>
             <QuestionNavigator

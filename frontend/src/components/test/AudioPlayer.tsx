@@ -14,7 +14,15 @@ interface AudioPlayerProps {
   volume?: number;
 }
 
-export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled = false, disableScrubbing = false, volume = 1 }: AudioPlayerProps) {
+export default function AudioPlayer({
+  src,
+  playOnce,
+  autoPlay,
+  onEnd,
+  disabled = false,
+  disableScrubbing = false,
+  volume = 1,
+}: AudioPlayerProps) {
   const {
     isPlaying,
     currentTime,
@@ -28,16 +36,11 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled =
   } = useAudioPlayer({ playOnce, autoPlay: disabled ? false : autoPlay, onEnd, volume });
 
   useEffect(() => {
-    if (src) {
-      loadAudio(src);
-    }
+    if (src) loadAudio(src);
   }, [src, loadAudio]);
 
-  // If review mode disables audio while it is already playing, force-stop it.
   useEffect(() => {
-    if (disabled && isPlaying) {
-      pause();
-    }
+    if (disabled && isPlaying) pause();
   }, [disabled, isPlaying, pause]);
 
   const formatTime = useCallback((seconds: number): string => {
@@ -54,23 +57,17 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled =
 
   const handleProgressClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (disabled || disableScrubbing) return;
-      if (!duration) return;
+      if (disabled || disableScrubbing || !duration) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
-      const newTime = (clickX / rect.width) * duration;
-      seek(Math.max(0, Math.min(newTime, duration)));
+      seek(Math.max(0, Math.min((clickX / rect.width) * duration, duration)));
     },
-    [disabled, duration, seek]
+    [disabled, disableScrubbing, duration, seek],
   );
 
   const handlePlayPause = useCallback(() => {
     if (disabled) return;
-    if (isPlaying) {
-      pause();
-    } else {
-      play();
-    }
+    isPlaying ? pause() : play();
   }, [disabled, isPlaying, play, pause]);
 
   const durationDisplay = useMemo(() => {
@@ -78,80 +75,138 @@ export default function AudioPlayer({ src, playOnce, autoPlay, onEnd, disabled =
     return formatTime(duration);
   }, [duration, formatTime, isLoaded]);
 
-  const durationLabel = durationDisplay === '--:--' ? 'loading...' : durationDisplay;
+  const isFinished = !canPlay && !disabled;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-3 sm:p-4">
-      <div className="flex items-center gap-4 sm:gap-6">
-        {/* Play/Pause Button */}
+    <div
+      className={cn(
+        'rounded-lg border bg-white',
+        disabled ? 'border-slate-100' : 'border-slate-200',
+      )}
+      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+    >
+      {/* ── Header bar ─────────────────────────────────────── */}
+      <div
+        className="flex items-center gap-3 px-4 py-3 border-b border-slate-100"
+        style={{ background: 'linear-gradient(90deg, #08507f 0%, #063d61 100%)' }}
+      >
+        {/* Waveform icon */}
+        <svg
+          className="w-4 h-4 text-white/80 shrink-0"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <rect x="2"  y="9"  width="2.5" height="6"  rx="1.25" />
+          <rect x="6"  y="6"  width="2.5" height="12" rx="1.25" />
+          <rect x="10" y="3"  width="2.5" height="18" rx="1.25" />
+          <rect x="14" y="6"  width="2.5" height="12" rx="1.25" />
+          <rect x="18" y="9"  width="2.5" height="6"  rx="1.25" />
+        </svg>
+
+        <span className="text-[11px] font-bold uppercase tracking-widest text-white/90 flex-1">
+          Audio Question
+        </span>
+
+        {/* Badges */}
+        <div className="flex items-center gap-2">
+          {playOnce && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 text-white text-[10px] font-semibold tracking-wide border border-white/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              Plays Once
+            </span>
+          )}
+          {isFinished && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 text-[10px] font-bold tracking-wide border border-emerald-300/30">
+              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              Done
+            </span>
+          )}
+          {disabled && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 text-white/50 text-[10px] font-semibold tracking-wide border border-white/10">
+              Disabled
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ── Controls ────────────────────────────────────────── */}
+      <div className="flex items-center gap-4 px-4 py-3">
+        {/* Play / Pause button */}
         <button
           onClick={handlePlayPause}
           disabled={disabled || !isLoaded || !canPlay}
           className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-all duration-300 shadow-sm",
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-md border transition-all duration-150',
             disabled || !isLoaded || !canPlay
-              ? 'cursor-not-allowed bg-slate-50 text-slate-300'
-              : 'bg-[#08507f] text-white hover:bg-[#064066] hover:shadow-md hover:scale-105 active:scale-95'
+              ? 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-300'
+              : 'border-[#08507f] bg-[#08507f] text-white hover:bg-[#063d61] hover:border-[#063d61] active:scale-95',
           )}
-          title={disabled ? 'Audio is disabled' : !canPlay ? 'Finished' : isPlaying ? 'Pause' : 'Play'}
+          title={
+            disabled      ? 'Audio is disabled'
+            : !canPlay    ? 'Already played'
+            : isPlaying   ? 'Pause'
+            :               'Play'
+          }
         >
           {isPlaying ? (
-            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-              <rect x="6" y="4" width="4" height="16" rx="1.5" />
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+              <rect x="6"  y="4" width="4" height="16" rx="1.5" />
               <rect x="14" y="4" width="4" height="16" rx="1.5" />
             </svg>
           ) : (
-            <svg className="h-5 w-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="h-4 w-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M7 4v16l13-8z" />
             </svg>
           )}
         </button>
 
-        {/* Info & Title */}
-        <div className="hidden md:block shrink-0 border-r border-slate-100 pr-4">
-          <h4 className="text-sm font-semibold text-[#08507f]">Audio Question</h4>
-          <p className="text-[10px] text-slate-500 font-medium">Plays once</p>
-        </div>
-
-        {/* Progress Section */}
-        <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+        {/* Progress section */}
+        <div className="flex-1 flex flex-col gap-1 min-w-0">
+          {/* Track */}
           <div
             className={cn(
-              "group relative h-2.5 w-full rounded-full bg-slate-100",
-              (disabled || disableScrubbing) ? 'cursor-default' : 'cursor-pointer'
+              'relative h-2 w-full rounded-full overflow-hidden bg-slate-100',
+              disabled || disableScrubbing ? 'cursor-default' : 'cursor-pointer',
             )}
             onClick={handleProgressClick}
           >
             <div
-              className="h-full rounded-full bg-[#08507f] transition-all duration-300"
-              style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+              className="h-full rounded-full transition-all duration-150"
+              style={{
+                width: `${Math.min(100, Math.max(0, progress))}%`,
+                background: isFinished
+                  ? 'linear-gradient(90deg, #059669, #34d399)'
+                  : 'linear-gradient(90deg, #08507f, #2563eb)',
+              }}
             />
           </div>
-          <div className="flex items-center justify-between text-[11px] font-bold font-mono tracking-tight text-slate-500 tabular-nums">
-            <span className="flex items-center gap-2">
-              <span className="md:hidden text-slate-400 font-semibold uppercase tracking-tighter">Audio Question</span>
+
+          {/* Time row */}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono font-semibold tabular-nums text-slate-500">
               {formatTime(currentTime)}
             </span>
-            <span className={cn(durationLabel === 'loading...' ? 'text-slate-300 font-medium' : 'text-slate-500')}>
-              {durationLabel}
+            <span
+              className={cn(
+                'text-[11px] font-mono font-semibold tabular-nums',
+                durationDisplay === '--:--' ? 'text-slate-300' : 'text-slate-400',
+              )}
+            >
+              {durationDisplay}
             </span>
           </div>
         </div>
-
-        {/* Status Badge */}
-        {!canPlay && !disabled && (
-          <div className="hidden sm:flex shrink-0 items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg text-[11px] font-bold text-emerald-700 border border-emerald-100/50 animate-in fade-in zoom-in duration-300">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
-            FINISHED
-          </div>
-        )}
       </div>
 
-      {/* Flagged/Disabled Notice (Minimal) */}
+      {/* ── Disabled notice ─────────────────────────────────── */}
       {disabled && (
-        <p className="mt-3 text-[10px] text-slate-400 font-medium italic border-t border-slate-50 pt-2">
-          Audio playback is disabled during review.
-        </p>
+        <div className="px-4 pb-3 -mt-1">
+          <p className="text-[11px] text-slate-400 italic">
+            Audio playback is disabled in review mode.
+          </p>
+        </div>
       )}
     </div>
   );
