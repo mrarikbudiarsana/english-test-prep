@@ -169,6 +169,13 @@ export default function ResultsPage() {
   }
 
   const getDisplayScore = (attempt: Attempt) => {
+    if (attempt.mode === 'section_practice') {
+      const type = attempt.practiceSectionType;
+      if (type === 'listening') return attempt.listeningRaw !== null ? `${attempt.listeningRaw} / 50` : null;
+      if (type === 'reading') return attempt.readingRaw !== null ? `${attempt.readingRaw} / 50` : null;
+      if (type === 'structure') return attempt.structureRaw !== null ? `${attempt.structureRaw} / 40` : null;
+      return null;
+    }
     const value = attempt.overallScore;
     return value !== null && value !== undefined ? value : null;
   };
@@ -320,8 +327,10 @@ export default function ResultsPage() {
                       >
                         {score !== null ? (
                           <>
-                            <span className="text-2xl" style={{ color: theme.primary }}>{score}</span>
-                            <span className="text-xs text-[#5a6c7d] font-medium">Score</span>
+                            <span className={attempt.mode === 'section_practice' ? 'text-lg' : 'text-2xl'} style={{ color: theme.primary }}>{score}</span>
+                            <span className="text-xs text-[#5a6c7d] font-medium">
+                              {attempt.mode === 'section_practice' ? 'Correct' : 'Score'}
+                            </span>
                           </>
                         ) : (
                           <span className="text-[#5a6c7d] text-xs text-center px-2">

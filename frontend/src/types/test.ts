@@ -92,6 +92,7 @@ export interface Attempt {
   listeningScore: number | null;
   readingRaw: number | null;
   readingScore: number | null;
+  structureRaw: number | null;
   structureScore: number | null;
   overallScore: number | null;
   test?: Test;

@@ -310,7 +310,7 @@ export async function scoreObjectiveSectionWithQuery(
     rawCol = 'reading_raw';
     scaledCol = 'reading_score';
   } else if (sectionType === 'structure') {
-    rawCol = 'listening_raw'; // Note: and DB might need structure_raw, but let's stick to what we have
+    rawCol = 'structure_raw';
     scaledCol = 'structure_score';
   }
 

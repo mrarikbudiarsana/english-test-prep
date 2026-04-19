@@ -17,6 +17,7 @@ const SELECT_COLUMNS = `
   listening_score      AS "listeningScore",
   reading_raw          AS "readingRaw",
   reading_score        AS "readingScore",
+  structure_raw        AS "structureRaw",
   structure_score      AS "structureScore",
   overall_score        AS "overallScore",
   created_at           AS "createdAt",
@@ -28,6 +29,7 @@ const scoreFieldMap: Record<string, string> = {
   listeningScore: 'listening_score',
   readingRaw: 'reading_raw',
   readingScore: 'reading_score',
+  structureRaw: 'structure_raw',
   structureScore: 'structure_score',
   overallScore: 'overall_score',
 };
@@ -50,6 +52,7 @@ function transformAttemptRow(row: any) {
     listeningScore: row.listening_score,
     readingRaw: row.reading_raw,
     readingScore: row.reading_score,
+    structureRaw: row.structure_raw,
     structureScore: row.structure_score,
     overallScore: row.overall_score,
     createdAt: row.created_at,
@@ -217,6 +220,7 @@ export async function updateScores(
     listeningScore: number;
     readingRaw: number;
     readingScore: number;
+    structureRaw: number;
     structureScore: number;
     overallScore: number;
   }>,
@@ -298,11 +302,12 @@ export async function getStatsForUser(userId: string, examType?: string, mode?: 
   const queryParams: any[] = [userId, testTypes];
   let paramCounter = 3;
 
-  if (mode) {
-    filterClause += ` AND a.mode = $${paramCounter}`;
-    queryParams.push(mode);
-    paramCounter++;
-  }
+  // By default, only show full practice stats on dashboard
+  const effectiveMode = mode || 'full';
+  
+  filterClause += ` AND a.mode = $${paramCounter}`;
+  queryParams.push(effectiveMode);
+  paramCounter++;
 
   const attemptsResult = await query(
     `SELECT
@@ -342,8 +347,8 @@ export async function getStatsForUser(userId: string, examType?: string, mode?: 
      JOIN tests t ON a.test_id = t.id
      WHERE a.user_id = $1 AND a.status = 'completed'
      AND t.test_type = ANY($2::text[])
-     ${mode ? `AND a.mode = $3` : ''}`,
-    mode ? [userId, testTypes, mode] : [userId, testTypes],
+     AND a.mode = $3`,
+    [userId, testTypes, effectiveMode],
   );
   const totalCompleted = parseInt(countResult.rows[0].count, 10);
 
