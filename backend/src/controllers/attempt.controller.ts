@@ -43,7 +43,8 @@ export async function getUserAttempts(
     const limit = parseInt(req.query.limit as string) || 20;
     const examType = req.query.examType as string | undefined;
     const testType = req.query.testType as string | undefined;
-    const result = await attemptService.getUserAttempts(req.user!.id, offset, limit, examType, testType);
+    const mode = req.query.mode as string | undefined;
+    const result = await attemptService.getUserAttempts(req.user!.id, offset, limit, examType, testType, mode);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');

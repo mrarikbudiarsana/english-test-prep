@@ -22,16 +22,10 @@ export default function ResultsPage() {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
-  const [offset, setOffset] = useState(0);
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
-  const [sortBy, setSortBy] = useState<SortBy>('date');
-  const [deletingAttemptId, setDeletingAttemptId] = useState<string | null>(null);
-  const limit = 10;
-  const userExamType = 'toefl_itp';
-  const { theme } = getExamConfig(userExamType);
-  const allowedTestTypes = useMemo(() => ['toefl_itp'], []);
-  const queryTestType = searchParams.get('testType') as TestType | null;
-  const activeTestType = queryTestType === 'toefl_itp' ? queryTestType : null;
+  const [activeCategory, setActiveCategory] = useState<'full' | 'section_practice'>('full');
+  const [stats, setStats] = useState<{ fullCount: number; sectionCount: number; fullHigh: string; fullAvg: string; sectionHigh: string; sectionAvg: string }>({
+    fullCount: 0, sectionCount: 0, fullHigh: '-', fullAvg: '-', sectionHigh: '-', sectionAvg: '-'
+  });
 
   const fetchAttempts = useCallback(async () => {
     setLoading(true);
@@ -41,6 +35,7 @@ export default function ResultsPage() {
           offset,
           limit,
           examType: userExamType,
+          mode: activeCategory,
           ...(activeTestType ? { testType: activeTestType } : {}),
         },
       });
@@ -68,7 +63,44 @@ export default function ResultsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTestType, allowedTestTypes, filterStatus, offset, sortBy]);
+  }, [activeCategory, activeTestType, allowedTestTypes, filterStatus, offset, sortBy]);
+
+  // Fetch summary stats once
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const res = await api.get<PaginatedResponse<Attempt>>('/attempts', {
+          params: { limit: 100, examType: userExamType }
+        });
+        const all = res.data.data.filter(a => a.status === 'completed');
+        const full = all.filter(a => a.mode === 'full');
+        const section = all.filter(a => a.mode === 'section_practice');
+
+        const highest = (list: Attempt[]) => {
+          const scored = list.filter(a => a.overallScore !== null);
+          if (!scored.length) return '-';
+          return Math.round(Math.max(...scored.map(a => Number(a.overallScore)))).toString();
+        };
+        const average = (list: Attempt[]) => {
+          const scored = list.filter(a => a.overallScore !== null);
+          if (!scored.length) return '-';
+          return Math.round(scored.reduce((s, a) => s + Number(a.overallScore), 0) / scored.length).toString();
+        };
+
+        setStats({
+          fullCount: full.length,
+          sectionCount: section.length,
+          fullHigh: highest(full),
+          fullAvg: average(full),
+          sectionHigh: highest(section),
+          sectionAvg: average(section),
+        });
+      } catch (e) {
+        console.error('Failed to fetch summary stats', e);
+      }
+    };
+    fetchSummary();
+  }, [userExamType]);
 
   useEffect(() => {
     fetchAttempts();
@@ -138,6 +170,33 @@ export default function ResultsPage() {
     );
   }
 
+  const StatBlock = ({
+    label, count, high, avg, accent, active, onClick
+  }: { label: string; count: number; high: string; avg: string; accent: string; active: boolean; onClick: () => void }) => (
+    <button
+      onClick={onClick}
+      className={`text-left rounded-xl border transition-all overflow-hidden ${
+        active ? 'ring-2 ring-offset-2 scale-[1.02] shadow-md' : 'border-[#e8ecef] bg-white opacity-80 hover:opacity-100 hover:border-slate-300'
+      }`}
+      style={active ? { borderColor: accent, ringColor: accent } as any : {}}
+    >
+      <div className="px-5 py-3 border-b border-[#e8ecef] flex items-center gap-2" style={{ backgroundColor: `${accent}18` }}>
+        <span className="text-xs font-bold uppercase tracking-widest" style={{ color: accent }}>{label}</span>
+        <span className="ml-auto text-xs font-semibold text-[#5a6c7d]">{count} test{count !== 1 ? 's' : ''}</span>
+      </div>
+      <div className="grid grid-cols-2 divide-x divide-[#e8ecef]">
+        <div className="px-5 py-4">
+          <p className="text-xs font-medium text-[#5a6c7d] mb-1">Highest Score</p>
+          <p className="text-2xl font-bold text-[#2c3e50]">{high}</p>
+        </div>
+        <div className="px-5 py-4">
+          <p className="text-xs font-medium text-[#5a6c7d] mb-1">Average Score</p>
+          <p className="text-2xl font-bold text-[#2c3e50]">{avg}</p>
+        </div>
+      </div>
+    </button>
+  );
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       <div className="flex items-center justify-between">
@@ -151,62 +210,26 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      {attempts.length > 0 && (() => {
-        const completedAttempts = attempts.filter(a => a.status === 'completed');
-        const fullTests   = completedAttempts.filter(a => !a.practiceSectionType);
-        const sectionTests = completedAttempts.filter(a =>  a.practiceSectionType);
-
-        const highest = (list: Attempt[]) => {
-          const scored = list.filter(a => getDisplayScore(a) !== null);
-          if (!scored.length) return '-';
-          return Math.round(Math.max(...scored.map(a => Number(getDisplayScore(a))))).toString();
-        };
-        const average = (list: Attempt[]) => {
-          const scored = list.filter(a => getDisplayScore(a) !== null);
-          if (!scored.length) return '-';
-          return Math.round(scored.reduce((s, a) => s + Number(getDisplayScore(a)), 0) / scored.length).toString();
-        };
-
-        const StatBlock = ({
-          label, count, high, avg, accent,
-        }: { label: string; count: number; high: string; avg: string; accent: string }) => (
-          <div className="rounded-xl border border-[#e8ecef] bg-white overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#e8ecef] flex items-center gap-2" style={{ backgroundColor: `${accent}18` }}>
-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: accent }}>{label}</span>
-              <span className="ml-auto text-xs font-semibold text-[#5a6c7d]">{count} test{count !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="grid grid-cols-2 divide-x divide-[#e8ecef]">
-              <div className="px-5 py-4">
-                <p className="text-xs font-medium text-[#5a6c7d] mb-1">Highest Score</p>
-                <p className="text-2xl font-bold text-[#2c3e50]">{high}</p>
-              </div>
-              <div className="px-5 py-4">
-                <p className="text-xs font-medium text-[#5a6c7d] mb-1">Average Score</p>
-                <p className="text-2xl font-bold text-[#2c3e50]">{avg}</p>
-              </div>
-            </div>
-          </div>
-        );
-
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <StatBlock
-              label="Full Practice"
-              count={fullTests.length}
-              high={highest(fullTests)}
-              avg={average(fullTests)}
-              accent={theme.primary}
-            />
-            <StatBlock
-              label="Section Practice"
-              count={sectionTests.length}
-              high={highest(sectionTests)}
-              avg={average(sectionTests)}
-              accent="#0e7490"
-            />
-          </div>
-        );
-      })()}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <StatBlock
+          label="Full Practice"
+          count={stats.fullCount}
+          high={stats.fullHigh}
+          avg={stats.fullAvg}
+          accent={theme.primary}
+          active={activeCategory === 'full'}
+          onClick={() => { setActiveCategory('full'); setOffset(0); }}
+        />
+        <StatBlock
+          label="Section Practice"
+          count={stats.sectionCount}
+          high={stats.sectionHigh}
+          avg={stats.sectionAvg}
+          accent="#0e7490"
+          active={activeCategory === 'section_practice'}
+          onClick={() => { setActiveCategory('section_practice'); setOffset(0); }}
+        />
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-white rounded-xl p-4 border border-[#e8ecef]">
         <div className="flex items-center gap-3">

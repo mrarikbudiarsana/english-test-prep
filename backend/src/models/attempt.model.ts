@@ -83,12 +83,26 @@ export async function findByUserId(
   offset: number = 0,
   limit: number = 20,
   testTypes?: string[],
+  mode?: string,
 ) {
   const hasTestTypeFilter = !!(testTypes && testTypes.length > 0);
-  const testTypeFilter = hasTestTypeFilter ? 'AND t.test_type = ANY($4::text[])' : '';
-  const attemptsParams = hasTestTypeFilter
-    ? [userId, offset, limit, testTypes]
-    : [userId, offset, limit];
+  const hasModeFilter = !!mode;
+
+  let queryFilter = '';
+  const attemptsParams: any[] = [userId, offset, limit];
+  let paramCounter = 4;
+
+  if (hasTestTypeFilter) {
+    queryFilter += ` AND t.test_type = ANY($${paramCounter}::text[])`;
+    attemptsParams.push(testTypes);
+    paramCounter++;
+  }
+
+  if (hasModeFilter) {
+    queryFilter += ` AND a.mode = $${paramCounter}`;
+    attemptsParams.push(mode);
+    paramCounter++;
+  }
 
   const result = await query(
     `SELECT a.*,
@@ -109,14 +123,27 @@ export async function findByUserId(
      ) r ON a.id = r.attempt_id
      WHERE a.user_id = $1
        AND (a.status != 'in_progress' OR COALESCE(r.response_count, 0) > 0)
-       ${testTypeFilter}
+       ${queryFilter}
      ORDER BY a.created_at DESC
      OFFSET $2 LIMIT $3`,
     attemptsParams,
   );
 
-  const countTestTypeFilter = hasTestTypeFilter ? 'AND t.test_type = ANY($2::text[])' : '';
-  const countParams = hasTestTypeFilter ? [userId, testTypes] : [userId];
+  const countParams: any[] = [userId];
+  let countParamCounter = 2;
+  let countFilter = '';
+
+  if (hasTestTypeFilter) {
+    countFilter += ` AND t.test_type = ANY($${countParamCounter}::text[])`;
+    countParams.push(testTypes);
+    countParamCounter++;
+  }
+
+  if (hasModeFilter) {
+    countFilter += ` AND a.mode = $${countParamCounter}`;
+    countParams.push(mode);
+    countParamCounter++;
+  }
 
   const countResult = await query(
     `SELECT COUNT(*)
@@ -129,7 +156,7 @@ export async function findByUserId(
      ) r ON a.id = r.attempt_id
      WHERE a.user_id = $1
        AND (a.status != 'in_progress' OR COALESCE(r.response_count, 0) > 0)
-       ${countTestTypeFilter}`,
+       ${countFilter}`,
     countParams,
   );
 
@@ -296,7 +323,8 @@ export async function getStatsForUser(userId: string, examType?: string) {
      WHERE a.user_id = $1 AND a.status = 'completed'
      ${testTypeFilter}
      ORDER BY a.completed_at DESC
-     LIMIT 10`,
+     ORDER BY a.completed_at DESC
+     LIMIT 50`,
     queryParams,
   );
 
@@ -336,6 +364,7 @@ export async function getStatsForUser(userId: string, examType?: string) {
       overallScore: a.overallScore,
       status: a.status,
       completedAt: a.completedAt,
+      mode: a.mode,
     })),
     sectionAverages,
   };

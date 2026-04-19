@@ -147,8 +147,9 @@ export async function getUserAttempts(
   limit: number = 20,
   _examType?: string,
   _testType?: string,
+  mode?: string,
 ) {
-  return attemptModel.findByUserId(userId, offset, limit, ['toefl_itp']);
+  return attemptModel.findByUserId(userId, offset, limit, ['toefl_itp'], mode);
 }
 
 /**

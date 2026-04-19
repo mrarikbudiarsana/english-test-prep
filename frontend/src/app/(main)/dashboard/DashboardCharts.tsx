@@ -21,8 +21,11 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 't
   const examConfig = getExamConfig(examType);
   const { scoreRange, scoreLabel, sections: examSections, theme } = examConfig;
   const chartColor = theme.chartColor;
+  const [chartMode, setChartMode] = useState<'full' | 'section_practice'>('full');
 
-  const progressData = [...recentAttempts].reverse().slice(-10).map((attempt, index) => ({
+  const filteredAttempts = recentAttempts.filter(a => chartMode === 'full' ? (a.mode === 'full' || !a.mode) : a.mode === 'section_practice');
+
+  const progressData = [...filteredAttempts].reverse().slice(-10).map((attempt, index) => ({
     name: `Test ${index + 1}`,
     score: attempt.overallScore ?? 0,
     date: new Date(attempt.completedAt).toLocaleDateString(),
@@ -38,7 +41,26 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 't
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <div className="mb-6"><h3 className="text-lg font-bold text-slate-800 mb-1">Score Progression</h3><p className="text-sm text-slate-500">Track your improvement over time</p></div>
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-1">Score Progression</h3>
+            <p className="text-sm text-slate-500">Track your improvement over time</p>
+          </div>
+          <div className="flex bg-slate-100 p-1 rounded-lg">
+            <button
+              onClick={() => setChartMode('full')}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${chartMode === 'full' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Full
+            </button>
+            <button
+              onClick={() => setChartMode('section_practice')}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${chartMode === 'section_practice' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Sections
+            </button>
+          </div>
+        </div>
         <div className="h-[300px] w-full">
           {tier === 'free' ? (
             <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-8 text-center"><div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3"><HiLockClosed className="w-5 h-5 text-gray-400" /></div><h4 className="font-semibold text-gray-700 mb-1">Score History Locked</h4><p className="text-sm text-gray-500 max-w-xs">Upgrade to Starter to track your progress over time and identify trends.</p></div>
