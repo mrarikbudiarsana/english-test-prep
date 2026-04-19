@@ -130,7 +130,7 @@ export default function MultipleChoice({
                     : status === 'missed'
                       ? 'bg-amber-50'
                       : selected
-                        ? 'bg-blue-50/60'
+                        ? 'bg-slate-100/50'
                         : readOnly
                           ? 'bg-white'
                           : 'bg-white hover:bg-slate-50'

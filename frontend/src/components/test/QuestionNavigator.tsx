@@ -52,9 +52,9 @@ export default function QuestionNavigator({
             "flex items-center justify-center rounded-md border text-sm font-bold transition-all duration-200",
             String(displayNumber).length > 2 ? "h-8 min-w-[2rem] px-1" : "h-8 w-8",
             isCurrent
-                ? "bg-blue-600 border-blue-600 text-white shadow-md ring-2 ring-blue-100 ring-offset-1"
+                ? "bg-[#08507f] border-[#08507f] text-white shadow-md ring-2 ring-[#08507f]/10 ring-offset-1"
                 : isAnswered
-                    ? "bg-emerald-100 border-emerald-200 text-emerald-700"
+                    ? "bg-[#08507f] border-[#08507f] text-white"
                     : "bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50",
             !isClickable && !isCurrent && "cursor-default opacity-80",
             !isClickable && isCurrent && "cursor-default"
@@ -152,11 +152,11 @@ export default function QuestionNavigator({
                                     isCurrent
                                         ? isFlagged
                                             ? "bg-white border-[#f59e0b] text-[#f59e0b] shadow-md ring-2 ring-[#f59e0b]/20"
-                                            : "bg-white border-blue-500 text-blue-600 shadow-sm"
+                                            : "bg-white border-[#08507f] text-[#08507f] shadow-sm"
                                         : isFlagged
                                             ? "bg-[#f59e0b] border-[#f59e0b] text-white shadow-sm"
                                             : isAnswered
-                                                ? "bg-blue-600 border-blue-600 text-white"
+                                                ? "bg-[#08507f] border-[#08507f] text-white"
                                                 : "bg-white border-gray-200 text-gray-400 hover:border-gray-300",
                                     !isClickable && !isCurrent && "cursor-default opacity-50",
                                     !isClickable && isCurrent && "cursor-default"

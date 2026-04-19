@@ -64,7 +64,7 @@ export default function SectionProgress({
                     ${status === 'completed'
                       ? 'border-green-500 bg-green-500 text-white'
                       : status === 'current'
-                        ? 'border-blue-600 bg-blue-600 text-white'
+                        ? 'border-[#08507f] bg-[#08507f] text-white'
                         : 'border-gray-300 bg-white text-gray-400'
                     }
                   `}
@@ -81,7 +81,7 @@ export default function SectionProgress({
                   className={`text-xs font-medium transition-colors duration-500 ease-out ${status === 'completed'
                     ? 'text-green-600'
                     : status === 'current'
-                      ? 'text-blue-600'
+                      ? 'text-[#08507f]'
                       : 'text-gray-400'
                     }`}
                 >

@@ -233,9 +233,9 @@ export default function QuestionRenderer({
         </TextHighlighter>
         {/* Explanation (review mode) */}
         {readOnly && question.explanation && (
-          <div className="mt-4 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
-            <p className="text-xs font-medium text-blue-700 mb-1">Explanation</p>
-            <p className="text-sm text-blue-800">{question.explanation}</p>
+          <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3">
+            <p className="text-xs font-bold text-emerald-700 mb-1 uppercase tracking-wider">Explanation</p>
+            <p className="text-sm text-emerald-800 leading-relaxed italic">{question.explanation}</p>
           </div>
         )}
       </div>
