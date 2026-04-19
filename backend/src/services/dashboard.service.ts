@@ -6,17 +6,23 @@ import * as subscriptionModel from '../models/subscription.model';
  * Returns total completed attempts, averages, best score, recent attempts, etc.
  * @param userId - The user's ID
  * @param examType - Optional exam type filter (ielts, toefl_ibt, toefl_itp, pte)
+ * @param mode - Optional mode filter (full, section)
  */
-export async function getStats(userId: string, examType?: string) {
-  const stats = await attemptModel.getStatsForUser(userId, examType);
+export async function getStats(userId: string, examType?: string, mode?: string) {
+  const stats = await attemptModel.getStatsForUser(userId, examType, mode);
   return stats;
 }
 
 /**
  * Get attempt history for a user with pagination.
  */
-export async function getHistory(userId: string, offset: number = 0, limit: number = 20) {
-  return attemptModel.findByUserId(userId, offset, limit);
+export async function getHistory(
+  userId: string,
+  offset: number = 0,
+  limit: number = 20,
+  mode?: string
+) {
+  return attemptModel.findByUserId(userId, offset, limit, undefined, mode);
 }
 
 /**

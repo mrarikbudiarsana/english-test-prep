@@ -291,10 +291,18 @@ const EXAM_TYPE_MAP: Record<string, string[]> = {
   toefl_itp: ['toefl_itp'],
 };
 
-export async function getStatsForUser(userId: string, examType?: string) {
-  const testTypes = examType ? EXAM_TYPE_MAP[examType] : ['toefl_itp'];
-  const testTypeFilter = `AND t.test_type = ANY($2::text[])`;
-  const queryParams = [userId, testTypes];
+export async function getStatsForUser(userId: string, examType?: string, mode?: string) {
+  const testTypes = (examType && EXAM_TYPE_MAP[examType]) ? EXAM_TYPE_MAP[examType] : ['toefl_itp'];
+  
+  let filterClause = 'AND t.test_type = ANY($2::text[])';
+  const queryParams: any[] = [userId, testTypes];
+  let paramCounter = 3;
+
+  if (mode) {
+    filterClause += ` AND a.mode = $${paramCounter}`;
+    queryParams.push(mode);
+    paramCounter++;
+  }
 
   const attemptsResult = await query(
     `SELECT
@@ -321,8 +329,7 @@ export async function getStatsForUser(userId: string, examType?: string) {
      FROM attempts a
      JOIN tests t ON a.test_id = t.id
      WHERE a.user_id = $1 AND a.status = 'completed'
-     ${testTypeFilter}
-     ORDER BY a.completed_at DESC
+     ${filterClause}
      ORDER BY a.completed_at DESC
      LIMIT 50`,
     queryParams,
@@ -334,8 +341,9 @@ export async function getStatsForUser(userId: string, examType?: string) {
     `SELECT COUNT(*) FROM attempts a
      JOIN tests t ON a.test_id = t.id
      WHERE a.user_id = $1 AND a.status = 'completed'
-     AND t.test_type = ANY($2::text[])`,
-    [userId, testTypes],
+     AND t.test_type = ANY($2::text[])
+     ${mode ? `AND a.mode = $3` : ''}`,
+    mode ? [userId, testTypes, mode] : [userId, testTypes],
   );
   const totalCompleted = parseInt(countResult.rows[0].count, 10);
 

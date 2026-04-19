@@ -12,6 +12,9 @@ import {
   HiArrowLeft,
   HiClock,
   HiFilter,
+  HiChartBar,
+  HiTrendingUp,
+  HiTrendingDown,
 } from 'react-icons/hi';
 
 type FilterStatus = 'all' | AttemptStatus;
@@ -19,10 +22,22 @@ type SortBy = 'date' | 'score';
 
 export default function ResultsPage() {
   const searchParams = useSearchParams();
+  const userExamType = 'toefl_itp'; // Default for this platform
+  const examConfig = getExamConfig(userExamType);
+  const { theme, testTypes: allowedTestTypes } = examConfig;
+
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const limit = 10;
+
   const [activeCategory, setActiveCategory] = useState<'full' | 'section_practice'>('full');
+  const [activeTestType, setActiveTestType] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  const [sortBy, setSortBy] = useState<SortBy>('date');
+  const [deletingAttemptId, setDeletingAttemptId] = useState<string | null>(null);
+
   const [stats, setStats] = useState<{ fullCount: number; sectionCount: number; fullHigh: string; fullAvg: string; sectionHigh: string; sectionAvg: string }>({
     fullCount: 0, sectionCount: 0, fullHigh: '-', fullAvg: '-', sectionHigh: '-', sectionAvg: '-'
   });
