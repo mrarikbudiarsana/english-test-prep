@@ -64,11 +64,15 @@ export async function getTestById(
   res: Response,
   next: NextFunction
 ): Promise<void> {
+  const testId = req.params.testId as string;
+  console.log(`[AdminController] Requesting test detail for ID: ${testId}`);
+
   try {
-    const testId = req.params.testId as string;
     const test = await adminService.getTestById(testId);
+    console.log(`[AdminController] Test found: ${test.title}`);
     res.json({ data: test });
   } catch (error) {
+    console.log(`[AdminController] Error fetching test: ${error instanceof Error ? error.message : String(error)}`);
     next(error);
   }
 }

@@ -34,14 +34,19 @@ const SELECT_COLUMNS = `
 
 export async function findById(id: string) {
   try {
+    // If id is clearly not a UUID (wrong length/format), return null early
+    if (!id || id.length < 32) {
+      return null;
+    }
+
     const result = await query(
       `SELECT ${SELECT_COLUMNS} FROM tests WHERE id = $1`,
       [id],
     );
     return result.rows[0] || null;
   } catch (err) {
-    // If it's a malformed UUID error (code 22P02), return null instead of throwing 500
-    if ((err as any).code === '22P02') {
+    // Handle Postgres malformed UUID error (22P02) or other specific lookup failures
+    if ((err as any).code === '22P02' || (err as any).code === '22023') {
       return null;
     }
     throw err;

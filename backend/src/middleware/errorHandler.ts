@@ -32,7 +32,7 @@ export class ValidationError extends AppError {
 }
 
 export function errorHandler(
-  err: Error,
+  err: any,
   req: Request,
   res: Response,
   _next: NextFunction
@@ -41,6 +41,7 @@ export function errorHandler(
   const errorDetails = {
     name: err.name,
     message: err.message,
+    statusCode: err.statusCode,
     stack: err.stack,
     path: req.path,
     method: req.method,
@@ -49,8 +50,15 @@ export function errorHandler(
 
   console.error('[errorHandler] Detailed Error:', JSON.stringify(errorDetails));
 
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json({ error: err.message });
+  // Structural check: if the error has a statusCode (custom app error)
+  if (err.statusCode && typeof err.statusCode === 'number') {
+    res.status(err.statusCode).json({ error: err.message || 'An error occurred' });
+    return;
+  }
+
+  // Handle common Postgres errors if they bubble up
+  if (err.code === '22P02') {
+    res.status(400).json({ error: 'Invalid ID format' });
     return;
   }
 
