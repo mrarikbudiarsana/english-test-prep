@@ -388,10 +388,7 @@ function TestTakingContent() {
           if (firstQOfNextPart) {
             setActivePartIndex(nextPartIdx);
             selectQuestionIndex(questions.indexOf(firstQOfNextPart));
-            // Reading passages are silent transitions — directions only show once at section start
-            if (state.currentSectionType !== 'reading') {
-              setViewingDirections(getResolvedPartNumber(activePartIndex) !== getResolvedPartNumber(nextPartIdx));
-            }
+            setViewingDirections(getResolvedPartNumber(activePartIndex) !== getResolvedPartNumber(nextPartIdx));
           }
         } else {
           startToeflReview();
@@ -669,13 +666,11 @@ function TestTakingContent() {
           {state.currentSectionType !== 'reading' ? (
             /* ── Non-reading: padded scroll area ── */
             <div className="h-full w-full mx-auto px-8 py-8">
-              {state.currentSectionType !== 'reading' && (
-                <div className="mb-8">
-                  <h1 className="text-2xl font-bold text-slate-900 leading-tight">
-                    {currentPartLabel.split('\u2014')[0].trim()}
-                  </h1>
-                </div>
-              )}
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+                  {currentPartLabel.split('\u2014')[0].trim()}
+                </h1>
+              </div>
               <div className="w-full">
                 {viewingDirections ? (
                   <div className={cn("w-full flex flex-col items-center justify-center min-h-[400px] transition-all duration-300", isDirectionsTransitioning ? 'opacity-0 scale-[0.98]' : 'opacity-100')}>
