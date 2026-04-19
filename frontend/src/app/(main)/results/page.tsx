@@ -193,8 +193,8 @@ export default function ResultsPage() {
   }
 
   const StatBlock = ({
-    label, count, high, avg, accent, active, onClick
-  }: { label: string; count: number; high: string; avg: string; accent: string; active: boolean; onClick: () => void }) => (
+    label, count, high, avg, accent, active, onClick, showScore
+  }: { label: string; count: number; high: string; avg: string; accent: string; active: boolean; onClick: () => void; showScore?: boolean }) => (
     <button
       onClick={onClick}
       className={`text-left rounded-xl border transition-all overflow-hidden ${
@@ -206,16 +206,22 @@ export default function ResultsPage() {
         <span className="text-xs font-bold uppercase tracking-widest" style={{ color: accent }}>{label}</span>
         <span className="ml-auto text-xs font-semibold text-[#5a6c7d]">{count} test{count !== 1 ? 's' : ''}</span>
       </div>
-      <div className="grid grid-cols-2 divide-x divide-[#e8ecef]">
-        <div className="px-5 py-4">
-          <p className="text-xs font-medium text-[#5a6c7d] mb-1">Highest Score</p>
-          <p className="text-2xl font-bold text-[#2c3e50]">{high}</p>
+      {showScore ? (
+        <div className="grid grid-cols-2 divide-x divide-[#e8ecef]">
+          <div className="px-5 py-4">
+            <p className="text-xs font-medium text-[#5a6c7d] mb-1">Highest Score</p>
+            <p className="text-2xl font-bold text-[#2c3e50]">{high}</p>
+          </div>
+          <div className="px-5 py-4">
+            <p className="text-xs font-medium text-[#5a6c7d] mb-1">Average Score</p>
+            <p className="text-2xl font-bold text-[#2c3e50]">{avg}</p>
+          </div>
         </div>
-        <div className="px-5 py-4">
-          <p className="text-xs font-medium text-[#5a6c7d] mb-1">Average Score</p>
-          <p className="text-2xl font-bold text-[#2c3e50]">{avg}</p>
+      ) : (
+        <div className="px-5 py-6 flex flex-col items-center justify-center text-center bg-slate-50/30">
+          <p className="text-xs font-semibold text-[#5a6c7d] opacity-70">Detailed results shown below</p>
         </div>
-      </div>
+      )}
     </button>
   );
 
@@ -241,6 +247,7 @@ export default function ResultsPage() {
           accent={theme.primary}
           active={activeCategory === 'full'}
           onClick={() => { setActiveCategory('full'); setOffset(0); }}
+          showScore={true}
         />
         <StatBlock
           label="Section Practice"
@@ -250,6 +257,7 @@ export default function ResultsPage() {
           accent="#0e7490"
           active={activeCategory === 'section_practice'}
           onClick={() => { setActiveCategory('section_practice'); setOffset(0); }}
+          showScore={false}
         />
       </div>
 
