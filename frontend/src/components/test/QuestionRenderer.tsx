@@ -103,34 +103,42 @@ export default function QuestionRenderer({
     ? (question.questionData as MCQData).expectedAnswers || 2
     : 1;
 
-  // Helper to render text with basic HTML support (specifically for <u> tags in TOEFL)
+  // Render sentence text with <u>…</u> underlines for TOEFL written-expression questions.
+  // Each underlined phrase stays on the sentence baseline; the A/B/C/D label sits
+  // below the underline via a small absolute-positioned element so line-height is unaffected.
   const renderRichText = (text: string | null | undefined) => {
     if (!text) return null;
 
     let uCount = 0;
-    // Split by <u> tags
     const parts = text.split(/(<u>.*?<\/u>)/g);
 
     return (
-      <span>
+      // Extra bottom padding gives room for the letter labels that sit below the line
+      <span className="inline leading-loose">
         {parts.map((part, i) => {
           if (part.startsWith('<u>') && part.endsWith('</u>')) {
-            const letter = String.fromCharCode(65 + (uCount % 26)); 
+            const letter = String.fromCharCode(65 + (uCount % 26));
             uCount++;
             const textInside = part.slice(3, -4);
 
             return (
-              <span key={i} className="inline-flex flex-col items-center align-bottom px-1 mx-0.5 group/u relative">
-                <span className="border-b-2 border-gray-900 leading-[1.3] pb-0.5 transition-colors group-hover/u:border-[#08507f]">
+              // relative container — no flex, stays inline so sentence flows normally
+              <span
+                key={i}
+                className="relative inline mx-[3px] pb-[18px] group/u"
+              >
+                {/* The underlined word */}
+                <span className="border-b-2 border-slate-800 group-hover/u:border-[#08507f] transition-colors">
                   {textInside}
                 </span>
-                <span className="text-[10px] font-bold text-gray-700 mt-0.5 leading-none select-none opacity-70">
-                  {letter}
+                {/* Letter label anchored below the underline */}
+                <span className="absolute left-1/2 -translate-x-1/2 bottom-0 text-[10px] font-semibold text-slate-500 leading-none select-none tracking-wide">
+                  ({letter})
                 </span>
               </span>
             );
           }
-          return <span key={i} className="whitespace-pre-wrap">{part}</span>;
+          return <span key={i}>{part}</span>;
         })}
       </span>
     );
@@ -158,8 +166,7 @@ export default function QuestionRenderer({
   return (
     <div className={cn(
       'py-4 border-b border-gray-100 last:border-0',
-      "flex items-start gap-3",
-      isActive && "bg-blue-50/40 -mx-4 px-4 rounded-lg ring-1 ring-blue-100"
+      'flex items-start gap-3',
     )}>
       <div className="flex shrink-0 items-center gap-1 mt-0.5">
         {Array.from({ length: expectedAnswers }).map((_, idx) => {
