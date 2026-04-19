@@ -86,7 +86,7 @@ export async function create(data: {
       data.snapToken ?? null,
       data.amount,
       data.currency ?? 'IDR',
-      data.examType ?? 'ielts',
+      data.examType ?? 'toefl_itp',
     ],
   );
   return result.rows[0];
