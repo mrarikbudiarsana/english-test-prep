@@ -183,6 +183,13 @@ export async function finalizeAttempt(attemptId: string) {
     return attempt;
   }
 
+  // Ensure current section or practice section is scored before finalizing
+  if (attempt.currentSection) {
+    await scoringService.scoreObjectiveSection(attemptId, attempt.currentSection as SectionType, 'toefl_itp');
+  } else if (attempt.practiceSectionType) {
+    await scoringService.scoreObjectiveSection(attemptId, attempt.practiceSectionType as SectionType, 'toefl_itp');
+  }
+
   // Calculate final ITP score: (Sum of section scaled scores) * 10 / 3
   const finalAttempt = await getAttempt(attemptId);
   const overallScore = scoringService.calculateOverallBand(
