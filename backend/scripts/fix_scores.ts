@@ -236,14 +236,17 @@ async function fixPastAttempts() {
       const bandScore = convertToBand(rawScore, sectionType);
       scoresMap[sectionType] = { raw: rawScore, band: bandScore };
       
-      const rawCol = sectionType + '_raw';
-      const scoreCol = sectionType + '_score';
-      
-      await pool.query(
-        `UPDATE attempts SET ${rawCol} = $1, ${scoreCol} = $2 WHERE id = $3`,
-        [rawScore, bandScore, attempt.id]
-      );
-      updatedAny = true;
+      const allowedSections = ['listening', 'structure', 'reading'];
+      if (allowedSections.includes(sectionType)) {
+        const rawCol = sectionType + '_raw';
+        const scoreCol = sectionType + '_score';
+        
+        await pool.query(
+          `UPDATE attempts SET ${rawCol} = $1, ${scoreCol} = $2 WHERE id = $3`,
+          [rawScore, bandScore, attempt.id]
+        );
+        updatedAny = true;
+      }
     }
 
     if (updatedAny) {

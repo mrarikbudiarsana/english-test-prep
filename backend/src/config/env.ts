@@ -14,7 +14,6 @@ export const env = {
     clientKey: process.env.MIDTRANS_CLIENT_KEY || '',
     isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
   },
-  openaiApiKey: process.env.OPENAI_API_KEY || '',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
