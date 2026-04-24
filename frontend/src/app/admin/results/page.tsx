@@ -15,6 +15,7 @@ interface ResultRow {
   userId: string;
   testId: string;
   mode: string;
+  practiceSectionType: 'listening' | 'reading' | 'structure' | null;
   status: string;
   startedAt: string | null;
   completedAt: string | null;
@@ -49,6 +50,12 @@ function testTypeBadgeColor(testType: string): string {
 }
 
 function formatScore(row: ResultRow): string {
+  if (row.mode === 'section_practice') {
+    if (row.practiceSectionType === 'listening' && row.listeningScore != null) return `${row.listeningScore}`;
+    if (row.practiceSectionType === 'reading' && row.readingScore != null) return `${row.readingScore}`;
+    if (row.practiceSectionType === 'structure' && row.structureScore != null) return `${row.structureScore}`;
+    return '—';
+  }
   if (row.overallScore != null) return `${row.overallScore}`;
   return '—';
 }

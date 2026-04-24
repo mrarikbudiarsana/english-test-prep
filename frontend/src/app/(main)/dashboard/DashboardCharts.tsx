@@ -17,17 +17,32 @@ interface DashboardChartsProps {
   tier?: string;
 }
 
+function getSectionScaledScore(attempt: any): number | null {
+  if (attempt.practiceSectionType === 'listening') return attempt.listeningScore ?? null;
+  if (attempt.practiceSectionType === 'reading') return attempt.readingScore ?? null;
+  if (attempt.practiceSectionType === 'structure') return attempt.structureScore ?? null;
+  return null;
+}
+
+function getAttemptScore(attempt: any): number | null {
+  return attempt.mode === 'section_practice'
+    ? getSectionScaledScore(attempt)
+    : attempt.overallScore ?? null;
+}
+
 export function DashboardCharts({ recentAttempts, sectionAverages, examType = 'toefl_itp', tier = 'free' }: DashboardChartsProps) {
   const examConfig = getExamConfig(examType);
   const { scoreRange, scoreLabel, sections: examSections, theme } = examConfig;
   const chartColor = theme.chartColor;
   const [chartMode, setChartMode] = useState<'full' | 'section_practice'>('full');
+  const progressionRange = chartMode === 'section_practice' ? examConfig.sectionScoreRange : scoreRange;
+  const progressionLabel = chartMode === 'section_practice' ? 'Section Scaled Score' : scoreLabel;
 
   const filteredAttempts = recentAttempts.filter(a => chartMode === 'full' ? (a.mode === 'full' || !a.mode) : a.mode === 'section_practice');
 
   const progressData = [...filteredAttempts].reverse().slice(-10).map((attempt, index) => ({
     name: `Test ${index + 1}`,
-    score: attempt.overallScore ?? 0,
+    score: getAttemptScore(attempt) ?? 0,
     date: new Date(attempt.completedAt).toLocaleDateString(),
     title: attempt.testTitle,
   }));
@@ -65,7 +80,7 @@ export function DashboardCharts({ recentAttempts, sectionAverages, examType = 't
           {tier === 'free' ? (
             <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 p-8 text-center"><div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3"><HiLockClosed className="w-5 h-5 text-gray-400" /></div><h4 className="font-semibold text-gray-700 mb-1">Score History Locked</h4><p className="text-sm text-gray-500 max-w-xs">Upgrade to Starter to track your progress over time and identify trends.</p></div>
           ) : progressData.length > 1 ? (
-            <ResponsiveContainer width="100%" height="100%"><LineChart data={progressData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}><defs><linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor={chartColor} /><stop offset="100%" stopColor={chartColor} /></linearGradient><linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={chartColor} stopOpacity={0.15} /><stop offset="95%" stopColor={chartColor} stopOpacity={0.01} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" /><XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} /><YAxis domain={[scoreRange.min, scoreRange.max]} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} /><Tooltip formatter={(value: number | undefined) => [formatScoreValue(value), scoreLabel]} contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: 'white', padding: '12px' }} labelStyle={{ fontWeight: 600, color: '#1e293b', marginBottom: '4px' }} cursor={{ stroke: `${chartColor}40`, strokeWidth: 2 }} /><Line type="monotone" dataKey="score" stroke={chartColor} strokeWidth={3} dot={{ r: 5, strokeWidth: 3, fill: '#fff', stroke: chartColor }} activeDot={{ r: 7, strokeWidth: 0, fill: chartColor }} animationDuration={1500} /></LineChart></ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%"><LineChart data={progressData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}><defs><linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor={chartColor} /><stop offset="100%" stopColor={chartColor} /></linearGradient><linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={chartColor} stopOpacity={0.15} /><stop offset="95%" stopColor={chartColor} stopOpacity={0.01} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" /><XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} /><YAxis domain={[progressionRange.min, progressionRange.max]} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} /><Tooltip formatter={(value: number | undefined) => [formatScoreValue(value), progressionLabel]} contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: 'white', padding: '12px' }} labelStyle={{ fontWeight: 600, color: '#1e293b', marginBottom: '4px' }} cursor={{ stroke: `${chartColor}40`, strokeWidth: 2 }} /><Line type="monotone" dataKey="score" stroke={chartColor} strokeWidth={3} dot={{ r: 5, strokeWidth: 3, fill: '#fff', stroke: chartColor }} activeDot={{ r: 7, strokeWidth: 0, fill: chartColor }} animationDuration={1500} /></LineChart></ResponsiveContainer>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-slate-400"><div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4"><svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg></div><p className="font-semibold text-slate-600 mb-1">Not enough data</p><p className="text-sm text-slate-500">Complete at least 2 tests to see your progress</p></div>
           )}

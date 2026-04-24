@@ -215,7 +215,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
     const sections = [
         { type: 'listening', label: 'Listening Comprehension', score: attempt.listeningScore, raw: attempt.listeningRaw, total: 50 },
-        { type: 'structure', label: 'Structure and Written Expression', score: attempt.structureScore, raw: attempt.listeningRaw, total: 40 },
+        { type: 'structure', label: 'Structure and Written Expression', score: attempt.structureScore, raw: attempt.structureRaw, total: 40 },
         { type: 'reading', label: 'Reading Comprehension', score: attempt.readingScore, raw: attempt.readingRaw, total: 50 },
     ];
 

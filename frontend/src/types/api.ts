@@ -23,6 +23,11 @@ export interface DashboardStats {
     id: string;
     testTitle: string;
     overallScore: number | null;
+    listeningScore?: number | null;
+    readingScore?: number | null;
+    structureScore?: number | null;
+    practiceSectionType?: 'listening' | 'reading' | 'structure' | null;
+    mode?: string;
     status: string;
     completedAt: string | null;
   }>;

@@ -128,12 +128,17 @@ export async function getShareInfo(id: string) {
     sections.push({ type: 'reading', label: 'Reading Comprehension', score: attempt.readingScore });
   }
 
+  const singleSection = attempt.practiceSectionType
+    ? sections.find((section) => section.type === attempt.practiceSectionType) ?? null
+    : null;
+
   return {
     testTitle: attempt.test?.title || 'TOEFL ITP Mock Test',
     testType: 'toefl_itp',
     overallScore: attempt.overallScore,
     completedAt: attempt.completedAt,
-    isPartialTest: sections.length === 1,
+    isPartialTest: !!singleSection,
+    singleSection,
     sections,
   };
 }
@@ -190,8 +195,12 @@ export async function finalizeAttempt(attemptId: string) {
     await scoringService.scoreObjectiveSection(attemptId, attempt.practiceSectionType as SectionType, 'toefl_itp');
   }
 
-  // Calculate final ITP score: (Sum of section scaled scores) * 10 / 3
   const finalAttempt = await getAttempt(attemptId);
+  if (finalAttempt.mode === 'section_practice') {
+    return attemptModel.complete(attemptId);
+  }
+
+  // Calculate final ITP score for full tests only: (Sum of section scaled scores) * 10 / 3
   const overallScore = scoringService.calculateOverallBand(
     finalAttempt.listeningScore,
     finalAttempt.readingScore,

@@ -51,6 +51,19 @@ export default function AdminUserDetailPage() {
             return <Badge variant="default" className="bg-gray-100 text-gray-800">In Progress</Badge>;
         }
 
+        if (attempt.mode === 'section_practice') {
+            const sectionScore =
+                attempt.practiceSectionType === 'listening' ? attempt.listeningScore :
+                attempt.practiceSectionType === 'reading' ? attempt.readingScore :
+                attempt.practiceSectionType === 'structure' ? attempt.structureScore :
+                null;
+
+            if (sectionScore !== null) {
+                return <span className="font-bold">{sectionScore}</span>;
+            }
+            return <span className="text-gray-400 text-xs">Not Scored</span>;
+        }
+
         if (attempt.overallScore !== null) {
             return (
                 <div>

@@ -20,6 +20,17 @@ import {
 type FilterStatus = 'all' | AttemptStatus;
 type SortBy = 'date' | 'score';
 
+function getSectionScaledScore(attempt: Attempt): number | null {
+  if (attempt.practiceSectionType === 'listening') return attempt.listeningScore;
+  if (attempt.practiceSectionType === 'reading') return attempt.readingScore;
+  if (attempt.practiceSectionType === 'structure') return attempt.structureScore;
+  return null;
+}
+
+function getComparableScore(attempt: Attempt): number | null {
+  return attempt.mode === 'section_practice' ? getSectionScaledScore(attempt) : attempt.overallScore;
+}
+
 export default function ResultsPage() {
   const searchParams = useSearchParams();
   const userExamType = 'toefl_itp'; // Default for this platform
@@ -68,7 +79,7 @@ export default function ResultsPage() {
       if (sortBy === 'date') {
         filteredAttempts.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
       } else {
-        filteredAttempts.sort((a, b) => (b.overallScore ?? 0) - (a.overallScore ?? 0));
+        filteredAttempts.sort((a, b) => (getComparableScore(b) ?? 0) - (getComparableScore(a) ?? 0));
       }
 
       setAttempts(filteredAttempts);
@@ -92,14 +103,18 @@ export default function ResultsPage() {
         const section = all.filter(a => a.mode === 'section_practice');
 
         const highest = (list: Attempt[]) => {
-          const scored = list.filter(a => a.overallScore !== null);
+          const scored = list
+            .map(getComparableScore)
+            .filter((score): score is number => score !== null);
           if (!scored.length) return '-';
-          return Math.round(Math.max(...scored.map(a => Number(a.overallScore)))).toString();
+          return Math.round(Math.max(...scored)).toString();
         };
         const average = (list: Attempt[]) => {
-          const scored = list.filter(a => a.overallScore !== null);
+          const scored = list
+            .map(getComparableScore)
+            .filter((score): score is number => score !== null);
           if (!scored.length) return '-';
-          return Math.round(scored.reduce((s, a) => s + Number(a.overallScore), 0) / scored.length).toString();
+          return Math.round(scored.reduce((s, score) => s + score, 0) / scored.length).toString();
         };
 
         setStats({
@@ -159,8 +174,8 @@ export default function ResultsPage() {
 
   function getScoreChange(index: number) {
     if (index >= attempts.length - 1) return null;
-    const current = attempts[index].overallScore;
-    const previous = attempts[index + 1].overallScore;
+    const current = getComparableScore(attempts[index]);
+    const previous = getComparableScore(attempts[index + 1]);
 
     if (current === null || current === undefined || previous === null || previous === undefined) return null;
 
@@ -170,11 +185,7 @@ export default function ResultsPage() {
 
   const getDisplayScore = (attempt: Attempt) => {
     if (attempt.mode === 'section_practice') {
-      const type = attempt.practiceSectionType;
-      if (type === 'listening') return attempt.listeningRaw !== null ? `${attempt.listeningRaw} / 50` : null;
-      if (type === 'reading') return attempt.readingRaw !== null ? `${attempt.readingRaw} / 50` : null;
-      if (type === 'structure') return attempt.structureRaw !== null ? `${attempt.structureRaw} / 40` : null;
-      return null;
+      return getSectionScaledScore(attempt);
     }
     const value = attempt.overallScore;
     return value !== null && value !== undefined ? value : null;
@@ -337,7 +348,7 @@ export default function ResultsPage() {
                           <>
                             <span className={attempt.mode === 'section_practice' ? 'text-lg' : 'text-2xl'} style={{ color: theme.primary }}>{score}</span>
                             <span className="text-xs text-[#5a6c7d] font-medium">
-                              {attempt.mode === 'section_practice' ? 'Correct' : 'Score'}
+                              {attempt.mode === 'section_practice' ? 'Scaled' : 'Score'}
                             </span>
                           </>
                         ) : (
