@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardStats } from '@/types/api';
 import { formatDate, formatScore } from '@/lib/utils';
 import { DashboardCharts } from './DashboardCharts';
@@ -56,6 +57,7 @@ function StatCard({ label, value, sub, icon, accent }: { label: string; value: s
 /* ── main component ─────────────────────────────────────────── */
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<{ planType: string; status: string; expiresAt: string } | null>(null);
@@ -108,17 +110,17 @@ export default function DashboardPage() {
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <p className="text-blue-200 text-sm font-semibold uppercase tracking-widest mb-2">Welcome back</p>
+            <p className="text-blue-200 text-sm font-semibold uppercase tracking-widest mb-2">{t('dash_welcome_back')}</p>
             <h1 className="text-3xl md:text-4xl font-extrabold mb-2">
               {user?.displayName?.split(' ')[0] || 'Student'} 👋
             </h1>
             <p className="text-blue-100 max-w-lg">
-              Your TOEFL ITP practice dashboard. Keep going — every test brings you closer to your target score.
+              {t('dash_subtitle')}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 shrink-0">
             <Link href="/tests" className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-[#08507f] bg-white hover:bg-blue-50 transition-all shadow-lg text-sm">
-              Start Practice <IconArrow />
+              {t('dash_start_practice')} <IconArrow />
             </Link>
             {subscription ? (
               <div className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/15 border border-white/20 text-sm">
@@ -127,7 +129,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <Link href="/pricing" className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-sm font-semibold hover:bg-white/20 transition-all">
-                Upgrade Plan
+                {t('dash_upgrade_plan')}
               </Link>
             )}
           </div>
@@ -136,9 +138,9 @@ export default function DashboardPage() {
 
       {/* ── Stats ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <StatCard label="Tests Completed" value={totalTests.toString()} sub="full TOEFL ITP tests" icon={<IconTests />} accent={NAVY} />
-        <StatCard label="Average Score" value={avgScore ? scaledScore(avgScore) : '—'} sub="scaled score (310–677)" icon={<IconChart />} accent="#2563eb" />
-        <StatCard label="Best Score" value={bestScore ? scaledScore(bestScore) : '—'} sub="your personal best" icon={<IconStar />} accent="#d97706" />
+        <StatCard label={t('dash_tests_completed')} value={totalTests.toString()} sub={t('dash_tests_sub')} icon={<IconTests />} accent={NAVY} />
+        <StatCard label={t('dash_avg_score')} value={avgScore ? scaledScore(avgScore) : '—'} sub={t('dash_avg_sub')} icon={<IconChart />} accent="#2563eb" />
+        <StatCard label={t('dash_best_score')} value={bestScore ? scaledScore(bestScore) : '—'} sub={t('dash_best_sub')} icon={<IconStar />} accent="#d97706" />
       </div>
 
       {/* ── Charts + Recent activity ──────────────────────────── */}
@@ -152,8 +154,8 @@ export default function DashboardPage() {
       {/* ── Recent tests ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="font-bold text-slate-900">Recent Tests</h2>
-          <Link href="/results" className="text-sm font-semibold hover:underline" style={{ color: NAVY }}>View all →</Link>
+          <h2 className="font-bold text-slate-900">{t('dash_recent_tests')}</h2>
+          <Link href="/results" className="text-sm font-semibold hover:underline" style={{ color: NAVY }}>{t('dash_view_all')}</Link>
         </div>
 
         {stats?.recentAttempts && stats.recentAttempts.length > 0 ? (
@@ -168,7 +170,7 @@ export default function DashboardPage() {
                     <p className="font-semibold text-slate-900 text-sm">{attempt.testTitle}</p>
                     <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
                       <IconClock />
-                      {attempt.completedAt ? formatDate(attempt.completedAt) : 'In progress'}
+                      {attempt.completedAt ? formatDate(attempt.completedAt) : t('dash_in_progress')}
                     </p>
                   </div>
                 </div>
@@ -183,10 +185,10 @@ export default function DashboardPage() {
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: NAVY_LIGHT }}>
               <IconTests />
             </div>
-            <p className="font-bold text-slate-900 text-lg mb-1">No tests yet</p>
-            <p className="text-slate-500 text-sm mb-6 max-w-xs">Take your first full TOEFL ITP practice test and start tracking your progress.</p>
+            <p className="font-bold text-slate-900 text-lg mb-1">{t('dash_no_tests_title')}</p>
+            <p className="text-slate-500 text-sm mb-6 max-w-xs">{t('dash_no_tests_body')}</p>
             <Link href="/tests" className="px-6 py-3 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-all" style={{ background: `linear-gradient(135deg, ${NAVY_DARK}, ${NAVY})` }}>
-              Browse Tests
+              {t('dash_browse_tests')}
             </Link>
           </div>
         )}
@@ -195,14 +197,14 @@ export default function DashboardPage() {
       {/* ── Study tips ────────────────────────────────────────── */}
       <div className="grid sm:grid-cols-3 gap-5">
         {[
-          { title: 'Listening Strategy', tip: 'Audio plays only once in the real test. Practice not rewinding — it builds focus.', color: '#2563eb' },
-          { title: 'Structure Tip', tip: 'For Written Expression, eliminate obviously wrong choices first before selecting your answer.', color: NAVY },
-          { title: 'Reading Speed', tip: 'Skim the passage first, then read questions carefully. You don\'t need to read every word.', color: '#7c3aed' },
-        ].map(t => (
-          <div key={t.title} className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-sm transition-shadow">
-            <div className="w-2 h-2 rounded-full mb-4" style={{ backgroundColor: t.color }} />
-            <h3 className="font-bold text-slate-900 text-sm mb-2">{t.title}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{t.tip}</p>
+          { title: t('dash_tip_listening_title'), tip: t('dash_tip_listening_body'), color: '#2563eb' },
+          { title: t('dash_tip_structure_title'), tip: t('dash_tip_structure_body'), color: NAVY },
+          { title: t('dash_tip_reading_title'), tip: t('dash_tip_reading_body'), color: '#7c3aed' },
+        ].map(tip => (
+          <div key={tip.title} className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-sm transition-shadow">
+            <div className="w-2 h-2 rounded-full mb-4" style={{ backgroundColor: tip.color }} />
+            <h3 className="font-bold text-slate-900 text-sm mb-2">{tip.title}</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">{tip.tip}</p>
           </div>
         ))}
       </div>

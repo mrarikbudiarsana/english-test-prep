@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Toaster } from 'react-hot-toast';
 import MigrationBanner from "@/components/layout/MigrationBanner";
 
@@ -29,19 +30,21 @@ export default function RootLayout({
       </head>
       <body className="antialiased" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
         <MigrationBanner />
-        <AuthProvider>
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: {
-                borderRadius: '12px',
-                fontFamily: 'Inter, system-ui, sans-serif',
-                fontSize: '14px',
-              },
-            }}
-          />
-          {children}
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                style: {
+                  borderRadius: '12px',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  fontSize: '14px',
+                },
+              }}
+            />
+            {children}
+          </AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Tabs } from '@/components/ui/Tabs';
@@ -11,6 +12,7 @@ import { toast } from 'react-hot-toast';
 
 export default function SettingsPage() {
     const { user, updateUserProfile, updateUserPassword } = useAuth();
+    const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState('profile');
     const [loading, setLoading] = useState(false);
 
@@ -36,7 +38,7 @@ export default function SettingsPage() {
         setLoading(true);
         try {
             await updateUserProfile(displayName, photoUrl);
-            toast.success('Profile updated successfully');
+            toast.success(t('settings_save'));
         } catch (error) {
             console.error('Error updating profile:', error);
             toast.error('Failed to update profile');
@@ -59,7 +61,7 @@ export default function SettingsPage() {
         setLoading(true);
         try {
             await updateUserPassword(password);
-            toast.success('Password updated successfully');
+            toast.success(t('settings_update_pw'));
             setPassword('');
             setConfirmPassword('');
         } catch (error) {
@@ -73,19 +75,19 @@ export default function SettingsPage() {
     const tabs = [
         {
             key: 'profile',
-            label: 'Profile',
+            label: t('settings_profile_tab'),
             icon: <HiUser className="w-5 h-5" />,
         },
         {
             key: 'security',
-            label: 'Security',
+            label: t('settings_security_tab'),
             icon: <HiLockClosed className="w-5 h-5" />,
         },
     ];
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">Account Settings</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-8">{t('settings_title')}</h1>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <Tabs
@@ -98,30 +100,30 @@ export default function SettingsPage() {
                 <div className="p-6 md:p-8">
                     {activeTab === 'profile' && (
                         <div className="max-w-xl">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-6">Profile Information</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('settings_profile_info')}</h2>
                             <form onSubmit={handleUpdateProfile} className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
+                                    <label className="block text-sm font-medium text-gray-700">{t('settings_profile_pic')}</label>
                                     <ImageUploader
                                         onUpload={(url) => setPhotoUrl(url)}
                                         currentUrl={photoUrl}
                                     />
                                 </div>
                                 <Input
-                                    label="Display Name"
+                                    label={t('settings_display_name')}
                                     value={displayName}
                                     onChange={(e) => setDisplayName(e.target.value)}
-                                    placeholder="Enter your name"
+                                    placeholder={t('settings_enter_name')}
                                 />
                                 <Input
-                                    label="Email Address"
+                                    label={t('settings_email')}
                                     value={user?.email || ''}
                                     disabled
                                     className="bg-gray-50 text-gray-500"
                                 />
                                 <div className="pt-2">
                                     <Button type="submit" loading={loading}>
-                                        Save Changes
+                                        {t('settings_save')}
                                     </Button>
                                 </div>
                             </form>
@@ -130,27 +132,27 @@ export default function SettingsPage() {
 
                     {activeTab === 'security' && (
                         <div className="max-w-xl">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-6">Change Password</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('settings_change_pw')}</h2>
                             <form onSubmit={handleUpdatePassword} className="space-y-6">
                                 <Input
                                     type="password"
-                                    label="New Password"
+                                    label={t('settings_new_pw')}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter new password"
+                                    placeholder={t('settings_enter_pw')}
                                     minLength={6}
                                 />
                                 <Input
                                     type="password"
-                                    label="Confirm New Password"
+                                    label={t('settings_confirm_pw')}
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="Confirm new password"
+                                    placeholder={t('settings_confirm_pw_placeholder')}
                                     minLength={6}
                                 />
                                 <div className="pt-2">
                                     <Button type="submit" loading={loading} variant="primary">
-                                        Update Password
+                                        {t('settings_update_pw')}
                                     </Button>
                                 </div>
                             </form>

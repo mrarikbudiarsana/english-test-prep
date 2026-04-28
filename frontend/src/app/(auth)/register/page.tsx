@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const NAVY = '#08507f';
 const NAVY_DARK = '#063d61';
@@ -23,6 +24,7 @@ const labelClass = "block text-sm font-semibold text-slate-700 mb-1.5";
 
 export default function RegisterPage() {
   const { register, loginWithGoogle, user } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -38,13 +40,13 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (password !== confirmPassword) { setError('Passwords do not match'); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (password !== confirmPassword) { setError(t('register_err_mismatch')); return; }
+    if (password.length < 6) { setError(t('register_err_short')); return; }
     setLoading(true);
     try {
       await register(email, password, displayName);
     } catch (err: any) {
-      setError(err.message || 'Failed to create account');
+      setError(err.message || t('register_err_fallback'));
       setLoading(false);
     }
   };
@@ -74,15 +76,15 @@ export default function RegisterPage() {
 
         <div>
           <h2 className="text-3xl font-extrabold mb-4 leading-snug">
-            Start your TOEFL ITP<br />
-            <span style={{ color: '#f59e0b' }}>journey today.</span>
+            {t('register_brand_headline').split('.')[0]}.<br />
+            <span style={{ color: '#f59e0b' }}>{t('register_brand_headline').split('.')[1]?.trim()}</span>
           </h2>
           <ul className="space-y-3 text-sm text-blue-100">
             {[
-              'Full-length Listening, Structure & Reading tests',
-              'Authentic 310–677 scaled scoring',
-              'Audio plays once — just like the real exam',
-              'Instant score breakdown after each test',
+              t('register_feat1'),
+              t('register_feat2'),
+              t('register_feat3'),
+              t('register_feat4'),
             ].map(item => (
               <li key={item} className="flex items-start gap-2.5">
                 <svg width="16" height="16" className="shrink-0 mt-0.5 text-[#f59e0b]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
@@ -94,9 +96,9 @@ export default function RegisterPage() {
 
         <div className="grid grid-cols-3 gap-4 text-center">
           {[
-            { n: '310–677', l: 'Score Scale' },
-            { n: '140 Qs', l: 'Per Full Test' },
-            { n: '115 min', l: 'Total Duration' },
+            { n: '310–677', l: t('register_stat_scale') },
+            { n: '140 Qs', l: t('register_stat_per_test') },
+            { n: '115 min', l: t('register_stat_duration') },
           ].map(s => (
             <div key={s.l} className="bg-white/10 rounded-xl p-4">
               <p className="text-xl font-black">{s.n}</p>
@@ -118,10 +120,10 @@ export default function RegisterPage() {
             </div>
           </Link>
 
-          <h1 className="text-2xl font-extrabold text-slate-900 mb-1">Create your account</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900 mb-1">{t('register_title')}</h1>
           <p className="text-slate-500 text-sm mb-8">
-            Free to start. Practice TOEFL ITP today.{' '}
-            <Link href="/login" className="font-semibold" style={{ color: NAVY }}>Sign in instead</Link>
+            {t('register_subtitle')}{' '}
+            <Link href="/login" className="font-semibold" style={{ color: NAVY }}>{t('register_sign_in_instead')}</Link>
           </p>
 
           {error && (
@@ -133,20 +135,20 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className={labelClass}>Full Name</label>
-              <input id="name" type="text" required value={displayName} onChange={e => setDisplayName(e.target.value)} className={inputClass} placeholder="Your name" />
+              <label htmlFor="name" className={labelClass}>{t('register_full_name')}</label>
+              <input id="name" type="text" required value={displayName} onChange={e => setDisplayName(e.target.value)} className={inputClass} placeholder={t('register_name_placeholder')} />
             </div>
             <div>
-              <label htmlFor="email" className={labelClass}>Email address</label>
+              <label htmlFor="email" className={labelClass}>{t('register_email')}</label>
               <input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)} className={inputClass} placeholder="you@example.com" />
             </div>
             <div>
-              <label htmlFor="password" className={labelClass}>Password</label>
-              <input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} className={inputClass} placeholder="At least 6 characters" />
+              <label htmlFor="password" className={labelClass}>{t('register_password')}</label>
+              <input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} className={inputClass} placeholder={t('register_pw_placeholder')} />
             </div>
             <div>
-              <label htmlFor="confirmPassword" className={labelClass}>Confirm Password</label>
-              <input id="confirmPassword" type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputClass} placeholder="Repeat your password" />
+              <label htmlFor="confirmPassword" className={labelClass}>{t('register_confirm_pw')}</label>
+              <input id="confirmPassword" type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputClass} placeholder={t('register_confirm_placeholder')} />
             </div>
 
             <button
@@ -155,13 +157,13 @@ export default function RegisterPage() {
               className="w-full py-3 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
               style={{ background: `linear-gradient(135deg, ${NAVY_DARK}, ${NAVY})` }}
             >
-              {loading ? 'Creating account…' : 'Create Free Account'}
+              {loading ? t('register_creating') : t('register_create_btn')}
             </button>
           </form>
 
           <div className="my-5 flex items-center gap-3">
             <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400 font-medium">or</span>
+            <span className="text-xs text-slate-400 font-medium">{t('register_or')}</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
 
@@ -171,11 +173,11 @@ export default function RegisterPage() {
             className="w-full py-3 px-4 border border-slate-200 rounded-xl hover:bg-white hover:border-slate-300 disabled:opacity-50 font-semibold text-slate-700 text-sm transition-all flex items-center justify-center gap-3 bg-white shadow-sm"
           >
             <GoogleIcon />
-            Sign up with Google
+            {t('register_google')}
           </button>
 
           <p className="mt-6 text-center text-xs text-slate-400">
-            By creating an account, you agree to our Terms of Service and Privacy Policy.
+            {t('register_terms')}
           </p>
         </div>
       </div>

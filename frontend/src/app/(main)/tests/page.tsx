@@ -5,6 +5,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { Test } from '@/types/test';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   HiClock,
   HiAcademicCap,
@@ -25,6 +26,7 @@ const TOEFL_ITP_SECTION_PREVIEW = [
 
 export default function TestCatalogPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [tests, setTests]           = useState<Test[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
@@ -46,14 +48,14 @@ export default function TestCatalogPage() {
     fetchTests();
   }, []);
 
-  const filteredTests = tests.filter((t) =>
-    t.testType === 'toefl_itp' &&
-    (t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase())))
+  const filteredTests = tests.filter((test) =>
+    test.testType === 'toefl_itp' &&
+    (test.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (test.description && test.description.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
-  const freeTests    = filteredTests.filter((t) => t.isFree);
-  const premiumTests = filteredTests.filter((t) => !t.isFree);
+  const freeTests    = filteredTests.filter((test) => test.isFree);
+  const premiumTests = filteredTests.filter((test) => !test.isFree);
 
   if (loading) {
     return (
@@ -74,15 +76,13 @@ export default function TestCatalogPage() {
       <div className="rounded-xl border border-slate-200 bg-white p-8" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="flex items-center gap-2 mb-3">
           <HiBookOpen className="w-4 h-4 text-[#08507f]" />
-          <p className="text-xs font-bold uppercase tracking-widest text-[#08507f]">Practice Library</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-[#08507f]">{t('tests_library_label')}</p>
         </div>
         <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">
-          Choose Your Test
+          {t('tests_choose_title')}
         </h1>
         <p className="text-slate-500 text-base max-w-2xl leading-relaxed">
-          Select from our{' '}
-          <span className="font-semibold text-[#08507f]">TOEFL ITP</span>{' '}
-          practice tests designed to help you improve your estimated score.
+          {t('tests_choose_body').replace('{exam}', examConfig.name)}
         </p>
 
         {/* Section overview pills */}
@@ -115,10 +115,10 @@ export default function TestCatalogPage() {
               <HiLockOpen className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-600">Free Access</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-600">{t('tests_free_access')}</p>
               <p className="text-sm font-semibold text-slate-800">
                 <span className="text-lg font-extrabold text-emerald-600">{user.freeTestsRemaining}</span>{' '}
-                tests remaining this month
+                {t('tests_remaining')}
               </p>
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function TestCatalogPage() {
             href="/pricing"
             className="hidden sm:inline-flex items-center px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
           >
-            Upgrade Plan
+            {t('tests_upgrade')}
           </Link>
         </div>
       )}
@@ -136,7 +136,7 @@ export default function TestCatalogPage() {
         <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
-          placeholder={`Search ${examConfig.name} tests...`}
+          placeholder={t('tests_search_placeholder').replace('{exam}', examConfig.name)}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-11 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm placeholder:text-slate-400 focus:border-[#08507f] focus:ring-2 focus:ring-[#e8f4fd] focus:outline-none transition-all"
@@ -155,13 +155,13 @@ export default function TestCatalogPage() {
       {filteredTests.length === 0 && !error ? (
         <div className="text-center py-20 rounded-xl border border-dashed border-slate-200 bg-white">
           <HiAcademicCap className="mx-auto h-14 w-14 text-slate-300 mb-4" />
-          <h3 className="text-lg font-bold text-slate-700 mb-1">No tests found</h3>
-          <p className="text-slate-500 text-sm mb-5">Try adjusting your search query.</p>
+          <h3 className="text-lg font-bold text-slate-700 mb-1">{t('tests_no_found_title')}</h3>
+          <p className="text-slate-500 text-sm mb-5">{t('tests_no_found_body')}</p>
           <button
             onClick={() => setSearchQuery('')}
             className="px-5 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
           >
-            Clear Search
+            {t('tests_clear_search')}
           </button>
         </div>
       ) : (
@@ -171,13 +171,13 @@ export default function TestCatalogPage() {
             <div className="space-y-4">
               <div className="flex items-center gap-2.5">
                 <HiSparkles className="w-5 h-5 text-emerald-600" />
-                <h2 className="text-xl font-bold text-slate-900">Free Tests</h2>
+                <h2 className="text-xl font-bold text-slate-900">{t('tests_free_section')}</h2>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold">
                   {freeTests.length}
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {freeTests.map((test) => <TestCard key={test.id} test={test} />)}
+                {freeTests.map((test) => <TestCard key={test.id} test={test} minLabel={t('tests_min_label')} />)}
               </div>
             </div>
           )}
@@ -187,13 +187,13 @@ export default function TestCatalogPage() {
             <div className="space-y-4">
               <div className="flex items-center gap-2.5">
                 <HiAcademicCap className="w-5 h-5 text-[#08507f]" />
-                <h2 className="text-xl font-bold text-slate-900">Premium Tests</h2>
+                <h2 className="text-xl font-bold text-slate-900">{t('tests_premium_section')}</h2>
                 <span className="px-2.5 py-0.5 rounded-full bg-[#e8f4fd] border border-[#08507f]/10 text-[#08507f] text-xs font-bold">
                   {premiumTests.length}
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {premiumTests.map((test) => <TestCard key={test.id} test={test} />)}
+                {premiumTests.map((test) => <TestCard key={test.id} test={test} minLabel={t('tests_min_label')} />)}
               </div>
             </div>
           )}
@@ -203,7 +203,7 @@ export default function TestCatalogPage() {
   );
 }
 
-function TestCard({ test }: { test: Test }) {
+function TestCard({ test, minLabel }: { test: Test; minLabel: string }) {
   const metadata = ['3 Sections', '140 Questions', '310–677 Scale'];
 
   return (
@@ -257,7 +257,7 @@ function TestCard({ test }: { test: Test }) {
         <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-slate-500">
             <HiClock className="w-3.5 h-3.5" />
-            <span className="text-xs font-semibold">{test.durationMinutes} min</span>
+            <span className="text-xs font-semibold">{test.durationMinutes} {minLabel}</span>
           </div>
           <span className="text-[10px] font-bold uppercase tracking-widest text-[#08507f]">
             TOEFL ITP

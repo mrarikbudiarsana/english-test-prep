@@ -5,9 +5,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function LoginPage() {
   const { login, loginWithGoogle, user } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -79,19 +81,19 @@ export default function LoginPage() {
           {/* middle: headline */}
           <div className="relative z-10 space-y-3">
             <h2 className="text-2xl font-extrabold leading-snug">
-              Your TOEFL ITP<br />practice starts here.
+              {t('login_brand_headline')}
             </h2>
             <p className="text-blue-200 text-sm leading-relaxed">
-              Full-length simulations, authentic scoring on the 310–677 scale, and instant feedback.
+              {t('login_brand_sub')}
             </p>
           </div>
 
           {/* bottom: stats */}
           <div className="relative z-10 grid grid-cols-3 gap-3">
             {[
-              { n: '310–677', l: 'Score Scale' },
-              { n: '140', l: 'Questions' },
-              { n: '115 min', l: 'Duration' },
+              { n: '310–677', l: t('login_stat_scale') },
+              { n: '140', l: t('login_stat_questions') },
+              { n: '115 min', l: t('login_stat_duration') },
             ].map(s => (
               <div key={s.l} className="rounded-2xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.1)' }}>
                 <p className="text-lg font-black">{s.n}</p>
@@ -111,9 +113,9 @@ export default function LoginPage() {
           </Link>
 
           <div className="mb-8">
-            <h1 className="text-2xl font-extrabold text-slate-900">Welcome back</h1>
+            <h1 className="text-2xl font-extrabold text-slate-900">{t('login_welcome')}</h1>
             <p className="text-slate-500 text-sm mt-1">
-              Sign in to your account to continue.
+              {t('login_subtitle')}
             </p>
           </div>
 
@@ -129,13 +131,13 @@ export default function LoginPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
-            Continue with Google
+            {t('login_google')}
           </button>
 
           {/* divider */}
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400 font-medium">or sign in with email</span>
+            <span className="text-xs text-slate-400 font-medium">{t('login_or_email')}</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
 
@@ -153,7 +155,7 @@ export default function LoginPage() {
             {/* email */}
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Email address
+                {t('login_email_label')}
               </label>
               <input
                 id="email"
@@ -171,9 +173,9 @@ export default function LoginPage() {
             {/* password */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="password" className="block text-sm font-semibold text-slate-700">Password</label>
+                <label htmlFor="password" className="block text-sm font-semibold text-slate-700">{t('login_password_label')}</label>
                 <Link href="/forgot-password" className="text-xs font-medium text-[#08507f] hover:underline">
-                  Forgot password?
+                  {t('login_forgot')}
                 </Link>
               </div>
               <div className="relative">
@@ -184,7 +186,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder="••••••••"
                   className="w-full px-4 py-3 pr-12 rounded-xl border border-slate-200 text-sm bg-slate-50 placeholder:text-slate-400 outline-none focus:bg-white focus:border-[#08507f] focus:ring-2 transition-all"
                   style={{ '--tw-ring-color': 'rgba(8,80,127,0.15)' } as any}
                 />
@@ -208,14 +210,14 @@ export default function LoginPage() {
               className="w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mt-2"
               style={{ background: 'linear-gradient(135deg, #063d61, #08507f)' }}
             >
-              {loading ? 'Signing in…' : 'Sign In'}
+              {loading ? t('login_signing_in') : t('login_button')}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-slate-500">
-            Don&apos;t have an account?{' '}
+            {t('login_no_account')}{' '}
             <Link href="/register" className="font-bold text-[#08507f] hover:underline">
-              Create one free
+              {t('login_create_free')}
             </Link>
           </p>
         </div>

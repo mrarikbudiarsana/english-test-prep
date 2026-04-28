@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
@@ -38,59 +39,54 @@ const IconClock = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
-const IconUser = () => (
-  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-  </svg>
-);
-
-/* ── data ─────────────────────────────────────────────────── */
-const SECTIONS = [
-  {
-    icon: <IconHeadphones />,
-    name: 'Listening Comprehension',
-    color: 'bg-blue-50 text-blue-700 border-blue-100',
-    iconBg: 'bg-blue-100 text-blue-700',
-    parts: ['Part A — Short Conversations (30 Qs)', 'Part B — Longer Conversations (8 Qs)', 'Part C — Talks & Lectures (12 Qs)'],
-    stats: '50 questions · 35 minutes',
-    scaled: '31–68',
-  },
-  {
-    icon: <IconPencil />,
-    name: 'Structure & Written Expression',
-    color: 'bg-teal-50 text-teal-700 border-teal-100',
-    iconBg: 'bg-teal-100 text-teal-700',
-    parts: ['Part 1 — Structure (15 Qs)', 'Part 2 — Written Expression (25 Qs)'],
-    stats: '40 questions · 25 minutes',
-    scaled: '31–68',
-  },
-  {
-    icon: <IconBook />,
-    name: 'Reading Comprehension',
-    color: 'bg-violet-50 text-violet-700 border-violet-100',
-    iconBg: 'bg-violet-100 text-violet-700',
-    parts: ['Multiple reading passages', 'Academic & informational texts', 'Inference & vocabulary questions'],
-    stats: '50 questions · 55 minutes',
-    scaled: '31–67',
-  },
-];
-
-const STEPS = [
-  { n: '01', title: 'Create your account', body: 'Sign up free in under a minute. No credit card required to start.' },
-  { n: '02', title: 'Choose a test', body: 'Pick from our library of full-length TOEFL ITP practice tests.' },
-  { n: '03', title: 'Take the test', body: 'Realistic exam conditions — timer, audio controls, no going back in Listening.' },
-  { n: '04', title: 'See your score', body: 'Instantly receive your Listening, Structure, and Reading scaled scores (310–677).' },
-];
-
-const FEATURES = [
-  { icon: <IconChart />, title: 'Real Score Scale', body: 'Get your total scaled score on the official 310–677 TOEFL ITP scale, plus section breakdowns.' },
-  { icon: <IconClock />, title: 'Timed Conditions', body: 'Practice under authentic exam timing. Audio plays only once, just like the real test.' },
-  { icon: <IconBook />, title: 'Line-Numbered Passages', body: 'Reading sections display line numbers for easy reference, matching the official paper format.' },
-];
 
 /* ── component ────────────────────────────────────────────── */
 export default function HomePage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
+
+  const SECTIONS = [
+    {
+      icon: <IconHeadphones />,
+      name: 'Listening Comprehension',
+      color: 'bg-blue-50 text-blue-700 border-blue-100',
+      iconBg: 'bg-blue-100 text-blue-700',
+      parts: ['Part A — Short Conversations (30 Qs)', 'Part B — Longer Conversations (8 Qs)', 'Part C — Talks & Lectures (12 Qs)'],
+      stats: '50 questions · 35 minutes',
+      scaled: '31–68',
+    },
+    {
+      icon: <IconPencil />,
+      name: 'Structure & Written Expression',
+      color: 'bg-teal-50 text-teal-700 border-teal-100',
+      iconBg: 'bg-teal-100 text-teal-700',
+      parts: ['Part 1 — Structure (15 Qs)', 'Part 2 — Written Expression (25 Qs)'],
+      stats: '40 questions · 25 minutes',
+      scaled: '31–68',
+    },
+    {
+      icon: <IconBook />,
+      name: 'Reading Comprehension',
+      color: 'bg-violet-50 text-violet-700 border-violet-100',
+      iconBg: 'bg-violet-100 text-violet-700',
+      parts: ['Multiple reading passages', 'Academic & informational texts', 'Inference & vocabulary questions'],
+      stats: '50 questions · 55 minutes',
+      scaled: '31–67',
+    },
+  ];
+
+  const STEPS = [
+    { n: '01', title: t('step1_title'), body: t('step1_body') },
+    { n: '02', title: t('step2_title'), body: t('step2_body') },
+    { n: '03', title: t('step3_title'), body: t('step3_body') },
+    { n: '04', title: t('step4_title'), body: t('step4_body') },
+  ];
+
+  const FEATURES = [
+    { icon: <IconChart />, title: t('feat_score_title'), body: t('feat_score_body') },
+    { icon: <IconClock />, title: t('feat_timed_title'), body: t('feat_timed_body') },
+    { icon: <IconBook />, title: t('feat_lines_title'), body: t('feat_lines_body') },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc]">
@@ -108,17 +104,17 @@ export default function HomePage() {
             <div className="text-white">
               <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm font-semibold mb-8">
                 <span className="w-2 h-2 rounded-full bg-[#f59e0b] animate-pulse" />
-                TOEFL ITP Simulations
+                {t('hero_badge')}
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] mb-6">
-                Prepare for<br />
+                {t('hero_title_1')}<br />
                 <span style={{ color: '#f59e0b' }}>TOEFL ITP</span><br />
-                with Confidence
+                {t('hero_title_3')}
               </h1>
 
               <p className="text-lg text-blue-100 mb-10 max-w-lg leading-relaxed">
-                Full-length practice tests that mirror the real TOEFL ITP exam — sectioned into Listening, Structure &amp; Written Expression, and Reading Comprehension with authentic scoring.
+                {t('hero_subtitle')}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-10">
@@ -126,23 +122,23 @@ export default function HomePage() {
                   href={user ? '/dashboard' : '/register'}
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold text-[#08507f] bg-white hover:bg-blue-50 transition-all shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  {user ? 'Go to Dashboard' : 'Start Free Practice'}
+                  {user ? t('hero_cta_dashboard') : t('hero_cta_start')}
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </Link>
                 <Link
                   href="/pricing"
                   className="inline-flex items-center justify-center px-8 py-4 rounded-xl font-bold text-white border-2 border-white/30 hover:bg-white/10 transition-all"
                 >
-                  View Plans
+                  {t('hero_cta_plans')}
                 </Link>
               </div>
 
               {/* trust row */}
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-blue-100">
-                {['Free tests included', 'No credit card needed', 'Instant score results'].map(t => (
-                  <span key={t} className="flex items-center gap-2">
+                {[t('hero_trust_1'), t('hero_trust_2'), t('hero_trust_3')].map(trust => (
+                  <span key={trust} className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-[#f59e0b]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>
-                    {t}
+                    {trust}
                   </span>
                 ))}
               </div>
@@ -192,8 +188,8 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-center gap-3">
           <svg width="18" height="18" style={{ flexShrink: 0, color: '#d97706' }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
           <p className="text-sm text-amber-800">
-            <span className="font-bold">Practice platform only — no certificate is issued.</span>
-            {' '}Results cannot be used for university admissions, job applications, or any official purpose.
+            <span className="font-bold">{t('disclaimer_text')}</span>
+            {' '}{t('disclaimer_sub')}
           </p>
         </div>
       </div>
@@ -202,8 +198,8 @@ export default function HomePage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <p className="section-label mb-3">How it works</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">Four steps to your score</h2>
+            <p className="section-label mb-3">{t('how_label')}</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">{t('how_title')}</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {STEPS.map((step, i) => (
@@ -228,10 +224,10 @@ export default function HomePage() {
       <section className="py-20 bg-[#f8fafc]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <p className="section-label mb-3">What's covered</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">All three TOEFL ITP sections</h2>
+            <p className="section-label mb-3">{t('sections_label')}</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">{t('sections_title')}</h2>
             <p className="mt-4 text-slate-500 max-w-2xl mx-auto">
-              140 questions across three sections, 115 minutes total — exactly matching the TOEFL ITP Level 1 format.
+              {t('sections_subtitle')}
             </p>
           </div>
 
@@ -252,7 +248,7 @@ export default function HomePage() {
                   ))}
                 </ul>
                 <div className="pt-4 border-t border-slate-100">
-                  <p className="text-xs text-slate-400">Scaled score range: <span className="font-bold text-slate-600">{s.scaled}</span></p>
+                  <p className="text-xs text-slate-400">{t('sections_score_range_item')}<span className="font-bold text-slate-600">{s.scaled}</span></p>
                 </div>
               </div>
             ))}
@@ -261,9 +257,9 @@ export default function HomePage() {
           {/* total score */}
           <div className="mt-10 text-center">
             <div className="inline-block bg-white rounded-2xl border border-slate-200 shadow-sm px-10 py-5">
-              <p className="text-sm text-slate-400 mb-1">Total Scaled Score Range</p>
+              <p className="text-sm text-slate-400 mb-1">{t('sections_score_range_label')}</p>
               <p className="text-4xl font-black" style={{ color: '#08507f' }}>310 – 677</p>
-              <p className="text-xs text-slate-400 mt-1">TOEFL ITP Level 1</p>
+              <p className="text-xs text-slate-400 mt-1">{t('sections_score_level')}</p>
             </div>
           </div>
         </div>
@@ -294,11 +290,11 @@ export default function HomePage() {
             <Image src="/logo.png" alt="English with Arik" width={72} height={72} className="rounded-full shadow-lg" unoptimized />
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-6 leading-tight">
-            Want to master<br />
-            <span style={{ color: '#f59e0b' }}>TOEFL ITP with a teacher?</span>
+            {t('cta_title_1')}<br />
+            <span style={{ color: '#f59e0b' }}>{t('cta_title_2')}</span>
           </h2>
           <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-            Join the TOEFL ITP course by English with Arik — structured lessons, expert guidance, and full practice tests to get you to your target score.
+            {t('cta_body')}
           </p>
           <a
             href="https://englishwitharik.com/toefl-itp"
@@ -306,7 +302,7 @@ export default function HomePage() {
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-3 px-10 py-5 rounded-2xl font-bold text-[#08507f] bg-white hover:bg-yellow-50 transition-all shadow-xl hover:shadow-2xl hover:scale-105 active:scale-[0.98]"
           >
-            Join the TOEFL ITP Course
+            {t('cta_button')}
             <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
           </a>
         </div>
