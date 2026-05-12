@@ -2,12 +2,13 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { Attempt } from '@/types/test';
 import { formatDate, formatScore, examNameFromTestType } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getTestTypesForExam } from '@/config/examConfig';
 import { HiArrowLeft } from 'react-icons/hi';
 import { Lock } from 'lucide-react';
@@ -77,7 +78,10 @@ function CriterionAnalytics({ criteria, color = '#08507f', maxScore = 50 }: { cr
 
 export default function ResultsContent({ attemptId }: ResultsContentProps) {
     const { user } = useAuth();
+    const { t } = useLanguage();
     const params = useParams<{ attemptId?: string | string[] }>();
+    const searchParams = useSearchParams();
+    const isCompleted = searchParams?.get('completed') === 'true';
     const [attempt, setAttempt] = useState<Attempt | null>(null);
     const [loading, setLoading] = useState(true);
     const [showShareModal, setShowShareModal] = useState(false);
@@ -97,6 +101,18 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
             .then(res => setSubscription(res.data))
             .catch(() => setSubscription(null));
     }, []);
+
+    // Auto-open congratulations modal if test was just completed
+    useEffect(() => {
+        if (attempt && isCompleted) {
+            setShowShareModal(true);
+            if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('completed');
+                window.history.replaceState({}, '', url.pathname + url.search);
+            }
+        }
+    }, [attempt, isCompleted]);
 
     const tier = (() => {
         if (user?.role === 'admin') return 'pro';
@@ -336,6 +352,40 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                         </div>
                     )}
 
+                    {/* ── Personalized Course CTA ──────────────────────────── */}
+                    <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white border border-slate-800 shadow-lg mt-10 mb-6" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+                        <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-[0.03] pointer-events-none" style={{ background: 'radial-gradient(circle, #f59e0b, transparent 70%)', transform: 'translate(20%, -20%)' }} />
+                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                                <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10 text-amber-400">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 className="text-lg font-bold mb-1">
+                                        {t('results_course_cta_title')}
+                                    </h4>
+                                    <p className="text-slate-400 text-xs sm:text-sm max-w-xl leading-relaxed">
+                                        {t('results_course_cta_body')}
+                                    </p>
+                                </div>
+                            </div>
+                            <a
+                                href="https://englishwitharik.com/toefl-itp"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold transition-all duration-200 text-sm shadow-md shrink-0 active:scale-[0.98]"
+                                style={{ color: '#063d61', backgroundColor: '#f59e0b' }}
+                            >
+                                {t('results_course_cta_btn')}
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+
                     {!isPartialTest && (
                         <p className="text-center text-sm text-[#08507f]/80">
                             This practice test is designed to help you evaluate your TOEFL ITP readiness. It is not an official score report, and your results on the actual exam may vary.
@@ -363,6 +413,8 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                 onViewResults={() => setShowShareModal(false)}
                 testTitle={attempt.test?.title}
                 attemptId={resolvedAttemptId}
+                score={attempt.overallScore || undefined}
+                isFreeTest={attempt.test?.isFree ?? true}
             />
         </div>
     );

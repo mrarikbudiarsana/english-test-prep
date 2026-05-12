@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import YecPromoCard from '@/components/ui/YecPromoCard';
 
 /* ── tiny inline icons ────────────────────────────────────── */
 const IconCheck = () => (
@@ -193,6 +194,9 @@ export default function HomePage() {
           </p>
         </div>
       </div>
+
+      {/* ═══ YEC PROMO CARD ═════════════════════════════════ */}
+      <YecPromoCard />
 
       {/* ═══ HOW IT WORKS ════════════════════════════════════ */}
       <section className="py-20 bg-white">

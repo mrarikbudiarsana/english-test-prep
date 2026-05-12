@@ -18,6 +18,7 @@ import {
   HiLockClosed,
   HiAcademicCap,
 } from 'react-icons/hi';
+import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 
 type AccessCheckResult = {
@@ -86,6 +87,7 @@ const sectionColors = {
 export default function TestOverviewPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useLanguage();
   const testId = params.testId as string;
 
   const [test, setTest] = useState<Test | null>(null);
@@ -98,7 +100,6 @@ export default function TestOverviewPage() {
   const examName = test ? examNameFromTestType(test.testType) : 'TOEFL ITP';
   const fullSectionCount = test ? sectionCountForTestType(test.testType) : 3;
   const badgeLabel = test ? testTypeShortLabel(test.testType) : '';
-  const brandColor = '#08507f';
 
   useEffect(() => {
     async function fetchTest() {
@@ -147,7 +148,6 @@ export default function TestOverviewPage() {
     }
   };
 
-  // Group sections by type for display
   const sectionGroups = sections.reduce((acc, section) => {
     if (!acc[section.sectionType]) {
       acc[section.sectionType] = [];
@@ -184,18 +184,15 @@ export default function TestOverviewPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
-      {/* Back Button */}
       <Link
         href="/tests"
         className="inline-flex items-center gap-2 text-slate-500 text-sm font-semibold transition-colors hover:text-[#08507f] group"
       >
         <HiChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        Back to Tests
+        {t('test_overview_back')}
       </Link>
 
-      {/* Hero */}
       <div className="rounded-xl border border-slate-200 bg-white p-8" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-        {/* Badges */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#e8f4fd] text-[#08507f] text-xs font-bold uppercase tracking-wide">
             <HiAcademicCap className="w-3.5 h-3.5" />
@@ -209,7 +206,7 @@ export default function TestOverviewPage() {
           )}
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold">
             <HiClock className="w-3.5 h-3.5" />
-            {test.durationMinutes} minutes
+            {test.durationMinutes} {t('tests_min_label')}
           </span>
         </div>
 
@@ -232,7 +229,6 @@ export default function TestOverviewPage() {
         </div>
       )}
 
-      {/* Start Full Test Card */}
       <div className="rounded-xl border border-slate-200 bg-white p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="flex items-start gap-4 mb-5">
           <div
@@ -248,7 +244,7 @@ export default function TestOverviewPage() {
           <div>
             <h2 className="text-lg font-bold text-slate-900 mb-1">Full Test</h2>
             <p className="text-sm text-slate-500 leading-relaxed">
-              Take the complete {examName} test with all {fullSectionCount} sections in order. Timer runs for each section to simulate real exam conditions.
+              {t('test_overview_full_desc')}
             </p>
           </div>
         </div>
@@ -267,7 +263,7 @@ export default function TestOverviewPage() {
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#08507f] text-white text-sm font-bold hover:bg-[#063d61] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <HiPlay className="w-4 h-4" />
-              {starting ? 'Starting…' : 'Start Full Test'}
+              {starting ? 'Starting…' : t('test_overview_start_full')}
             </button>
           </>
         ) : (
@@ -295,14 +291,13 @@ export default function TestOverviewPage() {
         )}
       </div>
 
-      {/* Section Practice */}
       <div>
         <div className="flex items-center gap-2.5 mb-2">
           <HiSparkles className="w-5 h-5 text-[#08507f]" />
           <h2 className="text-xl font-bold text-slate-900">Practice by Section</h2>
         </div>
         <p className="text-slate-500 text-sm mb-5 leading-relaxed">
-          Focus on specific skills by practicing individual sections. Perfect for targeted improvement.
+          {t('test_overview_practice_desc')}
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {(() => {
@@ -362,7 +357,9 @@ export default function TestOverviewPage() {
                   </p>
                   {test.testType === 'toefl_itp' && isAvailable && (
                     <p className="mb-4 text-[11px] text-slate-400">
-                      {toeflMeta?.note}
+                      {type === 'listening' && t('test_overview_listening_note')}
+                      {type === 'structure' && t('test_overview_structure_note')}
+                      {type === 'reading' && t('test_overview_reading_note')}
                     </p>
                   )}
 
@@ -376,7 +373,7 @@ export default function TestOverviewPage() {
                           : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                       }`}
                     >
-                      {isAvailable ? 'Practice' : 'Not Available'}
+                      {isAvailable ? t('test_overview_practice_btn') : t('test_overview_not_available')}
                     </button>
                   ) : (
                     <Link
@@ -384,7 +381,7 @@ export default function TestOverviewPage() {
                       className="mt-3 flex w-full items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
                     >
                       <HiLockClosed className="w-3.5 h-3.5" />
-                      Upgrade to Practice
+                      {t('test_overview_upgrade_practice')}
                     </Link>
                   )}
                 </div>
@@ -394,32 +391,31 @@ export default function TestOverviewPage() {
         </div>
       </div>
 
-      {/* Tips Section */}
       <div className="rounded-xl border border-slate-200 bg-white p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#e8f4fd] text-[#08507f]">
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
           </div>
-          <h3 className="text-sm font-bold text-slate-800">Before You Begin</h3>
+          <h3 className="text-sm font-bold text-slate-800">{t('test_overview_before_begin')}</h3>
         </div>
         <ul className="space-y-1.5 text-xs text-slate-500 leading-relaxed">
           <li className="flex items-start gap-2">
             <span className="mt-px text-[#08507f] font-black">·</span>
-            <span>Ensure you have a stable internet connection before starting</span>
+            <span>{t('test_overview_tip_internet')}</span>
           </li>
           {test.testType === 'toefl_itp' && (
             <li className="flex items-start gap-2">
               <span className="mt-px text-[#08507f] font-black">·</span>
-              <span>Listening audio is not replayable — use headphones and avoid background noise</span>
+              <span>{t('test_overview_tip_listening')}</span>
             </li>
           )}
           <li className="flex items-start gap-2">
             <span className="mt-px text-[#08507f] font-black">·</span>
-            <span>Find a quiet environment to minimize distractions</span>
+            <span>{t('test_overview_tip_quiet')}</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="mt-px text-[#08507f] font-black">·</span>
-            <span>For best results, simulate real exam conditions</span>
+            <span>{t('test_overview_tip_simulate')}</span>
           </li>
         </ul>
       </div>

@@ -303,6 +303,67 @@ const translations = {
   // ─── Language switcher ───────────────────────────────────────────────────────
   lang_switch_to_en: { id: 'EN', en: 'EN' },
   lang_switch_to_id: { id: 'ID', en: 'ID' },
+
+  // ─── YEC Promo ─────────────────────────────────────────────────────────────
+  yec_promo_title: { id: 'Siap Ambil Tes Resmi?', en: 'Ready for the Official Exam?' },
+  yec_promo_subtitle: {
+    id: 'Dapatkan sertifikat resmi TOEFL iTP® Anda secara online melalui YEC (mitra resmi IIEF & ETS). Gunakan kode diskon khusus kami untuk mendapatkan potongan harga Rp 20.000!',
+    en: 'Get your official TOEFL iTP® certificate online through YEC (official IIEF & ETS partner). Use our exclusive promo code below to enjoy a Rp 20,000 discount!',
+  },
+  yec_promo_feat1: { id: 'Daftar & ujian online dari rumah', en: 'Register & test online from home' },
+  yec_promo_feat2: { id: 'Sertifikat fisik dikirim ke rumah Anda', en: 'Physical certificate shipped to your home' },
+  yec_promo_feat3: { id: 'Ujian digital resmi & diakui secara nasional', en: 'Official digital exam & nationally recognized' },
+  yec_promo_normal_price: { id: 'Harga Normal', en: 'Regular Price' },
+  yec_promo_discount_price: { id: 'Harga Diskon', en: 'Discounted Price' },
+  yec_promo_code_label: { id: 'Kode Diskon Khusus', en: 'Special Promo Code' },
+  yec_promo_copy: { id: 'Salin', en: 'Copy' },
+  yec_promo_copied: { id: 'Tersalin!', en: 'Copied!' },
+  yec_promo_cta: { id: 'Daftar di YEC Sekarang', en: 'Register at YEC Now' },
+
+  // ─── Results Page Course CTA ───────────────────────────────────────────────
+  results_course_cta_title: { id: 'Ingin Meningkatkan Skor Ini?', en: 'Want to Improve This Score?' },
+  results_course_cta_body: {
+    id: 'Belajar langsung bersama English with Arik dalam kursus persiapan TOEFL ITP intensif. Dapatkan pelajaran terstruktur, bimbingan ahli, dan rahasia taktik ujian untuk mengamankan skor target Anda!',
+    en: 'Study directly with English with Arik in an intensive TOEFL ITP prep course. Get structured lessons, expert guidance, and exam tactics to secure your target score!',
+  },
+  results_course_cta_btn: { id: 'Belajar Bersama Arik Sekarang', en: 'Study with Arik Now' },
+
+  // ─── Test Catalog Tabs & Grouping ──────────────────────────────────────────
+  tests_tab_full: { id: 'Ujian Penuh', en: 'Full-Length Tests' },
+  tests_tab_sections: { id: 'Latihan per Bagian', en: 'Section Practice' },
+  tests_group_listening: { id: 'Bagian 1: Listening Comprehension', en: 'Section 1: Listening Comprehension' },
+  tests_group_structure: { id: 'Bagian 2: Structure & Written Expression', en: 'Section 2: Structure & Written Expression' },
+  tests_group_reading: { id: 'Bagian 3: Reading Comprehension', en: 'Section 3: Reading Comprehension' },
+
+  // ─── Test Overview Page (/tests/[testId]) ──────────────────────────────────
+  test_overview_back: { id: 'Kembali ke Daftar Tes', en: 'Back to Tests' },
+  test_overview_full_desc: {
+    id: 'Ambil ujian TOEFL ITP lengkap dengan ke-3 bagian secara berurutan. Timer berjalan untuk masing-masing bagian untuk mensimulasikan kondisi ujian nyata.',
+    en: 'Take the complete TOEFL ITP test with all 3 sections in order. Timer runs for each section to simulate real exam conditions.',
+  },
+  test_overview_start_full: { id: 'Start Full Test', en: 'Start Full Test' },
+  test_overview_practice_desc: {
+    id: 'Fokus pada keterampilan tertentu dengan berlatih per bagian secara terarah. Sangat cocok untuk peningkatan yang terfokus.',
+    en: 'Focus on specific skills by practicing individual sections. Perfect for targeted improvement.',
+  },
+  test_overview_listening_note: { id: 'Audio hanya diputar satu kali', en: 'Audio plays once only' },
+  test_overview_structure_note: { id: 'Sentence completion dan error recognition', en: 'Sentence completion and error recognition' },
+  test_overview_reading_note: { id: 'Bacaan akademis dengan nomor baris', en: 'Line-numbered academic passages' },
+  test_overview_practice_btn: { id: 'Practice', en: 'Practice' },
+  test_overview_not_available: { id: 'Tidak Tersedia', en: 'Not Available' },
+  test_overview_upgrade_practice: { id: 'Upgrade untuk Latihan', en: 'Upgrade to Practice' },
+  test_overview_before_begin: { id: 'Sebelum Anda Memulai', en: 'Before You Begin' },
+  test_overview_tip_internet: { id: 'Pastikan Anda memiliki koneksi internet yang stabil sebelum memulai', en: 'Ensure you have a stable internet connection before starting' },
+  test_overview_tip_listening: { id: 'Audio listening tidak dapat diputar ulang — gunakan headphone dan hindari kebisingan', en: 'Listening audio is not replayable — use headphones and avoid background noise' },
+  test_overview_tip_quiet: { id: 'Cari lingkungan yang tenang untuk meminimalkan gangguan', en: 'Find a quiet environment to minimize distractions' },
+  test_overview_tip_simulate: { id: 'Untuk hasil terbaik, simulasikan kondisi ujian nyata', en: 'For best results, simulate real exam conditions' },
+
+  // ─── Congratulations YEC Voucher Modal ─────────────────────────────────────
+  congrats_celebration_score: { id: 'Anda mendapatkan skor **{score}** pada **{testTitle}**!', en: 'You scored **{score}** on **{testTitle}**!' },
+  congrats_yec_banner_title: { id: 'Ambil Official TOEFL iTP Lebih Hemat!', en: 'Take Your Official TOEFL iTP and Save!' },
+  congrats_yec_banner_body: { id: 'Dapatkan potongan diskon Rp 20.000 dengan mendaftar di YEC (yec.co.id) menggunakan kode voucher eksklusif ini.', en: 'Get a Rp 20.000 discount by booking on YEC (yec.co.id) using this exclusive voucher code.' },
+  congrats_yec_copy_btn: { id: 'Salin Kode', en: 'Copy Code' },
+  congrats_yec_copied: { id: 'Tersalin!', en: 'Copied!' },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

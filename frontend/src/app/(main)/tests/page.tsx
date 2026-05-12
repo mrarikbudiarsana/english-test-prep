@@ -31,6 +31,7 @@ export default function TestCatalogPage() {
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab]     = useState<'full' | 'sections'>('full');
   const examConfig = getExamConfig('toefl_itp');
 
   useEffect(() => {
@@ -143,6 +144,30 @@ export default function TestCatalogPage() {
         />
       </div>
 
+      {/* ── Tabs Selector ────────────────────────────────────── */}
+      <div className="flex border-b border-slate-200 gap-2">
+        <button
+          onClick={() => setActiveTab('full')}
+          className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${
+            activeTab === 'full'
+              ? 'border-[#08507f] text-[#08507f]'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          {t('tests_tab_full')}
+        </button>
+        <button
+          onClick={() => setActiveTab('sections')}
+          className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${
+            activeTab === 'sections'
+              ? 'border-[#08507f] text-[#08507f]'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          {t('tests_tab_sections')}
+        </button>
+      </div>
+
       {/* ── Error ────────────────────────────────────────────── */}
       {error && (
         <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
@@ -164,7 +189,7 @@ export default function TestCatalogPage() {
             {t('tests_clear_search')}
           </button>
         </div>
-      ) : (
+      ) : activeTab === 'full' ? (
         <>
           {/* Free tests */}
           {freeTests.length > 0 && (
@@ -198,6 +223,81 @@ export default function TestCatalogPage() {
             </div>
           )}
         </>
+      ) : (
+        /* Section practice tabs view */
+        <div className="space-y-12 animate-fadeIn">
+          {/* Listening Group */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2.5">
+              <HiOutlineVolumeUp className="w-5 h-5 text-blue-600 animate-pulse" />
+              <h2 className="text-xl font-bold text-slate-900">{t('tests_group_listening')}</h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-bold">
+                {filteredTests.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {filteredTests.map((test) => (
+                <SectionPracticeCard
+                  key={`listening-${test.id}`}
+                  test={test}
+                  sectionType="listening"
+                  icon={HiOutlineVolumeUp}
+                  accentColor="bg-blue-500"
+                  iconBg="bg-blue-100 text-blue-700"
+                  detailText="50 questions · 35 min"
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Structure Group */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2.5">
+              <HiOutlineTemplate className="w-5 h-5 text-teal-600 animate-pulse" />
+              <h2 className="text-xl font-bold text-slate-900">{t('tests_group_structure')}</h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-100 text-teal-700 text-xs font-bold">
+                {filteredTests.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {filteredTests.map((test) => (
+                <SectionPracticeCard
+                  key={`structure-${test.id}`}
+                  test={test}
+                  sectionType="structure"
+                  icon={HiOutlineTemplate}
+                  accentColor="bg-teal-500"
+                  iconBg="bg-teal-100 text-teal-700"
+                  detailText="40 questions · 25 min"
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Reading Group */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2.5">
+              <HiBookOpen className="w-5 h-5 text-violet-600 animate-pulse" />
+              <h2 className="text-xl font-bold text-slate-900">{t('tests_group_reading')}</h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-violet-50 border border-violet-100 text-violet-700 text-xs font-bold">
+                {filteredTests.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {filteredTests.map((test) => (
+                <SectionPracticeCard
+                  key={`reading-${test.id}`}
+                  test={test}
+                  sectionType="reading"
+                  icon={HiBookOpen}
+                  accentColor="bg-violet-500"
+                  iconBg="bg-violet-100 text-violet-700"
+                  detailText="50 questions · 55 min"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -259,6 +359,73 @@ function TestCard({ test, minLabel }: { test: Test; minLabel: string }) {
             <HiClock className="w-3.5 h-3.5" />
             <span className="text-xs font-semibold">{test.durationMinutes} {minLabel}</span>
           </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[#08507f]">
+            TOEFL ITP
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function SectionPracticeCard({
+  test,
+  sectionType,
+  icon: Icon,
+  accentColor,
+  iconBg,
+  detailText,
+}: {
+  test: Test;
+  sectionType: string;
+  icon: React.ElementType;
+  accentColor: string;
+  iconBg: string;
+  detailText: string;
+}) {
+  return (
+    <Link
+      href={`/tests/${test.id}`}
+      className="group flex flex-col rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:border-[#08507f] hover:shadow-md overflow-hidden"
+      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+    >
+      {/* Accent top line */}
+      <div className={`h-1 w-full ${accentColor}`} />
+
+      <div className="flex flex-col flex-1 p-5">
+        {/* Icon + Badge */}
+        <div className="flex items-start justify-between mb-4">
+          <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${iconBg}`}>
+            <Icon className="w-5 h-5" />
+          </div>
+          {test.isFree ? (
+            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold uppercase tracking-wide">
+              Free
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#fff8ed] border border-[#f59e0b]/30 text-[#b45309] text-[11px] font-bold uppercase tracking-wide">
+              <HiSparkles className="w-3.5 h-3.5" />
+              Pro
+            </span>
+          )}
+        </div>
+
+        {/* Title */}
+        <h3 className="text-base font-bold text-slate-900 mb-2 line-clamp-2 min-h-[2.75rem] group-hover:text-[#08507f] transition-colors">
+          {test.title}
+        </h3>
+
+        {/* Detail text */}
+        <p className="text-xs text-slate-500 mb-4 font-semibold flex items-center gap-1.5">
+          <HiClock className="w-3.5 h-3.5" />
+          {detailText}
+        </p>
+
+        {/* Footer */}
+        <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-[#08507f] transition-colors">
+            Start Practice →
+          </span>
           <span className="text-[10px] font-bold uppercase tracking-widest text-[#08507f]">
             TOEFL ITP
           </span>

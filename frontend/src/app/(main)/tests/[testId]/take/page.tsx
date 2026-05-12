@@ -13,7 +13,6 @@ import ReadingPassage from '@/components/test/ReadingPassage';
 import SubmitConfirmation from '@/components/test/SubmitConfirmation';
 import { useTimer } from '@/hooks/useTimer';
 import { cn } from '@/lib/utils';
-import CongratulationsModal from '@/components/test/CongratulationsModal';
 import QuestionNavigator from '@/components/test/QuestionNavigator';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -228,7 +227,7 @@ function TestTakingContent() {
 
     if (mode === 'section_practice') {
       if (resolvedAttemptId) {
-        router.push(`/results/${resolvedAttemptId}`);
+        router.push(`/results/${resolvedAttemptId}?completed=true`);
       }
       return;
     }
@@ -512,13 +511,11 @@ function TestTakingContent() {
     timer.stop();
     await submitTest();
     setShowSubmitModal(false);
-    setShowCongratulationsModal(true);
-  };
-
-  const handleViewResults = () => {
     const resolvedAttemptId = state.attemptId || attemptId;
     if (resolvedAttemptId) {
-      router.push(`/results/${resolvedAttemptId}`);
+      router.push(`/results/${resolvedAttemptId}?completed=true`);
+    } else {
+      router.push('/results');
     }
   };
 
@@ -875,7 +872,6 @@ function TestTakingContent() {
 
       {/* Modals */}
       <SubmitConfirmation isOpen={showSubmitModal} onClose={() => setShowSubmitModal(false)} onConfirm={submitType === 'section' ? handleSubmitSection : handleSubmitTest} type={submitType} unansweredCount={unansweredCount()} />
-      <CongratulationsModal isOpen={showCongratulationsModal} onClose={() => setShowCongratulationsModal(false)} onViewResults={handleViewResults} testTitle={testTitle} attemptId={state.attemptId || attemptId} />
     </div>
   );
 }

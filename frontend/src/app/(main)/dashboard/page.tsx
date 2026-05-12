@@ -143,6 +143,40 @@ export default function DashboardPage() {
         <StatCard label={t('dash_best_score')} value={bestScore ? scaledScore(bestScore) : '—'} sub={t('dash_best_sub')} icon={<IconStar />} accent="#d97706" />
       </div>
 
+      {/* ── Course CTA Banner ─────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-3xl p-6 md:p-8 text-white border border-slate-800 shadow-xl" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+        <div className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-[0.03] pointer-events-none" style={{ background: 'radial-gradient(circle, #38bdf8, transparent 70%)', transform: 'translate(20%, -20%)' }} />
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row items-center gap-5 text-center md:text-left">
+            <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10 shadow-inner">
+              <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A5.905 5.905 0 018 3.443m4 3.785v3.382m0 0a1.5 1.5 0 001.832 1.457l3.15-.788a1.5 1.5 0 001.123-1.457V7.228m-6.105 0a3.001 3.001 0 012.222-2.476m5.602 4.41c1.295-.333 2.428-1.066 3.14-2.07M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold tracking-tight mb-1">
+                {t('cta_title_1')} <span style={{ color: '#f59e0b' }}>{t('cta_title_2')}</span>
+              </h3>
+              <p className="text-slate-400 text-xs sm:text-sm max-w-xl leading-relaxed">
+                {t('cta_body')}
+              </p>
+            </div>
+          </div>
+          <a
+            href="https://englishwitharik.com/toefl-itp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-[#08507f] hover:text-[#063d61] bg-[#f59e0b] hover:bg-amber-400 transition-all duration-200 text-sm shadow-md shrink-0 active:scale-[0.98]"
+            style={{ color: '#063d61', backgroundColor: '#f59e0b' }}
+          >
+            {t('cta_button')}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </a>
+        </div>
+      </div>
+
       {/* ── Charts + Recent activity ──────────────────────────── */}
       <DashboardCharts
         recentAttempts={stats?.recentAttempts || []}
