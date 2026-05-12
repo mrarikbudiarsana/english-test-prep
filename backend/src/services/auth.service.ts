@@ -10,10 +10,19 @@ export async function registerUser(
   email: string,
   displayName?: string,
   photoUrl?: string,
+  country?: string | null,
+  city?: string | null,
 ) {
   // Check if user already exists
   const existing = await userModel.findByFirebaseUid(firebaseUid);
   if (existing) {
+    if (!existing.country || !existing.city) {
+      const updated = await userModel.update(existing.id, {
+        country: existing.country || country || null,
+        city: existing.city || city || null,
+      });
+      return updated;
+    }
     return existing;
   }
 
@@ -22,6 +31,8 @@ export async function registerUser(
     email,
     displayName,
     photoUrl,
+    country,
+    city,
   });
 
   return user;

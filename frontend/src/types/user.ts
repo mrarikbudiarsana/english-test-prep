@@ -9,6 +9,8 @@ export interface User {
   role: 'user' | 'admin';
   freeTestsRemaining: number;
   preferredExamType: ExamType | null;
+  country?: string | null;
+  city?: string | null;
   createdAt: string;
 }
 

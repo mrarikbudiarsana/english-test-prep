@@ -107,9 +107,20 @@ export default function CongratulationsModal({
                     <h2 className="text-2xl font-extrabold text-slate-900">Congratulations!</h2>
                     {score != null ? (
                         <p className="text-slate-600 text-sm max-w-sm mx-auto leading-relaxed">
-                            {t('congrats_celebration_score')
-                                .replace('{score}', String(score))
-                                .replace('{testTitle}', testTitle)}
+                            {(() => {
+                                const text = t('congrats_celebration_score')
+                                    .replace('{score}', String(score))
+                                    .replace('{testTitle}', testTitle);
+                                return text.split('**').map((part, index) => 
+                                    index % 2 === 1 ? (
+                                        <strong key={index} className="font-extrabold text-slate-800">
+                                            {part}
+                                        </strong>
+                                    ) : (
+                                        part
+                                    )
+                                );
+                            })()}
                         </p>
                     ) : (
                         <p className="text-slate-600 text-sm max-w-sm mx-auto leading-relaxed">

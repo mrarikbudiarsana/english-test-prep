@@ -2,10 +2,6 @@ import { query } from '../config/database';
 
 // ---------- helpers ----------
 
-/**
- * Map camelCase field names used in the application layer
- * to the snake_case column names used in the database.
- */
 const fieldMap: Record<string, string> = {
   displayName: 'display_name',
   photoUrl: 'photo_url',
@@ -13,23 +9,31 @@ const fieldMap: Record<string, string> = {
   isActive: 'is_active',
   freeTestsRemaining: 'free_tests_remaining',
   preferredExamType: 'preferred_exam_type',
+  country: 'country',
+  city: 'city',
 };
+
+const SELECT_COLUMNS = `
+  id,
+  firebase_uid         AS "firebaseUid",
+  email,
+  display_name         AS "displayName",
+  photo_url            AS "photoUrl",
+  role,
+  is_active            AS "isActive",
+  free_tests_remaining AS "freeTestsRemaining",
+  preferred_exam_type  AS "preferredExamType",
+  country,
+  city,
+  created_at           AS "createdAt",
+  updated_at           AS "updatedAt"
+`;
 
 // ---------- queries ----------
 
 export async function findById(id: string) {
   const result = await query(
-    `SELECT id,
-            firebase_uid  AS "firebaseUid",
-            email,
-            display_name  AS "displayName",
-            photo_url     AS "photoUrl",
-            role,
-            is_active     AS "isActive",
-            free_tests_remaining AS "freeTestsRemaining",
-            preferred_exam_type AS "preferredExamType",
-            created_at    AS "createdAt",
-            updated_at    AS "updatedAt"
+    `SELECT ${SELECT_COLUMNS}
      FROM users
      WHERE id = $1`,
     [id],
@@ -39,17 +43,7 @@ export async function findById(id: string) {
 
 export async function findByFirebaseUid(firebaseUid: string) {
   const result = await query(
-    `SELECT id,
-            firebase_uid  AS "firebaseUid",
-            email,
-            display_name  AS "displayName",
-            photo_url     AS "photoUrl",
-            role,
-            is_active     AS "isActive",
-            free_tests_remaining AS "freeTestsRemaining",
-            preferred_exam_type AS "preferredExamType",
-            created_at    AS "createdAt",
-            updated_at    AS "updatedAt"
+    `SELECT ${SELECT_COLUMNS}
      FROM users
      WHERE firebase_uid = $1`,
     [firebaseUid],
@@ -59,17 +53,7 @@ export async function findByFirebaseUid(firebaseUid: string) {
 
 export async function findByEmail(email: string) {
   const result = await query(
-    `SELECT id,
-            firebase_uid  AS "firebaseUid",
-            email,
-            display_name  AS "displayName",
-            photo_url     AS "photoUrl",
-            role,
-            is_active     AS "isActive",
-            free_tests_remaining AS "freeTestsRemaining",
-            preferred_exam_type AS "preferredExamType",
-            created_at    AS "createdAt",
-            updated_at    AS "updatedAt"
+    `SELECT ${SELECT_COLUMNS}
      FROM users
      WHERE email = $1`,
     [email],
@@ -82,22 +66,21 @@ export async function create(data: {
   email: string;
   displayName?: string;
   photoUrl?: string;
+  country?: string | null;
+  city?: string | null;
 }) {
   const result = await query(
-    `INSERT INTO users (firebase_uid, email, display_name, photo_url)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id,
-               firebase_uid  AS "firebaseUid",
-               email,
-               display_name  AS "displayName",
-               photo_url     AS "photoUrl",
-               role,
-               is_active     AS "isActive",
-               free_tests_remaining AS "freeTestsRemaining",
-               preferred_exam_type AS "preferredExamType",
-               created_at    AS "createdAt",
-               updated_at    AS "updatedAt"`,
-    [data.firebaseUid, data.email, data.displayName ?? null, data.photoUrl ?? null],
+    `INSERT INTO users (firebase_uid, email, display_name, photo_url, country, city)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING ${SELECT_COLUMNS}`,
+    [
+      data.firebaseUid,
+      data.email,
+      data.displayName ?? null,
+      data.photoUrl ?? null,
+      data.country ?? null,
+      data.city ?? null,
+    ],
   );
   return result.rows[0];
 }
@@ -111,6 +94,8 @@ export async function update(
     isActive: boolean;
     freeTestsRemaining: number;
     preferredExamType: string;
+    country: string | null;
+    city: string | null;
   }>,
 ) {
   const entries = Object.entries(data).filter(([, v]) => v !== undefined);
@@ -137,17 +122,7 @@ export async function update(
     `UPDATE users
      SET ${setClauses.join(', ')}
      WHERE id = $${paramIndex}
-     RETURNING id,
-               firebase_uid  AS "firebaseUid",
-               email,
-               display_name  AS "displayName",
-               photo_url     AS "photoUrl",
-               role,
-               is_active     AS "isActive",
-               free_tests_remaining AS "freeTestsRemaining",
-               preferred_exam_type AS "preferredExamType",
-               created_at    AS "createdAt",
-               updated_at    AS "updatedAt"`,
+     RETURNING ${SELECT_COLUMNS}`,
     values,
   );
   return result.rows[0] || null;
@@ -159,17 +134,7 @@ export async function decrementFreeTests(id: string) {
      SET free_tests_remaining = free_tests_remaining - 1,
          updated_at = NOW()
      WHERE id = $1 AND free_tests_remaining > 0
-     RETURNING id,
-               firebase_uid  AS "firebaseUid",
-               email,
-               display_name  AS "displayName",
-               photo_url     AS "photoUrl",
-               role,
-               is_active     AS "isActive",
-               free_tests_remaining AS "freeTestsRemaining",
-               preferred_exam_type AS "preferredExamType",
-               created_at    AS "createdAt",
-               updated_at    AS "updatedAt"`,
+     RETURNING ${SELECT_COLUMNS}`,
     [id],
   );
   return result.rows[0] || null;
@@ -177,17 +142,7 @@ export async function decrementFreeTests(id: string) {
 
 export async function findAll(offset: number = 0, limit: number = 20) {
   const result = await query(
-    `SELECT id,
-            firebase_uid  AS "firebaseUid",
-            email,
-            display_name  AS "displayName",
-            photo_url     AS "photoUrl",
-            role,
-            is_active     AS "isActive",
-            free_tests_remaining AS "freeTestsRemaining",
-            preferred_exam_type AS "preferredExamType",
-            created_at    AS "createdAt",
-            updated_at    AS "updatedAt"
+    `SELECT ${SELECT_COLUMNS}
      FROM users
      ORDER BY created_at DESC
      OFFSET $1 LIMIT $2`,

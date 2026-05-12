@@ -1,5 +1,7 @@
 /// <reference path="../types/express.d.ts" />
 import { Request, Response, NextFunction } from 'express';
+import { detectLocation } from '../utils/geolocation';
+import * as userModel from '../models/user.model';
 import * as authService from '../services/auth.service';
 
 export async function register(
@@ -9,7 +11,15 @@ export async function register(
 ): Promise<void> {
   try {
     const { firebaseUid, email, displayName, photoUrl } = req.body;
-    const user = await authService.registerUser(firebaseUid, email, displayName, photoUrl);
+    const location = await detectLocation(req);
+    const user = await authService.registerUser(
+      firebaseUid,
+      email,
+      displayName,
+      photoUrl,
+      location.country,
+      location.city
+    );
     res.status(201).json({ data: user });
   } catch (error) {
     next(error);
@@ -23,7 +33,19 @@ export async function login(
 ): Promise<void> {
   try {
     const { firebaseUid } = req.body;
-    const user = await authService.getUserByFirebaseUid(firebaseUid);
+    let user = await authService.getUserByFirebaseUid(firebaseUid);
+
+    // Dynamic location backfilling on login
+    if (!user.country || !user.city) {
+      const location = await detectLocation(req);
+      if (location.country || location.city) {
+        user = await userModel.update(user.id, {
+          country: user.country || location.country,
+          city: user.city || location.city,
+        });
+      }
+    }
+
     res.json({ data: user });
   } catch (error) {
     next(error);

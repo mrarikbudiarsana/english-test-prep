@@ -328,30 +328,6 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                         </div>
                     )}
 
-                    {/* Overall Section Analysis (Gated) */}
-                    {!isPartialTest && sections.length > 0 && (
-                        <div className="bg-white rounded-xl border border-[#cbd5e1] p-6 mb-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Analysis</h3>
-                            {tier !== 'free' ? (
-                                <CriterionAnalytics
-                                    criteria={sections.map(s => ({
-                                        label: s.label,
-                                        short: s.type.substring(0, 3).toUpperCase(),
-                                        band: s.score || 0
-                                    }))}
-                                    color="#08507f"
-                                    maxScore={68}
-                                />
-                            ) : (
-                                <div className="bg-gray-50 rounded-xl p-8 text-center border border-gray-100">
-                                    <Lock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                    <h4 className="font-semibold text-gray-700">Performance Charts Locked</h4>
-                                    <p className="text-sm text-gray-500 mt-1">Upgrade to Starter to see your relative strengths and weaknesses.</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
                     {/* ── Personalized Course CTA ──────────────────────────── */}
                     <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white border border-slate-800 shadow-lg mt-10 mb-6" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
                         <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-[0.03] pointer-events-none" style={{ background: 'radial-gradient(circle, #f59e0b, transparent 70%)', transform: 'translate(20%, -20%)' }} />
@@ -385,6 +361,30 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                             </a>
                         </div>
                     </div>
+
+                    {/* Overall Section Analysis (Gated) */}
+                    {!isPartialTest && sections.length > 0 && (
+                        <div className="bg-white rounded-xl border border-[#cbd5e1] p-6 mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Analysis</h3>
+                            {tier !== 'free' ? (
+                                <CriterionAnalytics
+                                    criteria={sections.map(s => ({
+                                        label: s.label,
+                                        short: s.type.substring(0, 3).toUpperCase(),
+                                        band: s.score || 0
+                                    }))}
+                                    color="#08507f"
+                                    maxScore={68}
+                                />
+                            ) : (
+                                <div className="bg-gray-50 rounded-xl p-8 text-center border border-gray-100">
+                                    <Lock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                    <h4 className="font-semibold text-gray-700">Performance Charts Locked</h4>
+                                    <p className="text-sm text-gray-500 mt-1">Upgrade to Starter to see your relative strengths and weaknesses.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {!isPartialTest && (
                         <p className="text-center text-sm text-[#08507f]/80">

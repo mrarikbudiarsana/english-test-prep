@@ -6,7 +6,7 @@ import * as testModel from '../models/test.model';
 import * as attemptModel from '../models/attempt.model';
 import * as sectionModel from '../models/section.model';
 import * as questionModel from '../models/question.model';
-import { getClient } from '../config/database';
+import { getClient, query } from '../config/database';
 
 /**
  * Admin: Get user by ID.
@@ -365,9 +365,29 @@ export async function updateUserRole(userId: string, role: string) {
 export async function getDashboardStats() {
   const usersResult = await userModel.findAll(0, 1);
   const testsResult = await testModel.findAllAdmin(0, 1);
+  const completedAttemptsResult = await attemptModel.findAllCompleted(0, 1);
+
+  // Geographic statistics
+  const countriesQuery = await query(
+    `SELECT COALESCE(country, 'Unknown') AS country, COUNT(*)::int AS count
+     FROM users
+     GROUP BY country
+     ORDER BY count DESC`
+  );
+  const citiesQuery = await query(
+    `SELECT COALESCE(city, 'Unknown') AS city, COUNT(*)::int AS count
+     FROM users
+     GROUP BY city
+     ORDER BY count DESC`
+  );
 
   return {
     totalUsers: usersResult.total,
     totalTests: testsResult.total,
+    totalAttempts: completedAttemptsResult.total,
+    locationStats: {
+      countries: countriesQuery.rows,
+      cities: citiesQuery.rows,
+    },
   };
 }

@@ -127,11 +127,20 @@ export default function AdminUserDetailPage() {
                     </Link>
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">{user.displayName || 'No Name'}</h1>
-                        <div className="text-sm text-gray-500 flex items-center gap-2">
-                            {user.email}
-                            <Badge variant={user.role === 'admin' ? 'default' : 'default'} className="ml-2">
+                        <div className="text-sm text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span>{user.email}</span>
+                            <span className="text-gray-300">•</span>
+                            <Badge variant={user.role === 'admin' ? 'default' : 'default'}>
                                 {user.role}
                             </Badge>
+                            {(user.city || user.country) && (
+                                <>
+                                    <span className="text-gray-300">•</span>
+                                    <span className="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-full px-2.5 py-0.5 text-xs text-slate-600 font-semibold shadow-sm">
+                                        📍 {[user.city, user.country].filter(Boolean).join(', ')}
+                                    </span>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

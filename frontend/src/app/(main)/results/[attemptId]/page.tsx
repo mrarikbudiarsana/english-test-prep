@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Metadata } from 'next';
+import { headers } from 'next/headers';
 import ResultsContent from './ResultsContent';
 import { examNameFromTestType, usesBandScale } from '@/lib/utils';
 
@@ -19,6 +20,10 @@ type ShareInfo = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { attemptId } = await Promise.resolve(params);
+  const headersList = await headers();
+  const host = headersList.get('host') || 'tests.englishwitharik.com';
+  const proto = headersList.get('x-forwarded-proto') || 'https';
+  const baseUrl = `${proto}://${host}`;
 
   // Fetch public share info for metadata (no auth required)
   let shareInfo: ShareInfo | null = null;
@@ -67,7 +72,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // For partial tests, show skill name in OG image title
   const ogImageTitle = isPartialTest ? `${examName} ${skillLabel} Practice` : testTitle;
-  const ogImageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.englishwitharik.com'}/api/og?title=${encodeURIComponent(ogImageTitle)}&score=${encodeURIComponent(score)}&date=${encodeURIComponent(date)}`;
+  const ogImageUrl = `${baseUrl}/api/og?title=${encodeURIComponent(ogImageTitle)}&score=${encodeURIComponent(score)}&date=${encodeURIComponent(date)}`;
 
   return {
     title: `Result: ${testTitle} | English with Arik`,

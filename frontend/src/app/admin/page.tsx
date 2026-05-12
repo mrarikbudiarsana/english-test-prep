@@ -17,6 +17,10 @@ interface AdminDashboardStats {
   totalTests: number;
   totalUsers: number;
   totalAttempts: number;
+  locationStats?: {
+    countries: Array<{ country: string; count: number }>;
+    cities: Array<{ city: string; count: number }>;
+  };
 }
 
 export default function AdminDashboardPage() {
@@ -138,6 +142,74 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
+      {/* Geolocation Stats */}
+      {stats?.locationStats && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Countries card */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <h3 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+              <span className="w-1.5 h-5 rounded-full bg-[#08507f]" />
+              Users by Country
+            </h3>
+            <div className="space-y-4">
+              {stats.locationStats.countries.slice(0, 5).map((item) => {
+                const percent = stats.totalUsers > 0 ? (item.count / stats.totalUsers) * 100 : 0;
+                return (
+                  <div key={item.country} className="space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-semibold text-slate-700">{item.country}</span>
+                      <span className="text-slate-500 font-medium text-xs">
+                        {item.count} {item.count === 1 ? 'user' : 'users'} ({percent.toFixed(1)}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-[#08507f] to-blue-500 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              {stats.locationStats.countries.length === 0 && (
+                <p className="text-sm text-slate-400 py-4 text-center">No location data available.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Cities card */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <h3 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+              <span className="w-1.5 h-5 rounded-full bg-orange-500" />
+              Users by City
+            </h3>
+            <div className="space-y-4">
+              {stats.locationStats.cities.slice(0, 5).map((item) => {
+                const percent = stats.totalUsers > 0 ? (item.count / stats.totalUsers) * 100 : 0;
+                return (
+                  <div key={item.city} className="space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-semibold text-slate-700">{item.city}</span>
+                      <span className="text-slate-500 font-medium text-xs">
+                        {item.count} {item.count === 1 ? 'user' : 'users'} ({percent.toFixed(1)}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-orange-500 to-amber-400 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              {stats.locationStats.cities.length === 0 && (
+                <p className="text-sm text-slate-400 py-4 text-center">No location data available.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-8">
         <div className="space-y-4">
