@@ -188,9 +188,11 @@ export async function finalizeAttempt(attemptId: string) {
     return attempt;
   }
 
-  // Ensure current section or practice section is scored before finalizing
-  if (attempt.currentSection) {
-    await scoringService.scoreObjectiveSection(attemptId, attempt.currentSection as SectionType, 'toefl_itp');
+  // Ensure all sections are scored before finalizing to guarantee complete and accurate scores
+  if (attempt.mode === 'full') {
+    await scoringService.scoreObjectiveSection(attemptId, 'listening', 'toefl_itp');
+    await scoringService.scoreObjectiveSection(attemptId, 'structure', 'toefl_itp');
+    await scoringService.scoreObjectiveSection(attemptId, 'reading', 'toefl_itp');
   } else if (attempt.practiceSectionType) {
     await scoringService.scoreObjectiveSection(attemptId, attempt.practiceSectionType as SectionType, 'toefl_itp');
   }

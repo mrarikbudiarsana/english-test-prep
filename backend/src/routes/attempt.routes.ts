@@ -7,6 +7,7 @@ const router = Router();
 router.post('/', authMiddleware, attemptController.startAttempt);
 router.get('/', authMiddleware, attemptController.getUserAttempts);
 router.get('/:attemptId', authMiddleware, attemptController.getAttempt);
+router.get('/:attemptId/responses', authMiddleware, attemptController.getResponses);
 router.put('/:attemptId/section-start', authMiddleware, attemptController.updateSection);
 router.post('/:attemptId/responses', authMiddleware, attemptController.saveResponses);
 router.post('/:attemptId/auto-save', authMiddleware, attemptController.autoSave);

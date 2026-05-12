@@ -327,7 +327,14 @@ export default function ResultsPage() {
             const score = getDisplayScore(attempt);
 
             return (
-              <Link key={attempt.id} href={`/results/${attempt.id}`} className="block bg-white rounded-xl border border-[#e8ecef] hover:shadow-lg transition-all group">
+              <Link
+                key={attempt.id}
+                href={attempt.status === 'in_progress'
+                  ? `/tests/${attempt.testId}/take?attemptId=${attempt.id}&mode=${attempt.mode}${attempt.practiceSectionType ? `&section=${attempt.practiceSectionType}` : ''}`
+                  : `/results/${attempt.id}`
+                }
+                className="block bg-white rounded-xl border border-[#e8ecef] hover:shadow-lg transition-all group"
+              >
                 <div
                   className="p-6 border border-[#e8ecef] rounded-xl transition-colors"
                   style={{ borderColor: '#e8ecef' }}
@@ -430,8 +437,8 @@ export default function ResultsPage() {
                           {deletingAttemptId === attempt.id ? 'Deleting...' : 'Delete'}
                         </button>
                       )}
-                      <button className="text-sm font-semibold flex items-center gap-1 transition-colors" style={{ color: theme.primary }}>
-                        {score !== null ? 'View Score Report' : 'View Details'}
+                       <button className="text-sm font-semibold flex items-center gap-1 transition-colors" style={{ color: theme.primary }}>
+                        {attempt.status === 'in_progress' ? 'Resume Test' : (score !== null ? 'View Score Report' : 'View Details')}
                         <span className="group-hover:translate-x-1 transition-transform">-&gt;</span>
                       </button>
                     </div>

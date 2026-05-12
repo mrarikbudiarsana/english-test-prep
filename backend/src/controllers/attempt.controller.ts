@@ -33,6 +33,25 @@ export async function getAttempt(
   }
 }
 
+export async function getResponses(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    // Verify attempt access and ownership first
+    await attemptService.getAttempt(attemptId, req.user!.id);
+    const responses = await responseModel.findByAttemptId(attemptId);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.json({ data: responses });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getUserAttempts(
   req: Request,
   res: Response,

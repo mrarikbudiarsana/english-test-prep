@@ -191,7 +191,8 @@ function TestTakingContent() {
   const loadSectionQuestions = useCallback(async (
     sectionParts: Section[],
     sectionType: SectionType,
-    allSections: Section[]
+    allSections: Section[],
+    overrideTimeRemaining?: number
   ) => {
     const allQuestions: Question[] = [];
     for (const section of sectionParts) {
@@ -203,19 +204,22 @@ function TestTakingContent() {
     setCurrentQuestionIndex(0);
 
     const totalDuration = sectionParts.reduce((sum, s) => sum + s.durationMinutes, 0);
+    const finalTimeRemaining = overrideTimeRemaining !== undefined
+      ? overrideTimeRemaining
+      : totalDuration * 60;
 
     dispatch({
       type: 'SET_SECTION',
       payload: {
         sectionType,
         index: SECTION_ORDER.indexOf(sectionType),
-        timeRemaining: totalDuration * 60,
+        timeRemaining: finalTimeRemaining,
       },
     });
-    timer.start(totalDuration * 60);
+    timer.start(finalTimeRemaining);
 
     const resolvedAttemptId = state.attemptId || attemptId;
-    if (resolvedAttemptId) {
+    if (resolvedAttemptId && overrideTimeRemaining === undefined) {
       await api.put(`/attempts/${resolvedAttemptId}/section-start`, { sectionType });
     }
 
@@ -261,6 +265,50 @@ function TestTakingContent() {
           sectionTypes.includes(s.sectionType)
         );
 
+        let attemptData: any = null;
+        if (attemptId) {
+          try {
+            const attemptRes = await api.get(`/attempts/${attemptId}`);
+            attemptData = attemptRes.data?.data || attemptRes.data;
+          } catch (err) {
+            console.error('Failed to load attempt:', err);
+          }
+        }
+
+        let startType = sectionTypes[0];
+        if (
+          mode === 'full' &&
+          attemptData?.currentSection &&
+          sectionTypes.includes(attemptData.currentSection)
+        ) {
+          startType = attemptData.currentSection;
+        }
+
+        let savedAnswers: Record<string, any> = {};
+        if (attemptId) {
+          try {
+            const responsesRes = await api.get(`/attempts/${attemptId}/responses`);
+            const responsesData = responsesRes.data?.data || responsesRes.data || [];
+            responsesData.forEach((r: any) => {
+              if (r.questionId) {
+                savedAnswers[r.questionId] = r.answerData;
+              }
+            });
+          } catch (err) {
+            console.error('Failed to load saved responses:', err);
+          }
+        }
+
+        let overrideTime: number | undefined = undefined;
+        if (attemptData?.sectionStartedAt && startType === attemptData.currentSection) {
+          const startingSections = filteredSections.filter(s => s.sectionType === startType);
+          const totalDuration = startingSections.reduce((sum, s) => sum + s.durationMinutes, 0);
+          const elapsedSeconds = Math.floor(
+            (Date.now() - new Date(attemptData.sectionStartedAt).getTime()) / 1000
+          );
+          overrideTime = Math.max(0, totalDuration * 60 - elapsedSeconds);
+        }
+
         dispatch({
           type: 'INIT_SESSION',
           payload: {
@@ -271,10 +319,13 @@ function TestTakingContent() {
           },
         });
 
-        const firstType = sectionTypes[0];
-        const firstSections = filteredSections.filter(s => s.sectionType === firstType);
+        if (Object.keys(savedAnswers).length > 0) {
+          dispatch({ type: 'LOAD_SAVED_ANSWERS', payload: savedAnswers });
+        }
+
+        const firstSections = filteredSections.filter(s => s.sectionType === startType);
         if (firstSections.length > 0) {
-          await loadSectionQuestions(firstSections, firstType, filteredSections);
+          await loadSectionQuestions(firstSections, startType, filteredSections, overrideTime);
         }
       } catch (err) {
         console.error('Failed to initialize test:', err);
