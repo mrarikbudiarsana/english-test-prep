@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { pool } from './config/database';
 
-async function runMigrations() {
+export async function runMigrations(shouldEndPool = false) {
   const client = await pool.connect();
 
   try {
@@ -52,8 +52,13 @@ async function runMigrations() {
     console.log('All migrations completed successfully');
   } finally {
     client.release();
-    await pool.end();
+    if (shouldEndPool) {
+      await pool.end();
+    }
   }
 }
 
-runMigrations().catch(console.error);
+if (require.main === module) {
+  runMigrations(true).catch(console.error);
+}
+

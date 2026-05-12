@@ -5,8 +5,15 @@ import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { generalLimiter } from './middleware/rateLimiter';
 import routes from './routes';
+import { runMigrations } from './migrate';
 
 const app = express();
+
+// Run database migrations on startup (self-healing production DB schema)
+runMigrations(false).catch((err) => {
+  console.error('Failed to run database migrations on startup:', err);
+});
+
 const allowedOrigins = env.corsOrigin
   .split(',')
   .map((origin) => origin.trim())
