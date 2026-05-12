@@ -9,9 +9,10 @@ import { runMigrations } from './migrate';
 
 const app = express();
 
-// Run database migrations on startup (self-healing production DB schema)
-runMigrations(false).catch((err) => {
+// Run database migrations on startup and let requests wait for the schema.
+const migrationsReady = runMigrations(false).catch((err) => {
   console.error('Failed to run database migrations on startup:', err);
+  throw err;
 });
 
 const allowedOrigins = env.corsOrigin
@@ -51,6 +52,15 @@ app.use(generalLimiter);
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+app.use(async (_req, _res, next) => {
+  try {
+    await migrationsReady;
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 // API routes
 app.use('/api/v1', routes);

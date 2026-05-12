@@ -4,8 +4,12 @@ import { pool } from './config/database';
 
 export async function runMigrations(shouldEndPool = false) {
   const client = await pool.connect();
+  let lockAcquired = false;
 
   try {
+    await client.query(`SELECT pg_advisory_lock(hashtext('english_tests_migrations'))`);
+    lockAcquired = true;
+
     // Create migrations tracking table
     await client.query(`
       CREATE TABLE IF NOT EXISTS _migrations (
@@ -51,6 +55,14 @@ export async function runMigrations(shouldEndPool = false) {
 
     console.log('All migrations completed successfully');
   } finally {
+    if (lockAcquired) {
+      try {
+        await client.query(`SELECT pg_advisory_unlock(hashtext('english_tests_migrations'))`);
+      } catch (error) {
+        console.error('Failed to release migration advisory lock:', error);
+      }
+    }
+
     client.release();
     if (shouldEndPool) {
       await pool.end();
@@ -61,4 +73,3 @@ export async function runMigrations(shouldEndPool = false) {
 if (require.main === module) {
   runMigrations(true).catch(console.error);
 }
-
