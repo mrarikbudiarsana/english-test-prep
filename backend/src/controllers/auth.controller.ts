@@ -58,7 +58,18 @@ export async function getProfile(
   next: NextFunction
 ): Promise<void> {
   try {
-    const profile = await authService.getUserById(req.user!.id);
+    let profile = await authService.getUserById(req.user!.id);
+
+    if (!profile.country || !profile.city) {
+      const location = await detectLocation(req);
+      if (location.country || location.city) {
+        profile = await userModel.update(profile.id, {
+          country: profile.country || location.country,
+          city: profile.city || location.city,
+        });
+      }
+    }
+
     res.json({ data: profile });
   } catch (error) {
     next(error);

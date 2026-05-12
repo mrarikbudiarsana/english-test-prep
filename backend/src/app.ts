@@ -6,14 +6,17 @@ import { errorHandler } from './middleware/errorHandler';
 import { generalLimiter } from './middleware/rateLimiter';
 import routes from './routes';
 import { runMigrations } from './migrate';
+import { query } from './config/database';
 
 const app = express();
 
-// Run database migrations on startup and let requests wait for the schema.
-const migrationsReady = runMigrations(false).catch((err) => {
+// Full migrations are best-effort in serverless deployments; auth only waits for
+// the small schema guard below so a bundled migration-file issue cannot brick login.
+runMigrations(false).catch((err) => {
   console.error('Failed to run database migrations on startup:', err);
-  throw err;
 });
+
+const authSchemaReady = ensureAuthSchema();
 
 const allowedOrigins = env.corsOrigin
   .split(',')
@@ -53,9 +56,9 @@ app.use(generalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-app.use(async (_req, _res, next) => {
+app.use('/api/v1/auth', async (_req, _res, next) => {
   try {
-    await migrationsReady;
+    await authSchemaReady;
     next();
   } catch (error) {
     next(error);
@@ -64,8 +67,6 @@ app.use(async (_req, _res, next) => {
 
 // API routes
 app.use('/api/v1', routes);
-
-import { query } from './config/database';
 
 // Welcome route
 app.get('/', (_req, res) => {
@@ -94,5 +95,15 @@ app.get('/health', async (_req, res) => {
 
 // Error handler
 app.use(errorHandler);
+
+async function ensureAuthSchema() {
+  await query(`
+    ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS preferred_exam_type VARCHAR(20)
+        CHECK (preferred_exam_type IN ('ielts', 'toefl_ibt', 'toefl_itp', 'pte')),
+      ADD COLUMN IF NOT EXISTS country VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS city VARCHAR(100)
+  `);
+}
 
 export default app;

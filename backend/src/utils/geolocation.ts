@@ -1,19 +1,20 @@
 import { Request } from 'express';
+import { env } from '../config/env';
 
 export async function detectLocation(req: Request): Promise<{ country: string | null; city: string | null }> {
-  let ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+  const vercelLocation = getVercelLocation(req);
+  if (vercelLocation.country || vercelLocation.city) {
+    return vercelLocation;
+  }
 
-  // Clean up IPv6 loopback / local IPv4
-  if (
-    ip === '::1' ||
-    ip === '127.0.0.1' ||
-    ip.startsWith('::ffff:127.0.0.1') ||
-    ip.startsWith('fe80') ||
-    ip.startsWith('10.') ||
-    ip.startsWith('192.168.') ||
-    !ip
-  ) {
-    // Generate beautiful mock localizations for testing/development
+  const ip = getRequestIp(req);
+
+  if (!ip || isPrivateIp(ip)) {
+    if (env.nodeEnv !== 'development') {
+      return { country: null, city: null };
+    }
+
+    // Generate mock localizations for local development.
     const mockLocations = [
       { country: 'Indonesia', city: 'Jakarta' },
       { country: 'Indonesia', city: 'Surabaya' },
@@ -25,11 +26,6 @@ export async function detectLocation(req: Request): Promise<{ country: string | 
       { country: 'Malaysia', city: 'Kuala Lumpur' },
     ];
     return mockLocations[Math.floor(Math.random() * mockLocations.length)];
-  }
-
-  // Handle multiple IPs in x-forwarded-for (common behind proxies)
-  if (ip.includes(',')) {
-    ip = ip.split(',')[0].trim();
   }
 
   try {
@@ -51,4 +47,60 @@ export async function detectLocation(req: Request): Promise<{ country: string | 
   }
 
   return { country: null, city: null };
+}
+
+function getVercelLocation(req: Request) {
+  const countryCode = getHeader(req, 'x-vercel-ip-country')?.toUpperCase() || null;
+  const city = decodeHeaderValue(getHeader(req, 'x-vercel-ip-city'));
+
+  return {
+    country: countryCode ? getCountryName(countryCode) : null,
+    city,
+  };
+}
+
+function getRequestIp(req: Request) {
+  const forwardedFor =
+    getHeader(req, 'x-vercel-forwarded-for') ||
+    getHeader(req, 'x-forwarded-for') ||
+    getHeader(req, 'x-real-ip') ||
+    req.socket.remoteAddress ||
+    '';
+
+  return forwardedFor.split(',')[0].trim().replace(/^::ffff:/, '');
+}
+
+function getHeader(req: Request, headerName: string) {
+  const value = req.headers[headerName];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function decodeHeaderValue(value?: string) {
+  if (!value) return null;
+
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function getCountryName(countryCode: string) {
+  try {
+    const displayNames = new (Intl as any).DisplayNames(['en'], { type: 'region' });
+    return displayNames.of(countryCode) || countryCode;
+  } catch {
+    return countryCode;
+  }
+}
+
+function isPrivateIp(ip: string) {
+  return (
+    ip === '::1' ||
+    ip === '127.0.0.1' ||
+    ip.startsWith('fe80') ||
+    ip.startsWith('10.') ||
+    ip.startsWith('192.168.') ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip)
+  );
 }
