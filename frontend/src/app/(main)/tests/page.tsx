@@ -83,63 +83,68 @@ export default function TestCatalogPage() {
     <div className="space-y-8 pb-12 max-w-6xl mx-auto">
 
       {/* ── Page header ──────────────────────────────────────── */}
-      <div className="rounded-xl border border-slate-200 bg-white p-8" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-        <div className="flex items-center gap-2 mb-3">
-          <HiBookOpen className="w-4 h-4 text-[#08507f]" />
-          <p className="text-xs font-bold uppercase tracking-widest text-[#08507f]">{t('tests_library_label')}</p>
-        </div>
-        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">
-          {t('tests_choose_title')}
-        </h1>
-        <p className="text-slate-500 text-base max-w-2xl leading-relaxed">
-          {t('tests_choose_body').replace('{exam}', examConfig.name)}
-        </p>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 md:p-8" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="flex flex-col lg:flex-row justify-between gap-6 lg:items-center">
+          {/* Left Side: Title & Description */}
+          <div className="flex-1 max-w-2xl">
+            <div className="flex items-center gap-2 mb-2">
+              <HiBookOpen className="w-4 h-4 text-[#08507f]" />
+              <p className="text-xs font-bold uppercase tracking-widest text-[#08507f]">{t('tests_library_label')}</p>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">
+              {t('tests_choose_title')}
+            </h1>
+            <p className="text-slate-500 text-sm md:text-base leading-relaxed">
+              {t('tests_choose_body').replace('{exam}', examConfig.name)}
+            </p>
+          </div>
 
-        {/* Section overview pills */}
-        <div className="mt-6 flex flex-wrap gap-3">
+          {/* Right Side: Free access banner / Upgrade */}
+          {user && (
+            <div className="flex-shrink-0 lg:max-w-xs w-full lg:w-auto flex items-center justify-between lg:justify-start gap-4 rounded-lg border border-emerald-100 bg-emerald-50/50 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 border border-emerald-200">
+                  <HiLockOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">{t('tests_free_access')}</p>
+                  <p className="text-xs font-semibold text-slate-800">
+                    <span className="text-sm font-extrabold text-emerald-600">{user.freeTestsRemaining}</span>{' '}
+                    {t('tests_remaining')}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/pricing"
+                className="inline-flex items-center px-3.5 py-1.5 rounded-lg border border-emerald-200 bg-white text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-colors shadow-sm"
+              >
+                {t('tests_upgrade')}
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Section overview pills with divider */}
+        <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap gap-2.5">
           {TOEFL_ITP_SECTION_PREVIEW.map((section) => {
             const Icon = section.icon;
             return (
               <div
                 key={section.label}
-                className="inline-flex items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-150 bg-slate-50/70 px-3 py-1.5"
               >
                 <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#e8f4fd] text-[#08507f]">
                   <Icon className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">{section.label}</p>
-                  <p className="text-[11px] text-slate-500">{section.detail}</p>
+                  <p className="text-xs font-semibold text-slate-800">{section.label}</p>
+                  <p className="text-[10px] text-slate-500">{section.detail}</p>
                 </div>
               </div>
             );
           })}
         </div>
       </div>
-
-      {/* ── Free-tests remaining banner ───────────────────────── */}
-      {user && (
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-6 py-4" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
-              <HiLockOpen className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-600">{t('tests_free_access')}</p>
-              <p className="text-sm font-semibold text-slate-800">
-                <span className="text-lg font-extrabold text-emerald-600">{user.freeTestsRemaining}</span>{' '}
-                {t('tests_remaining')}
-              </p>
-            </div>
-          </div>
-          <Link
-            href="/pricing"
-            className="hidden sm:inline-flex items-center px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-          >
-            {t('tests_upgrade')}
-          </Link>
-        </div>
-      )}
 
       {/* ── Search ───────────────────────────────────────────── */}
       <div className="relative">
