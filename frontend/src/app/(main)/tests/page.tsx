@@ -18,11 +18,6 @@ import {
 } from 'react-icons/hi';
 import { getExamConfig } from '@/config/examConfig';
 
-const TOEFL_ITP_SECTION_PREVIEW = [
-  { label: 'Listening',  detail: '50 questions · 35 min', icon: HiOutlineVolumeUp },
-  { label: 'Structure',  detail: '40 questions · 25 min', icon: HiOutlineTemplate  },
-  { label: 'Reading',   detail: '50 questions · 55 min', icon: HiBookOpen          },
-];
 
 export default function TestCatalogPage() {
   const { user } = useAuth();
@@ -124,26 +119,6 @@ export default function TestCatalogPage() {
           )}
         </div>
 
-        {/* Section overview pills with divider */}
-        <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap gap-2.5">
-          {TOEFL_ITP_SECTION_PREVIEW.map((section) => {
-            const Icon = section.icon;
-            return (
-              <div
-                key={section.label}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-150 bg-slate-50/70 px-3 py-1.5"
-              >
-                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#e8f4fd] text-[#08507f]">
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-800">{section.label}</p>
-                  <p className="text-[10px] text-slate-500">{section.detail}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </div>
 
       {/* ── Search ───────────────────────────────────────────── */}

@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Mail, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
 import { examConfigs } from '@/config/examConfig';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { Modal } from '@/components/ui/Modal';
 
 interface PricingPlan {
   id: number;
@@ -21,10 +23,19 @@ interface PricingPlan {
 
 export default function PricingPage() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [plans, setPlans] = useState<PricingPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [checkingOut, setCheckingOut] = useState<number | null>(null);
+
+  // Waitlist Modal states
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+  const [selectedPlanForWaitlist, setSelectedPlanForWaitlist] = useState<PricingPlan | null>(null);
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+
   const examConfig = examConfigs.toefl_itp;
   const { theme } = examConfig;
 
@@ -44,55 +55,39 @@ export default function PricingPage() {
     }
   };
 
-  const handleSubscribe = async (plan: PricingPlan) => {
+  const handleSubscribe = (plan: PricingPlan) => {
     if (plan.priceMonthly === 0) return;
 
-    const nameLower = plan.name.toLowerCase();
-    let planType: 'monthly' | 'quarterly' | 'yearly';
-    if (nameLower.includes('yearly') || nameLower.includes('annual') || billingCycle === 'yearly') {
-      planType = 'yearly';
-    } else if (nameLower.includes('quarterly')) {
-      planType = 'quarterly';
-    } else {
-      planType = 'monthly';
+    // Direct users to waitlist instead of Midtrans checkout
+    setSelectedPlanForWaitlist(plan);
+    setWaitlistEmail(user?.email || '');
+    setWaitlistSuccess(false);
+    setIsWaitlistOpen(true);
+  };
+
+  const handleJoinWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPlanForWaitlist) return;
+
+    const emailToSubmit = user?.email || waitlistEmail;
+    if (!emailToSubmit || !emailToSubmit.includes('@')) {
+      toast.error(t('waitlist_email_invalid'));
+      return;
     }
 
-    setCheckingOut(plan.id);
+    setIsSubmittingWaitlist(true);
     try {
-      const { data } = await api.post('/payments/create', { planType, examType: 'toefl_itp' });
-      const snapToken: string = data.snapToken;
-
-      if (!(window as any).snap) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL!;
-          script.setAttribute('data-client-key', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!);
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Failed to load Midtrans Snap'));
-          document.head.appendChild(script);
-        });
-      }
-
-      (window as any).snap.pay(snapToken, {
-        onSuccess: () => {
-          toast.success('Payment successful!');
-          window.location.href = '/payment/finish?transaction_status=settlement';
-        },
-        onPending: () => {
-          toast('Payment pending. We will notify you once confirmed.');
-          window.location.href = '/payment/finish?transaction_status=pending';
-        },
-        onError: () => {
-          toast.error('Payment failed. Please try again.');
-        },
-        onClose: () => {
-          toast('Checkout closed.');
-        },
+      await api.post('/waitlist/join', {
+        email: emailToSubmit,
+        planId: selectedPlanForWaitlist.id,
       });
+      setWaitlistSuccess(true);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to start checkout');
+      console.error('Error joining waitlist:', error);
+      const errorMsg = error?.response?.data?.error || t('waitlist_already_joined');
+      toast.error(errorMsg);
     } finally {
-      setCheckingOut(null);
+      setIsSubmittingWaitlist(false);
     }
   };
 
@@ -238,6 +233,104 @@ export default function PricingPage() {
           })}
         </div>
       </div>
+
+      {/* ── Early Access Waitlist Modal ────────────────────────────────────── */}
+      <Modal
+        isOpen={isWaitlistOpen}
+        onClose={() => setIsWaitlistOpen(false)}
+      >
+        <div className="p-2 sm:p-4 text-center">
+          {!waitlistSuccess ? (
+            <form onSubmit={handleJoinWaitlistSubmit} className="space-y-6">
+              <div className="flex justify-center mb-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e8f4fd] text-[#08507f]">
+                  <Sparkles className="w-6 h-6 animate-pulse" />
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
+                  {t('waitlist_modal_title')}
+                </h3>
+                <p className="text-slate-500 text-sm leading-relaxed max-w-md mx-auto">
+                  {t('waitlist_modal_pitch')}
+                </p>
+              </div>
+
+              {user ? (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between max-w-sm mx-auto">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-full bg-slate-200/50 flex items-center justify-center text-slate-500">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Account Email</p>
+                      <p className="text-xs font-bold text-slate-700">{user.email}</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold bg-[#e8f4fd] text-[#08507f] px-2 py-1 rounded-full uppercase tracking-wider">Logged In</span>
+                </div>
+              ) : (
+                <div className="max-w-sm mx-auto relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="email"
+                    placeholder={t('waitlist_placeholder_email')}
+                    value={waitlistEmail}
+                    onChange={(e) => setWaitlistEmail(e.target.value)}
+                    required
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 bg-white text-slate-800 text-sm placeholder:text-slate-400 focus:border-[#08507f] focus:ring-2 focus:ring-[#e8f4fd] focus:outline-none transition-all"
+                  />
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-2 max-w-sm mx-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsWaitlistOpen(false)}
+                  className="w-full sm:w-1/3 py-3.5 px-4 rounded-2xl font-bold text-sm text-slate-500 hover:bg-slate-50 border border-slate-200/80 transition-all active:scale-[0.98]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingWaitlist}
+                  className="w-full sm:w-2/3 py-3.5 px-4 rounded-2xl font-bold text-sm bg-[#08507f] text-white shadow-md hover:bg-[#064066] hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSubmittingWaitlist && (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white animate-spin rounded-full" />
+                  )}
+                  <span>{t('waitlist_button_request')}</span>
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-6 py-4 animate-scaleUp">
+              <div className="flex justify-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm">
+                  <Check className="w-8 h-8 stroke-[3]" />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
+                  {t('waitlist_success_title')}
+                </h3>
+                <p className="text-slate-500 text-sm leading-relaxed max-w-md mx-auto">
+                  {t('waitlist_success_pitch')}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsWaitlistOpen(false)}
+                className="py-3 px-8 rounded-2xl font-bold text-sm bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-[0.98] max-w-xs"
+              >
+                Done
+              </button>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

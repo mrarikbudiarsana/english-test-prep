@@ -364,6 +364,22 @@ const translations = {
   congrats_yec_banner_body: { id: 'Dapatkan potongan diskon Rp 20.000 dengan mendaftar di YEC (yec.co.id) menggunakan kode voucher eksklusif ini.', en: 'Get a Rp 20.000 discount by booking on YEC (yec.co.id) using this exclusive voucher code.' },
   congrats_yec_copy_btn: { id: 'Salin Kode', en: 'Copy Code' },
   congrats_yec_copied: { id: 'Tersalin!', en: 'Copied!' },
+
+  // ─── Early Access / Waitlist Modal ──────────────────────────────────────────
+  waitlist_modal_title: { id: 'Dapatkan Akses Awal Pro!', en: 'Get Pro Early Access!' },
+  waitlist_modal_pitch: {
+    id: 'Kami sedang mempersiapkan fitur Premium yang mencakup Tes Tanpa Batas, Analisis Kelemahan Keterampilan, dan Penjelasan AI yang canggih. Bergabunglah dengan daftar akses awal hari ini untuk mendapatkan diskon peluncuran sebesar 20%!',
+    en: 'We are preparing our Premium features including Unlimited Tests, Skill Weakness Radar Charts, and powerful AI-driven explanations. Join the early access waitlist today and secure an exclusive 20% launch discount!',
+  },
+  waitlist_button_request: { id: 'Ajukan Akses Awal', en: 'Request Early Access' },
+  waitlist_placeholder_email: { id: 'Masukkan alamat email Anda', en: 'Enter your email address' },
+  waitlist_email_invalid: { id: 'Masukkan email yang valid', en: 'Please enter a valid email' },
+  waitlist_success_title: { id: 'Anda Masuk Daftar!', en: "You're on the list!" },
+  waitlist_success_pitch: {
+    id: 'Terima kasih banyak atas minat Anda! Kami telah mendaftarkan email Anda ke daftar tunggu awal kami. Kami akan mengirimkan email saat fitur Pro diluncurkan bersama kode diskon 20% Anda!',
+    en: "Thank you for your interest! We have registered your email to our early access waitlist. We'll drop you an email when Pro launches along with your 20% discount code!",
+  },
+  waitlist_already_joined: { id: 'Anda sudah bergabung dalam daftar tunggu paket ini.', en: 'You have already joined the waitlist for this plan.' },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

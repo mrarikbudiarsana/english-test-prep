@@ -17,6 +17,18 @@ const SELECT_COLUMNS = `
   updated_at AS "updatedAt"
 `;
 
+const fieldMap: Record<string, string> = {
+    name: 'name',
+    description: 'description',
+    priceMonthly: 'price_monthly',
+    priceYearly: 'price_yearly',
+    currency: 'currency',
+    perks: 'perks',
+    isActive: 'is_active',
+    isPopular: 'is_popular',
+    tierLevel: 'tier_level',
+};
+
 // ---------- queries ----------
 
 export async function findAll(includeInactive: boolean = false) {
@@ -92,12 +104,15 @@ export async function update(
     let paramIndex = 1;
 
     for (const [key, value] of entries) {
-        // Map camelCase to snake_case
-        const column = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        const column = fieldMap[key];
+        if (!column) continue;
+
         setClauses.push(`${column} = $${paramIndex}`);
         values.push(value);
         paramIndex++;
     }
+
+    if (setClauses.length === 0) return findById(id);
 
     setClauses.push(`updated_at = NOW()`);
     values.push(id);

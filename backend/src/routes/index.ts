@@ -8,6 +8,7 @@ import subscriptionRoutes from './subscription.routes';
 import uploadRoutes from './upload.routes';
 import dashboardRoutes from './dashboard.routes';
 import pricingRoutes from './pricing.routes';
+import waitlistRoutes from './waitlist.routes';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/subscriptions', subscriptionRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/pricing', pricingRoutes);
+router.use('/waitlist', waitlistRoutes);
 
 export default router;
