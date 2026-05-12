@@ -35,6 +35,15 @@ export default function TestCatalogPage() {
   const examConfig = getExamConfig('toefl_itp');
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const tabParam = new URLSearchParams(window.location.search).get('tab');
+      if (tabParam === 'sections') {
+        setActiveTab('sections');
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     async function fetchTests() {
       try {
         const response   = await api.get('/tests');
@@ -308,7 +317,7 @@ function TestCard({ test, minLabel }: { test: Test; minLabel: string }) {
 
   return (
     <Link
-      href={`/tests/${test.id}`}
+      href={`/tests/${test.id}?mode=full`}
       className="group flex flex-col rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:border-[#08507f] hover:shadow-md overflow-hidden"
       style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
     >
@@ -385,7 +394,7 @@ function SectionPracticeCard({
 }) {
   return (
     <Link
-      href={`/tests/${test.id}`}
+      href={`/tests/${test.id}?mode=practice&section=${sectionType}`}
       className="group flex flex-col rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:border-[#08507f] hover:shadow-md overflow-hidden"
       style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
     >

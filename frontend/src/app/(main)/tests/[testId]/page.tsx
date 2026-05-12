@@ -96,6 +96,16 @@ export default function TestOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
+  const [autoStarted, setAutoStarted] = useState(false);
+
+  const [mode, setMode] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const modeParam = new URLSearchParams(window.location.search).get('mode');
+      setMode(modeParam);
+    }
+  }, []);
 
   const examName = test ? examNameFromTestType(test.testType) : 'TOEFL ITP';
   const fullSectionCount = test ? sectionCountForTestType(test.testType) : 3;
@@ -148,6 +158,18 @@ export default function TestOverviewPage() {
     }
   };
 
+  useEffect(() => {
+    if (!loading && test && access?.canAccess && !autoStarted) {
+      if (typeof window !== 'undefined') {
+        const sectionType = new URLSearchParams(window.location.search).get('section');
+        if (sectionType) {
+          setAutoStarted(true);
+          handleStartTest('section_practice', sectionType);
+        }
+      }
+    }
+  }, [loading, test, access, autoStarted]);
+
   const sectionGroups = sections.reduce((acc, section) => {
     if (!acc[section.sectionType]) {
       acc[section.sectionType] = [];
@@ -171,6 +193,23 @@ export default function TestOverviewPage() {
     );
   }
 
+  if (starting) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
+        <div className="relative flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#08507f]"></div>
+          <div className="absolute h-8 w-8 rounded-full bg-slate-50"></div>
+        </div>
+        <h2 className="text-xl font-bold text-slate-800 animate-pulse">
+          Preparing your practice test...
+        </h2>
+        <p className="text-sm text-slate-500">
+          Please wait while we set up your attempt. Do not close this page.
+        </p>
+      </div>
+    );
+  }
+
   if (!test) {
     return (
       <div className="text-center py-20">
@@ -185,7 +224,7 @@ export default function TestOverviewPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       <Link
-        href="/tests"
+        href={mode === 'practice' ? '/tests?tab=sections' : '/tests?tab=full'}
         className="inline-flex items-center gap-2 text-slate-500 text-sm font-semibold transition-colors hover:text-[#08507f] group"
       >
         <HiChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -229,167 +268,171 @@ export default function TestOverviewPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-        <div className="flex items-start gap-4 mb-5">
-          <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
-            style={{ backgroundColor: access?.canAccess ? '#08507f' : '#94a3b8' }}
-          >
-            {access?.canAccess ? (
-              <HiPlay className="w-5 h-5 text-white" />
-            ) : (
-              <HiLockClosed className="w-5 h-5 text-white" />
-            )}
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 mb-1">Full Test</h2>
-            <p className="text-sm text-slate-500 leading-relaxed">
-              {t('test_overview_full_desc')}
-            </p>
-          </div>
-        </div>
-
-        {access?.canAccess ? (
-          <>
-            {access.reason === 'has_free_tests' && (
-              <p className="text-sm text-amber-600 mb-4 flex items-center gap-1.5">
-                <HiSparkles className="w-3.5 h-3.5" />
-                This will use 1 of your {access.freeTestsRemaining} free tests remaining
-              </p>
-            )}
-            <button
-              onClick={() => handleStartTest('full')}
-              disabled={starting}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#08507f] text-white text-sm font-bold hover:bg-[#063d61] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      {(mode === 'full' || !mode) && (
+        <div className="rounded-xl border border-slate-200 bg-white p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div className="flex items-start gap-4 mb-5">
+            <div
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+              style={{ backgroundColor: access?.canAccess ? '#08507f' : '#94a3b8' }}
             >
-              <HiPlay className="w-4 h-4" />
-              {starting ? 'Starting…' : t('test_overview_start_full')}
-            </button>
-          </>
-        ) : (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100">
-                <HiLockClosed className="w-4 h-4 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-800 mb-0.5">Premium Test</h3>
-                <p className="text-xs text-slate-500">
-                  Subscribe to access this test or use your free tests.
-                  {access?.freeTestsRemaining === 0 && ' You have no free tests remaining.'}
-                </p>
-              </div>
+              {access?.canAccess ? (
+                <HiPlay className="w-5 h-5 text-white" />
+              ) : (
+                <HiLockClosed className="w-5 h-5 text-white" />
+              )}
             </div>
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-sm font-bold hover:bg-[#d97706] transition-colors"
-            >
-              <HiSparkles className="w-3.5 h-3.5" />
-              View Plans
-            </Link>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">Full Test</h2>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                {t('test_overview_full_desc')}
+              </p>
+            </div>
           </div>
-        )}
-      </div>
 
-      <div>
-        <div className="flex items-center gap-2.5 mb-2">
-          <HiSparkles className="w-5 h-5 text-[#08507f]" />
-          <h2 className="text-xl font-bold text-slate-900">Practice by Section</h2>
+          {access?.canAccess ? (
+            <>
+              {access.reason === 'has_free_tests' && (
+                <p className="text-sm text-amber-600 mb-4 flex items-center gap-1.5">
+                  <HiSparkles className="w-3.5 h-3.5" />
+                  This will use 1 of your {access.freeTestsRemaining} free tests remaining
+                </p>
+              )}
+              <button
+                onClick={() => handleStartTest('full')}
+                disabled={starting}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#08507f] text-white text-sm font-bold hover:bg-[#063d61] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <HiPlay className="w-4 h-4" />
+                {starting ? 'Starting…' : t('test_overview_start_full')}
+              </button>
+            </>
+          ) : (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100">
+                  <HiLockClosed className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 mb-0.5">Premium Test</h3>
+                  <p className="text-xs text-slate-500">
+                    Subscribe to access this test or use your free tests.
+                    {access?.freeTestsRemaining === 0 && ' You have no free tests remaining.'}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/pricing"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-sm font-bold hover:bg-[#d97706] transition-colors"
+              >
+                <HiSparkles className="w-3.5 h-3.5" />
+                View Plans
+              </Link>
+            </div>
+          )}
         </div>
-        <p className="text-slate-500 text-sm mb-5 leading-relaxed">
-          {t('test_overview_practice_desc')}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {(() => {
-            const sectionOrder = test.testType === 'toefl_itp'
-              ? ['listening', 'structure', 'reading'] as const
-              : ['listening', 'reading', 'writing', 'speaking'] as const;
-            const toeflCanonicalParts: Partial<Record<(typeof sectionOrder)[number], number>> = {
-              listening: 3,
-              structure: 2,
-              reading: 1,
-            };
+      )}
 
-            return sectionOrder.map((type) => {
-              const Icon = sectionIcons[type];
-              const colors = sectionColors[type];
-              const typeSections = sectionGroups[type] || [];
-              const totalDuration = typeSections.reduce((sum, s) => sum + s.durationMinutes, 0);
-              const toeflMeta =
-                test.testType === 'toefl_itp' && type in TOEFL_ITP_FORMAT.sections
-                  ? TOEFL_ITP_FORMAT.sections[type as keyof typeof TOEFL_ITP_FORMAT.sections]
-                  : undefined;
-              const questionCount =
-                test.testType === 'toefl_itp' ? toeflMeta?.questions : undefined;
-              const isAvailable = typeSections.length > 0;
-              const displayedPartCount =
-                test.testType === 'toefl_itp'
-                  ? (toeflCanonicalParts[type] ?? typeSections.length)
-                  : typeSections.length;
+      {(mode === 'practice' || !mode) && (
+        <div>
+          <div className="flex items-center gap-2.5 mb-2">
+            <HiSparkles className="w-5 h-5 text-[#08507f]" />
+            <h2 className="text-xl font-bold text-slate-900">Practice by Section</h2>
+          </div>
+          <p className="text-slate-500 text-sm mb-5 leading-relaxed">
+            {t('test_overview_practice_desc')}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {(() => {
+              const sectionOrder = test.testType === 'toefl_itp'
+                ? ['listening', 'structure', 'reading'] as const
+                : ['listening', 'reading', 'writing', 'speaking'] as const;
+              const toeflCanonicalParts: Partial<Record<(typeof sectionOrder)[number], number>> = {
+                listening: 3,
+                structure: 2,
+                reading: 1,
+              };
 
-              return (
-                <div
-                  key={type}
-                  className={`group rounded-xl border bg-white p-5 transition-all duration-200 ${
-                    isAvailable
-                      ? 'border-slate-200 hover:border-[#08507f] hover:shadow-md'
-                      : 'border-slate-200 opacity-60'
-                  }`}
-                  style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${colors.iconBg}`}>
-                      <Icon className={`w-5 h-5 ${colors.text}`} />
+              return sectionOrder.map((type) => {
+                const Icon = sectionIcons[type];
+                const colors = sectionColors[type];
+                const typeSections = sectionGroups[type] || [];
+                const totalDuration = typeSections.reduce((sum, s) => sum + s.durationMinutes, 0);
+                const toeflMeta =
+                  test.testType === 'toefl_itp' && type in TOEFL_ITP_FORMAT.sections
+                    ? TOEFL_ITP_FORMAT.sections[type as keyof typeof TOEFL_ITP_FORMAT.sections]
+                    : undefined;
+                const questionCount =
+                  test.testType === 'toefl_itp' ? toeflMeta?.questions : undefined;
+                const isAvailable = typeSections.length > 0;
+                const displayedPartCount =
+                  test.testType === 'toefl_itp'
+                    ? (toeflCanonicalParts[type] ?? typeSections.length)
+                    : typeSections.length;
+
+                return (
+                  <div
+                    key={type}
+                    className={`group rounded-xl border bg-white p-5 transition-all duration-200 ${
+                      isAvailable
+                        ? 'border-slate-200 hover:border-[#08507f] hover:shadow-md'
+                        : 'border-slate-200 opacity-60'
+                    }`}
+                    style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${colors.iconBg}`}>
+                        <Icon className={`w-5 h-5 ${colors.text}`} />
+                      </div>
+                      {isAvailable && (
+                        <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-500 rounded-md text-[10px] font-bold uppercase tracking-wide">
+                          {displayedPartCount} {displayedPartCount === 1 ? 'part' : 'parts'}
+                        </span>
+                      )}
                     </div>
-                    {isAvailable && (
-                      <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-500 rounded-md text-[10px] font-bold uppercase tracking-wide">
-                        {displayedPartCount} {displayedPartCount === 1 ? 'part' : 'parts'}
-                      </span>
+
+                    <h3 className="text-base font-bold text-slate-900 mb-1">
+                      {sectionTypeLabel(type)}
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-1 flex items-center gap-1.5">
+                      <HiClock className="w-3.5 h-3.5" />
+                      {totalDuration} min{questionCount && ` · ${questionCount} questions`}
+                    </p>
+                    {test.testType === 'toefl_itp' && isAvailable && (
+                      <p className="mb-4 text-[11px] text-slate-400">
+                        {type === 'listening' && t('test_overview_listening_note')}
+                        {type === 'structure' && t('test_overview_structure_note')}
+                        {type === 'reading' && t('test_overview_reading_note')}
+                      </p>
+                    )}
+
+                    {access?.canAccess ? (
+                      <button
+                        onClick={() => handleStartTest('section_practice', type)}
+                        disabled={starting || !isAvailable}
+                        className={`mt-3 w-full py-2 rounded-lg text-sm font-semibold transition-colors ${
+                          isAvailable
+                            ? 'bg-[#e8f4fd] text-[#08507f] hover:bg-[#08507f] hover:text-white border border-[#08507f]/20'
+                            : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                        }`}
+                      >
+                        {isAvailable ? t('test_overview_practice_btn') : t('test_overview_not_available')}
+                      </button>
+                    ) : (
+                      <Link
+                        href="/pricing"
+                        className="mt-3 flex w-full items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
+                      >
+                        <HiLockClosed className="w-3.5 h-3.5" />
+                        {t('test_overview_upgrade_practice')}
+                      </Link>
                     )}
                   </div>
-
-                  <h3 className="text-base font-bold text-slate-900 mb-1">
-                    {sectionTypeLabel(type)}
-                  </h3>
-                  <p className="text-xs text-slate-500 mb-1 flex items-center gap-1.5">
-                    <HiClock className="w-3.5 h-3.5" />
-                    {totalDuration} min{questionCount && ` · ${questionCount} questions`}
-                  </p>
-                  {test.testType === 'toefl_itp' && isAvailable && (
-                    <p className="mb-4 text-[11px] text-slate-400">
-                      {type === 'listening' && t('test_overview_listening_note')}
-                      {type === 'structure' && t('test_overview_structure_note')}
-                      {type === 'reading' && t('test_overview_reading_note')}
-                    </p>
-                  )}
-
-                  {access?.canAccess ? (
-                    <button
-                      onClick={() => handleStartTest('section_practice', type)}
-                      disabled={starting || !isAvailable}
-                      className={`mt-3 w-full py-2 rounded-lg text-sm font-semibold transition-colors ${
-                        isAvailable
-                          ? 'bg-[#e8f4fd] text-[#08507f] hover:bg-[#08507f] hover:text-white border border-[#08507f]/20'
-                          : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                      }`}
-                    >
-                      {isAvailable ? t('test_overview_practice_btn') : t('test_overview_not_available')}
-                    </button>
-                  ) : (
-                    <Link
-                      href="/pricing"
-                      className="mt-3 flex w-full items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
-                    >
-                      <HiLockClosed className="w-3.5 h-3.5" />
-                      {t('test_overview_upgrade_practice')}
-                    </Link>
-                  )}
-                </div>
-              );
-            });
-          })()}
+                );
+              });
+            })()}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="rounded-xl border border-slate-200 bg-white p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="flex items-center gap-2 mb-3">
