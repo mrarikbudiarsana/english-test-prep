@@ -9,6 +9,7 @@ import { DashboardStats } from '@/types/api';
 import { formatDate, formatScore } from '@/lib/utils';
 import { DashboardCharts } from './DashboardCharts';
 import { getTier } from '@/lib/tier';
+import type { Subscription } from '@/types/user';
 
 const NAVY = '#08507f';
 const NAVY_DARK = '#063d61';
@@ -61,7 +62,7 @@ export default function DashboardPage() {
   const { t } = useLanguage();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [subscription, setSubscription] = useState<{ planType: string; status: string; expiresAt: string } | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
 
   const tier = getTier(user, subscription);
 

@@ -128,6 +128,7 @@ function TestTakingContent() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showCongratulationsModal, setShowCongratulationsModal] = useState(false);
 
@@ -560,6 +561,7 @@ function TestTakingContent() {
       }
       timer.stop();
       try {
+        setError(null);
         await submitSection(state.currentSectionType);
         setShowSubmitModal(false);
         advanceToNextSection();
@@ -574,6 +576,7 @@ function TestTakingContent() {
   const handleSubmitTest = async () => {
     timer.stop();
     try {
+      setError(null);
       await submitTest();
       setShowSubmitModal(false);
       const resolvedAttemptId = state.attemptId || attemptId;
@@ -722,6 +725,12 @@ function TestTakingContent() {
           </div>
         </div>
       </header>
+
+      {error && (
+        <div className="shrink-0 border-b border-red-200 bg-red-50 px-6 py-3 text-sm font-semibold text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Main Layout Body */}
       <div className="flex-1 overflow-hidden flex">
