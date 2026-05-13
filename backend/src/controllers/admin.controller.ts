@@ -304,3 +304,18 @@ export async function getAllResults(
     next(error);
   }
 }
+
+export async function assignPackage(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.params.userId as string;
+    const { planType, examType } = req.body;
+    const subscription = await adminService.assignPackage(userId, planType, examType);
+    res.json({ data: subscription });
+  } catch (error) {
+    next(error);
+  }
+}

@@ -225,8 +225,8 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
         : 'Your Estimated Total Score';
 
     const scorePrecision = 0;
-    const navyBannerClass = 'bg-gradient-to-br from-white via-[#f8f9fa] to-[#e8f4fd] border-[#cbd5e1] shadow-[0_12px_35px_rgba(8,80,127,0.1)]';
-    const navyScoreClass = 'text-[#08507f] drop-shadow-[0_3px_10px_rgba(8,80,127,0.15)]';
+    const navyBannerClass = 'card-premium !rounded-[2.5rem] !p-12 !shadow-2xl';
+    const navyScoreClass = 'text-[#08507f] drop-shadow-[0_4px_12px_rgba(8,80,127,0.2)]';
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
@@ -292,46 +292,46 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                             {sections.map((section) => (
                                 <div
                                     key={section.type}
-                                    className="rounded-2xl border p-5 text-center border-[#cbd5e1] bg-gradient-to-b from-white to-[#f8fafc] shadow-sm hover:shadow-md transition-all"
+                                    className="card-premium !p-6 text-center hover:-translate-y-1"
                                 >
-                                    <p className="mb-1 text-xs font-bold text-[#08507f] uppercase tracking-wider">{section.label}</p>
-                                    <p className="text-3xl font-bold text-slate-800">
+                                    <p className="mb-2 text-[10px] font-bold text-[#08507f] uppercase tracking-[0.15em]">{section.label}</p>
+                                    <p className="text-4xl font-black text-slate-800">
                                         {section.score != null ? Math.round(section.score) : '-'}
                                     </p>
-                                    <p className="text-xs text-slate-400 mt-1 capitalize">{section.type.substring(0, 1)} Scale</p>
+                                    <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">{section.type.substring(0, 1)} Scale</p>
                                 </div>
                             ))}
                         </div>
                     )}
 
                     {/* ── Personalized Course CTA ──────────────────────────── */}
-                    <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white border border-slate-800 shadow-lg mt-10 mb-6" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
-                        <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-[0.03] pointer-events-none" style={{ background: 'radial-gradient(circle, #f59e0b, transparent 70%)', transform: 'translate(20%, -20%)' }} />
-                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-                            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-                                <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10 text-amber-400">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <div className="relative overflow-hidden rounded-[2.5rem] p-8 md:p-10 text-white shadow-2xl border border-slate-900 mt-12 mb-8" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+                        <div className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-[0.05] pointer-events-none" style={{ background: 'radial-gradient(circle, #f59e0b, transparent 70%)', transform: 'translate(20%, -20%)' }} />
+                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                            <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+                                <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10 shadow-inner text-amber-400">
+                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <h4 className="text-lg font-bold mb-1">
+                                    <h4 className="text-xl font-black tracking-tight mb-2">
                                         {t('results_course_cta_title')}
                                     </h4>
-                                    <p className="text-slate-400 text-xs sm:text-sm max-w-xl leading-relaxed">
+                                    <p className="text-slate-400 text-sm max-w-xl leading-relaxed font-medium">
                                         {t('results_course_cta_body')}
                                     </p>
                                 </div>
                             </div>
                             <a
-                                href="https://englishwitharik.com/toefl-itp"
+                                href="https://wa.me/6282144223581?text=Halo%20Arik%2C%20saya%20tertarik%20dengan%20kursus%20TOEFL%20ITP"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold transition-all duration-200 text-sm shadow-md shrink-0 active:scale-[0.98]"
+                                className="w-full md:w-auto inline-flex items-center justify-center gap-3 px-8 py-4.5 rounded-2xl font-black transition-all duration-200 text-sm shadow-xl shrink-0 active:scale-95"
                                 style={{ color: '#063d61', backgroundColor: '#f59e0b' }}
                             >
                                 {t('results_course_cta_btn')}
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                                 </svg>
                             </a>

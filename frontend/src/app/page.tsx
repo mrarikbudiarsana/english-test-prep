@@ -301,7 +301,7 @@ export default function HomePage() {
             {t('cta_body')}
           </p>
           <a
-            href="https://englishwitharik.com/toefl-itp"
+            href="https://wa.me/6282144223581?text=Halo%20Arik%2C%20saya%20tertarik%20dengan%20kursus%20TOEFL%20ITP"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-3 px-10 py-5 rounded-2xl font-bold text-[#08507f] bg-white hover:bg-yellow-50 transition-all shadow-xl hover:shadow-2xl hover:scale-105 active:scale-[0.98]"

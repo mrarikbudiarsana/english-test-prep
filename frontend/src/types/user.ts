@@ -12,6 +12,7 @@ export interface User {
   country?: string | null;
   city?: string | null;
   createdAt: string;
+  subscription?: Subscription | null;
 }
 
 export type PlanType = 'monthly' | 'quarterly' | 'yearly';

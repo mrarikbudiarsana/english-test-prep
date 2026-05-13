@@ -80,3 +80,30 @@ export async function activateSubscription(orderId: string) {
   // Return the activated subscription
   return subscriptionModel.findById(subscription.id);
 }
+
+/**
+ * Manually assign a subscription to a user (Admin only).
+ */
+export async function assignManualSubscription(userId: string, planType: string, examType: string = 'toefl_itp') {
+  const planEntry = (PLAN_CONFIGS as any)[planType];
+
+  if (!planEntry) {
+    throw new ValidationError(`Invalid plan type: ${planType}`);
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + planEntry.durationDays * 24 * 60 * 60 * 1000);
+
+  // Create and activate the subscription record immediately
+  const subscription = await subscriptionModel.create({
+    userId,
+    planType: planEntry.type,
+    examType,
+    startsAt: now,
+    expiresAt,
+  });
+
+  await subscriptionModel.activate(subscription.id);
+
+  return subscriptionModel.findById(subscription.id);
+}

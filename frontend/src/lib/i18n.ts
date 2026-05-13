@@ -2,14 +2,14 @@ export type Lang = 'id' | 'en';
 
 const translations = {
   // ─── Navbar ─────────────────────────────────────────────────────────────────
-  nav_dashboard: { id: 'Dasbor', en: 'Dashboard' },
-  nav_practice_tests: { id: 'Tes Latihan', en: 'Practice Tests' },
-  nav_pricing: { id: 'Harga', en: 'Pricing' },
+  nav_dashboard: { id: 'Beranda', en: 'Dashboard' },
+  nav_practice_tests: { id: 'Latihan Soal', en: 'Practice Tests' },
+  nav_pricing: { id: 'Harga Berlangganan', en: 'Pricing' },
   nav_admin_panel: { id: 'Panel Admin', en: 'Admin Panel' },
   nav_settings: { id: 'Pengaturan', en: 'Settings' },
   nav_sign_out: { id: 'Keluar', en: 'Sign Out' },
   nav_sign_in: { id: 'Masuk', en: 'Sign In' },
-  nav_get_started: { id: 'Mulai Gratis', en: 'Get Started Free' },
+  nav_get_started: { id: 'Daftar Sekarang', en: 'Get Started Free' },
 
   // ─── Footer ─────────────────────────────────────────────────────────────────
   footer_tagline: {
@@ -75,7 +75,7 @@ const translations = {
   },
   step4_title: { id: 'Lihat skor Anda', en: 'See your score' },
   step4_body: {
-    id: 'Langsung terima skor scaled Listening, Structure, dan Reading Anda (310–677).',
+    id: 'Terima hasil konversi skor Listening, Structure, dan Reading secara instan (310–677).',
     en: 'Instantly receive your Listening, Structure, and Reading scaled scores (310–677).',
   },
 
@@ -94,14 +94,14 @@ const translations = {
     id: 'Dapatkan total skor scaled pada skala TOEFL ITP resmi 310–677, plus rincian per bagian.',
     en: 'Get your total scaled score on the official 310–677 TOEFL ITP scale, plus section breakdowns.',
   },
-  feat_timed_title: { id: 'Kondisi Bertime', en: 'Timed Conditions' },
+  feat_timed_title: { id: 'Simulasi dengan Batas Waktu', en: 'Timed Conditions' },
   feat_timed_body: {
-    id: 'Berlatih dengan waktu ujian yang otentik. Audio hanya diputar sekali, seperti ujian nyata.',
+    id: 'Berlatih dengan simulasi waktu ujian yang otentik. Audio hanya diputar sekali, seperti ujian nyata.',
     en: 'Practice under authentic exam timing. Audio plays only once, just like the real test.',
   },
-  feat_lines_title: { id: 'Teks Bernomor Baris', en: 'Line-Numbered Passages' },
+  feat_lines_title: { id: 'Teks dengan Nomor Baris', en: 'Line-Numbered Passages' },
   feat_lines_body: {
-    id: 'Bagian Reading menampilkan nomor baris untuk referensi mudah, sesuai format resmi kertas.',
+    id: 'Bagian Reading menampilkan nomor baris untuk referensi cepat, sesuai format resmi.',
     en: 'Reading sections display line numbers for easy reference, matching the official paper format.',
   },
 
@@ -124,7 +124,7 @@ const translations = {
   dash_tests_completed: { id: 'Tes Diselesaikan', en: 'Tests Completed' },
   dash_tests_sub: { id: 'tes TOEFL ITP penuh', en: 'full TOEFL ITP tests' },
   dash_avg_score: { id: 'Skor Rata-rata', en: 'Average Score' },
-  dash_avg_sub: { id: 'skor scaled (310–677)', en: 'scaled score (310–677)' },
+  dash_avg_sub: { id: 'skor konversi (310–677)', en: 'scaled score (310–677)' },
   dash_best_score: { id: 'Skor Terbaik', en: 'Best Score' },
   dash_best_sub: { id: 'rekor pribadi Anda', en: 'your personal best' },
   dash_recent_tests: { id: 'Tes Terbaru', en: 'Recent Tests' },
@@ -341,7 +341,7 @@ const translations = {
     id: 'Ambil ujian TOEFL ITP lengkap dengan ke-3 bagian secara berurutan. Timer berjalan untuk masing-masing bagian untuk mensimulasikan kondisi ujian nyata.',
     en: 'Take the complete TOEFL ITP test with all 3 sections in order. Timer runs for each section to simulate real exam conditions.',
   },
-  test_overview_start_full: { id: 'Start Full Test', en: 'Start Full Test' },
+  test_overview_start_full: { id: 'Mulai Ujian Penuh', en: 'Start Full Test' },
   test_overview_practice_desc: {
     id: 'Fokus pada keterampilan tertentu dengan berlatih per bagian secara terarah. Sangat cocok untuk peningkatan yang terfokus.',
     en: 'Focus on specific skills by practicing individual sections. Perfect for targeted improvement.',
@@ -349,7 +349,7 @@ const translations = {
   test_overview_listening_note: { id: 'Audio hanya diputar satu kali', en: 'Audio plays once only' },
   test_overview_structure_note: { id: 'Sentence completion dan error recognition', en: 'Sentence completion and error recognition' },
   test_overview_reading_note: { id: 'Bacaan akademis dengan nomor baris', en: 'Line-numbered academic passages' },
-  test_overview_practice_btn: { id: 'Practice', en: 'Practice' },
+  test_overview_practice_btn: { id: 'Latihan', en: 'Practice' },
   test_overview_not_available: { id: 'Tidak Tersedia', en: 'Not Available' },
   test_overview_upgrade_practice: { id: 'Upgrade untuk Latihan', en: 'Upgrade to Practice' },
   test_overview_before_begin: { id: 'Sebelum Anda Memulai', en: 'Before You Begin' },
@@ -408,7 +408,7 @@ const translations = {
   test_overview_no_free_left: { id: ' Tes gratis Anda sudah habis.', en: ' You have no free tests remaining.' },
   test_overview_view_plans: { id: 'Lihat Paket', en: 'View Plans' },
   test_overview_free: { id: 'Gratis', en: 'Free' },
-  test_overview_starting: { id: 'Memulai…', en: 'Starting…' },
+  test_overview_starting: { id: 'Sedang Memulai…', en: 'Starting…' },
   test_overview_free_remaining: { id: 'Ini akan menggunakan 1 dari {count} tes gratis tersisa Anda', en: 'This will use 1 of your {count} free tests remaining' },
   test_overview_practice_by_section: { id: 'Latihan per Bagian', en: 'Practice by Section' },
   test_overview_test_not_found: { id: 'Tes tidak ditemukan', en: 'Test not found' },

@@ -45,13 +45,13 @@ const IconBadge = () => <svg width="18" height="18" fill="none" stroke="currentC
 /* ── stat card ──────────────────────────────────────────────── */
 function StatCard({ label, value, sub, icon, accent }: { label: string; value: string; sub?: string; icon: React.ReactNode; accent: string; }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-md transition-shadow">
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: accent + '20', color: accent }}>
+    <div className="card-premium p-6">
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 shadow-sm" style={{ backgroundColor: accent + '15', color: accent }}>
         {icon}
       </div>
-      <p className="text-sm text-slate-500 font-medium mb-0.5">{label}</p>
-      <p className="text-3xl font-extrabold" style={{ color: NAVY }}>{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
+      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-4xl font-black tracking-tight" style={{ color: NAVY }}>{value}</p>
+      {sub && <p className="text-xs text-slate-400 mt-2 font-medium">{sub}</p>}
     </div>
   );
 }
@@ -101,31 +101,36 @@ export default function DashboardPage() {
     <div className="space-y-6 pb-12 max-w-6xl mx-auto">
 
       {/* ── Hero banner ───────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-3xl p-8 md:p-10 text-white" style={{ background: `linear-gradient(135deg, ${NAVY_DARK} 0%, ${NAVY} 60%, #0a6aad 100%)` }}>
+      <div className="relative overflow-hidden rounded-3xl p-8 md:p-12 text-white bg-brand-gradient shadow-2xl">
         <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-        <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-10 pointer-events-none" style={{ background: 'radial-gradient(circle, #f59e0b, transparent 70%)', transform: 'translate(30%,-40%)' }} />
+        <div className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-10 pointer-events-none" style={{ background: 'radial-gradient(circle, #f59e0b, transparent 70%)', transform: 'translate(30%,-40%)' }} />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div>
-            <p className="text-blue-200 text-sm font-semibold uppercase tracking-widest mb-2">{t('dash_welcome_back')}</p>
-            <h1 className="text-3xl md:text-4xl font-extrabold mb-2">
+            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              {t('dash_welcome_back')}
+            </div>
+            <h1 className="text-3xl md:text-5xl font-black mb-3 tracking-tight">
               {user?.displayName?.split(' ')[0] || 'Student'} 👋
             </h1>
-            <p className="text-blue-100 max-w-lg">
+            <p className="text-blue-100 max-w-lg text-sm font-medium leading-relaxed opacity-90">
               {t('dash_subtitle')}
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-            <Link href="/tests" className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-[#08507f] bg-white hover:bg-blue-50 transition-all shadow-lg text-sm">
+          <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+            <Link href="/tests" className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-[#08507f] bg-white hover:bg-blue-50 transition-all shadow-xl text-sm active:scale-95">
               {t('dash_start_practice')} <IconArrow />
             </Link>
             {subscription ? (
-              <div className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/15 border border-white/20 text-sm">
-                <IconBadge />
-                <span className="font-semibold capitalize">{subscription.planType} Plan</span>
+              <div className="inline-flex items-center gap-3 px-5 py-4 rounded-2xl bg-white/10 border border-white/20 text-sm shadow-inner backdrop-blur-sm">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400/20 text-amber-400 border border-amber-400/20">
+                  <IconBadge />
+                </div>
+                <span className="font-bold uppercase tracking-widest text-[11px]">{subscription.planType} Plan</span>
               </div>
             ) : (
-              <Link href="/pricing" className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-sm font-semibold hover:bg-white/20 transition-all">
+              <Link href="/pricing" className="inline-flex items-center gap-2 px-5 py-4 rounded-2xl bg-white/10 border border-white/20 text-sm font-bold hover:bg-white/20 transition-all text-white active:scale-95">
                 {t('dash_upgrade_plan')}
               </Link>
             )}
@@ -141,33 +146,32 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Course CTA Banner ─────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-3xl p-6 md:p-8 text-white border border-slate-800 shadow-xl" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
-        <div className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-[0.03] pointer-events-none" style={{ background: 'radial-gradient(circle, #38bdf8, transparent 70%)', transform: 'translate(20%, -20%)' }} />
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex flex-col md:flex-row items-center gap-5 text-center md:text-left">
-            <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10 shadow-inner">
-              <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+      <div className="relative overflow-hidden rounded-[2rem] p-8 md:p-10 text-white shadow-2xl border border-slate-900" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-[0.05] pointer-events-none" style={{ background: 'radial-gradient(circle, #38bdf8, transparent 70%)', transform: 'translate(20%, -20%)' }} />
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+            <div className="w-20 h-20 rounded-3xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10 shadow-inner">
+              <svg className="w-10 h-10 text-amber-400" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A5.905 5.905 0 018 3.443m4 3.785v3.382m0 0a1.5 1.5 0 001.832 1.457l3.15-.788a1.5 1.5 0 001.123-1.457V7.228m-6.105 0a3.001 3.001 0 012.222-2.476m5.602 4.41c1.295-.333 2.428-1.066 3.14-2.07M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <h3 className="text-xl font-bold tracking-tight mb-1">
-                {t('cta_title_1')} <span style={{ color: '#f59e0b' }}>{t('cta_title_2')}</span>
+              <h3 className="text-2xl font-black tracking-tight mb-2">
+                {t('cta_title_1')} <span className="text-amber-400">{t('cta_title_2')}</span>
               </h3>
-              <p className="text-slate-400 text-xs sm:text-sm max-w-xl leading-relaxed">
+              <p className="text-slate-400 text-sm max-w-xl leading-relaxed font-medium">
                 {t('cta_body')}
               </p>
             </div>
           </div>
           <a
-            href="https://englishwitharik.com/toefl-itp"
+            href="https://wa.me/6282144223581?text=Halo%20Arik%2C%20saya%20tertarik%20dengan%20kursus%20TOEFL%20ITP"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-[#08507f] hover:text-[#063d61] bg-[#f59e0b] hover:bg-amber-400 transition-all duration-200 text-sm shadow-md shrink-0 active:scale-[0.98]"
-            style={{ color: '#063d61', backgroundColor: '#f59e0b' }}
+            className="w-full md:w-auto inline-flex items-center justify-center gap-3 px-8 py-5 rounded-2xl font-black text-[#063d61] bg-[#f59e0b] hover:bg-amber-400 transition-all duration-200 text-sm shadow-xl shrink-0 active:scale-95"
           >
             {t('cta_button')}
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
             </svg>
           </a>
@@ -183,10 +187,10 @@ export default function DashboardPage() {
       />
 
       {/* ── Recent tests ─────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="font-bold text-slate-900">{t('dash_recent_tests')}</h2>
-          <Link href="/results" className="text-sm font-semibold hover:underline" style={{ color: NAVY }}>{t('dash_view_all')}</Link>
+      <div className="card-premium overflow-hidden">
+        <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
+          <h2 className="text-lg font-black text-slate-900 tracking-tight">{t('dash_recent_tests')}</h2>
+          <Link href="/results" className="text-xs font-bold uppercase tracking-widest hover:underline" style={{ color: NAVY }}>{t('dash_view_all')}</Link>
         </div>
 
         {stats?.recentAttempts && stats.recentAttempts.length > 0 ? (

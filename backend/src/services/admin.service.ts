@@ -6,13 +6,18 @@ import * as testModel from '../models/test.model';
 import * as attemptModel from '../models/attempt.model';
 import * as sectionModel from '../models/section.model';
 import * as questionModel from '../models/question.model';
+import * as subscriptionService from './subscription.service';
 import { getClient, query } from '../config/database';
 
 /**
  * Admin: Get user by ID.
  */
 export async function getUserById(userId: string) {
-  return userModel.findById(userId);
+  const user = await userModel.findById(userId);
+  if (!user) return null;
+
+  const subscription = await subscriptionService.getActiveSub(userId);
+  return { ...user, subscription };
 }
 
 /**
@@ -390,4 +395,11 @@ export async function getDashboardStats() {
       cities: citiesQuery.rows,
     },
   };
+}
+
+/**
+ * Admin: Manually assign a package to a user.
+ */
+export async function assignPackage(userId: string, planType: string, examType?: string) {
+  return subscriptionService.assignManualSubscription(userId, planType, examType);
 }

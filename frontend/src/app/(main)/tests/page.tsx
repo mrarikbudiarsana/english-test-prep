@@ -78,47 +78,49 @@ export default function TestCatalogPage() {
     <div className="space-y-8 pb-12 max-w-6xl mx-auto">
 
       {/* ── Page header ──────────────────────────────────────── */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 md:p-8" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-        <div className="flex flex-col lg:flex-row justify-between gap-6 lg:items-center">
-          {/* Left Side: Title & Description */}
+      <div className="relative overflow-hidden rounded-3xl p-8 md:p-12 text-white bg-brand-gradient shadow-2xl">
+        {/* decorative dots & glows */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-10 pointer-events-none" style={{ background: 'radial-gradient(circle, #f59e0b, transparent 70%)', transform: 'translate(30%, -40%)' }} />
+
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between gap-8 lg:items-center">
+          {/* Left Side: Title */}
           <div className="flex-1 max-w-2xl">
-            <div className="flex items-center gap-2 mb-2">
-              <HiBookOpen className="w-4 h-4 text-[#08507f]" />
-              <p className="text-xs font-bold uppercase tracking-widest text-[#08507f]">{t('tests_library_label')}</p>
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 border border-white/20">
+                <HiBookOpen className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-xs font-bold uppercase tracking-widest text-blue-100">{t('tests_library_label')}</p>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">
+            <h1 className="text-3xl md:text-5xl font-black mb-0 tracking-tight">
               {t('tests_choose_title')}
             </h1>
-            <p className="text-slate-500 text-sm md:text-base leading-relaxed">
-              {t('tests_choose_body').replace('{exam}', examConfig.name)}
-            </p>
           </div>
 
           {/* Right Side: Free access banner / Upgrade */}
           {user && (
-            <div className="flex-shrink-0 lg:max-w-xs w-full lg:w-auto flex items-center justify-between lg:justify-start gap-4 rounded-lg border border-emerald-100 bg-emerald-50/50 p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 border border-emerald-200">
-                  <HiLockOpen className="w-5 h-5" />
+            <div className="flex-shrink-0 lg:max-w-xs w-full lg:w-auto flex items-center justify-between lg:justify-start gap-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm p-5 shadow-inner">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#08507f] shadow-lg">
+                  <HiLockOpen className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">{t('tests_free_access')}</p>
-                  <p className="text-xs font-semibold text-slate-800">
-                    <span className="text-sm font-extrabold text-emerald-600">{user.freeTestsRemaining}</span>{' '}
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200">{t('tests_free_access')}</p>
+                  <p className="text-sm font-bold text-white">
+                    <span className="text-lg font-black text-amber-400">{user.freeTestsRemaining}</span>{' '}
                     {t('tests_remaining')}
                   </p>
                 </div>
               </div>
               <Link
                 href="/pricing"
-                className="inline-flex items-center px-3.5 py-1.5 rounded-lg border border-emerald-200 bg-white text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-colors shadow-sm"
+                className="inline-flex items-center px-4 py-2 rounded-xl bg-white text-sm font-bold text-[#08507f] hover:bg-blue-50 transition-all shadow-lg active:scale-95"
               >
                 {t('tests_upgrade')}
               </Link>
             </div>
           )}
         </div>
-
       </div>
 
       {/* ── Search ───────────────────────────────────────────── */}
@@ -298,27 +300,26 @@ function TestCard({ test, minLabel }: { test: Test; minLabel: string }) {
   return (
     <Link
       href={`/tests/${test.id}?mode=full`}
-      className="group flex flex-col rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:border-[#08507f] hover:shadow-md overflow-hidden"
-      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+      className="group card-premium flex flex-col overflow-hidden"
     >
-      {/* Navy top accent */}
-      <div className="h-1 w-full bg-[#08507f]" />
+      {/* Top accent gradient */}
+      <div className="h-1.5 w-full bg-brand-gradient" />
 
-      <div className="flex flex-col flex-1 p-5">
+      <div className="flex flex-col flex-1 p-6">
         {/* Avatar + badge row */}
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-5">
           <div
-            className="flex h-12 w-12 items-center justify-center rounded-lg text-white text-lg font-extrabold"
+            className="flex h-12 w-12 items-center justify-center rounded-2xl text-white text-lg font-black shadow-lg"
             style={{ background: 'linear-gradient(135deg, #08507f 0%, #063d61 100%)' }}
           >
             T
           </div>
           {test.isFree ? (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold uppercase tracking-wide">
+            <span className="inline-flex items-center px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
               Free
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#fff8ed] border border-[#f59e0b]/30 text-[#b45309] text-[11px] font-bold uppercase tracking-wide">
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider">
               <HiSparkles className="w-3 h-3" />
               Pro
             </span>
@@ -326,16 +327,16 @@ function TestCard({ test, minLabel }: { test: Test; minLabel: string }) {
         </div>
 
         {/* Title */}
-        <h3 className="text-base font-bold text-slate-900 mb-3 line-clamp-2 min-h-[2.75rem] group-hover:text-[#08507f] transition-colors">
+        <h3 className="text-lg font-extrabold text-slate-900 mb-4 line-clamp-2 min-h-[3rem] group-hover:text-[#08507f] transition-colors leading-tight">
           {test.title}
         </h3>
 
         {/* Metadata chips */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="flex flex-wrap gap-2 mb-6">
           {metadata.map((item) => (
             <span
               key={item}
-              className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-[#e8f4fd] text-[#08507f]"
+              className="rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide bg-slate-50 text-slate-500 border border-slate-100"
             >
               {item}
             </span>
@@ -343,12 +344,12 @@ function TestCard({ test, minLabel }: { test: Test; minLabel: string }) {
         </div>
 
         {/* Footer */}
-        <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-slate-500">
-            <HiClock className="w-3.5 h-3.5" />
-            <span className="text-xs font-semibold">{test.durationMinutes} {minLabel}</span>
+        <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-slate-400">
+            <HiClock className="w-4 h-4" />
+            <span className="text-xs font-bold">{test.durationMinutes} {minLabel}</span>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#08507f]">
+          <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#08507f]/40 group-hover:text-[#08507f] transition-colors">
             TOEFL ITP
           </span>
         </div>
@@ -375,24 +376,23 @@ function SectionPracticeCard({
   return (
     <Link
       href={`/tests/${test.id}?mode=practice&section=${sectionType}`}
-      className="group flex flex-col rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:border-[#08507f] hover:shadow-md overflow-hidden"
-      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+      className="group card-premium flex flex-col overflow-hidden"
     >
-      {/* Accent top line */}
-      <div className={`h-1 w-full ${accentColor}`} />
+      {/* Accent top gradient line */}
+      <div className={`h-1.5 w-full ${accentColor}`} />
 
-      <div className="flex flex-col flex-1 p-5">
+      <div className="flex flex-col flex-1 p-6">
         {/* Icon + Badge */}
-        <div className="flex items-start justify-between mb-4">
-          <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${iconBg}`}>
-            <Icon className="w-5 h-5" />
+        <div className="flex items-start justify-between mb-5">
+          <div className={`flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm ${iconBg}`}>
+            <Icon className="w-6 h-6" />
           </div>
           {test.isFree ? (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold uppercase tracking-wide">
+            <span className="inline-flex items-center px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
               Free
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#fff8ed] border border-[#f59e0b]/30 text-[#b45309] text-[11px] font-bold uppercase tracking-wide">
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider">
               <HiSparkles className="w-3.5 h-3.5" />
               Pro
             </span>
@@ -400,22 +400,22 @@ function SectionPracticeCard({
         </div>
 
         {/* Title */}
-        <h3 className="text-base font-bold text-slate-900 mb-2 line-clamp-2 min-h-[2.75rem] group-hover:text-[#08507f] transition-colors">
+        <h3 className="text-lg font-extrabold text-slate-900 mb-2 line-clamp-2 min-h-[3rem] group-hover:text-[#08507f] transition-colors leading-tight">
           {test.title}
         </h3>
 
         {/* Detail text */}
-        <p className="text-xs text-slate-500 mb-4 font-semibold flex items-center gap-1.5">
-          <HiClock className="w-3.5 h-3.5" />
+        <p className="text-xs text-slate-400 mb-6 font-bold flex items-center gap-2">
+          <HiClock className="w-4 h-4" />
           {detailText}
         </p>
 
         {/* Footer */}
-        <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-[#08507f] transition-colors">
-            Start Practice →
+        <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#08507f] group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+            Start Practice <HiSearch className="rotate-90 w-3 h-3" />
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#08507f]">
+          <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#08507f]/40">
             TOEFL ITP
           </span>
         </div>

@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Select } from '@/components/ui/Select';
 import { formatDate } from '@/lib/utils';
 import type { User } from '@/types/user';
 import type { Attempt } from '@/types/test';
@@ -23,7 +24,9 @@ export default function AdminUserDetailPage() {
     const [attempts, setAttempts] = useState<Attempt[]>([]);
     const [mappingFilter] = useState<MappingFilter>('all');
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [assignPlan, setAssignPlan] = useState<string>('monthly');
 
     useEffect(() => {
         fetchData();
@@ -43,6 +46,26 @@ export default function AdminUserDetailPage() {
             setError(err.response?.data?.error || 'Failed to load user data');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleAssignPackage = async () => {
+        if (!window.confirm(`Are you sure you want to manually assign the ${assignPlan} plan to this user?`)) {
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            await api.post(`/admin/users/${userId}/assign-package`, {
+                planType: assignPlan,
+                examType: 'toefl_itp'
+            });
+            await fetchData();
+            alert('Package assigned successfully!');
+        } catch (err: any) {
+            alert(err.response?.data?.error || 'Failed to assign package');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -146,10 +169,12 @@ export default function AdminUserDetailPage() {
                 </div>
             </div>
 
-            <Card padding={false}>
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-900">Attempts History ({filteredAttempts.length})</h2>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <Card padding={false}>
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <h2 className="text-lg font-semibold text-gray-900">Attempts History ({filteredAttempts.length})</h2>
+                        </div>
 
                 {filteredAttempts.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
@@ -211,5 +236,74 @@ export default function AdminUserDetailPage() {
                 )}
             </Card>
         </div>
-    );
-}
+
+        <div className="space-y-6">
+            <Card>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Subscription Status</h3>
+                {user.subscription ? (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500">Plan</span>
+                            <Badge variant="default" className="bg-blue-100 text-blue-700 capitalize font-bold">
+                                {user.subscription.planType}
+                            </Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500">Status</span>
+                            <Badge variant="default" className="bg-emerald-100 text-emerald-700 capitalize font-bold">
+                                {user.subscription.status}
+                            </Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500">Expires</span>
+                            <span className="text-sm font-semibold">{formatDate(user.subscription.expiresAt)}</span>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-center">
+                        <p className="text-sm text-slate-500">No active subscription</p>
+                    </div>
+                )}
+
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                    <h4 className="text-sm font-bold text-gray-900 mb-4">Assign Manual Package</h4>
+                    <div className="space-y-4">
+                        <Select
+                            label="Select Plan"
+                            value={assignPlan}
+                            onChange={(e) => setAssignPlan(e.target.value)}
+                            options={[
+                                { label: 'Monthly Plan', value: 'monthly' },
+                                { label: 'Quarterly Plan', value: 'quarterly' },
+                                { label: 'Yearly Plan', value: 'yearly' },
+                            ]}
+                        />
+                        <Button
+                            onClick={handleAssignPackage}
+                            className="w-full"
+                            disabled={submitting}
+                            loading={submitting}
+                        >
+                            Assign Package
+                        </Button>
+                        <p className="text-[10px] text-gray-400 text-center italic">
+                            * This will immediately activate the selected plan for this user.
+                        </p>
+                    </div>
+                </div>
+            </Card>
+
+            <Card>
+                <h3 className="text-sm font-bold text-gray-900 mb-4">Quick Actions</h3>
+                <div className="space-y-2">
+                    <Button variant="outline" className="w-full justify-start text-sm" disabled>
+                        Reset Password
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start text-sm text-red-600 hover:bg-red-50" disabled>
+                        Deactivate Account
+                    </Button>
+                </div>
+            </Card>
+        </div>
+    </div>
+</div>

@@ -25,7 +25,7 @@ export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:border-r lg:border-gray-200 lg:bg-white lg:min-h-[calc(100vh-4rem)] shadow-sm">
+    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:border-r lg:border-gray-200 lg:bg-white h-full shadow-sm">
       <div className="p-4 border-b border-gray-100 mb-2">
         <Link
           href="/dashboard"
