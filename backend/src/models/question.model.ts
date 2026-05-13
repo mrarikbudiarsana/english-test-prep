@@ -20,6 +20,7 @@ export interface Question {
   correctAnswer: any;
   points: number;
   explanation?: string;
+  explanationAi?: string;
   groupLabel?: string;
   groupInstructions?: string;
   audioUrl?: string;
@@ -36,6 +37,7 @@ const fieldMap: Record<string, string> = {
   correctAnswer: 'correct_answer',
   points: 'points',
   explanation: 'explanation',
+  explanationAi: 'explanation_ai',
   groupLabel: 'group_label',
   groupInstructions: 'group_instructions',
   audioUrl: 'audio_url',
@@ -52,6 +54,7 @@ const SELECT_COLUMNS = `
   correct_answer   AS "correctAnswer",
   points,
   explanation,
+  explanation_ai   AS "explanationAi",
   group_label      AS "groupLabel",
   group_instructions AS "groupInstructions",
   audio_url        AS "audioUrl",
@@ -92,6 +95,7 @@ export async function findByTestId(testId: string) {
             q.correct_answer   AS "correctAnswer",
             q.points,
             q.explanation,
+            q.explanation_ai   AS "explanationAi",
             q.group_label      AS "groupLabel",
             q.group_instructions AS "groupInstructions",
             q.audio_url        AS "audioUrl",
@@ -117,6 +121,7 @@ export async function create(data: {
   correctAnswer: any;
   points?: number;
   explanation?: string;
+  explanationAi?: string;
   groupLabel?: string;
   groupInstructions?: string;
   audioUrl?: string;
@@ -126,10 +131,10 @@ export async function create(data: {
     `INSERT INTO questions (
        section_id, question_number, question_type,
        question_text, question_data, correct_answer,
-       points, explanation, group_label, group_instructions, audio_url,
+       points, explanation, explanation_ai, group_label, group_instructions, audio_url,
        item_payload
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.sectionId,
@@ -140,6 +145,7 @@ export async function create(data: {
       JSON.stringify(data.correctAnswer),
       data.points ?? 1,
       data.explanation ?? null,
+      data.explanationAi ?? null,
       data.groupLabel ?? null,
       data.groupInstructions ?? null,
       data.audioUrl ?? null,
@@ -159,6 +165,7 @@ export async function update(
     correctAnswer: any;
     points: number;
     explanation: string;
+    explanationAi: string;
     groupLabel: string;
     groupInstructions: string;
     audioUrl: string;

@@ -116,8 +116,8 @@ const translations = {
   // ─── Dashboard ───────────────────────────────────────────────────────────────
   dash_welcome_back: { id: 'Selamat datang kembali', en: 'Welcome back' },
   dash_subtitle: {
-    id: 'Dasbor latihan TOEFL ITP Anda. Terus lakukan — setiap tes membawa Anda lebih dekat ke skor target.',
-    en: 'Your TOEFL ITP practice dashboard. Keep going — every test brings you closer to your target score.',
+    id: 'Beranda latihan TOEFL ITP Anda. Teruslah berlatih! Setiap langkah membawa Anda makin dekat ke skor impian.',
+    en: 'Your TOEFL ITP practice home. Keep practicing! Every step brings you closer to your dream score.',
   },
   dash_start_practice: { id: 'Mulai Latihan', en: 'Start Practice' },
   dash_upgrade_plan: { id: 'Upgrade Paket', en: 'Upgrade Plan' },

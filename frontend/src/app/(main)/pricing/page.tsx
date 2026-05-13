@@ -46,7 +46,8 @@ export default function PricingPage() {
   const fetchPlans = async () => {
     try {
       const response = await api.get('/pricing');
-      setPlans(response.data);
+      const sortedPlans = (response.data || []).sort((a: PricingPlan, b: PricingPlan) => a.priceMonthly - b.priceMonthly);
+      setPlans(sortedPlans);
     } catch (error) {
       console.error('Error fetching pricing plans:', error);
       toast.error('Failed to load pricing plans');
@@ -103,28 +104,36 @@ export default function PricingPage() {
     return { symbol: '', value: formatted };
   };
 
-  // Localised plan overrides
-  const planOverrides = [
-    {
-      name: 'Free',
-      description: t('plan_free_desc'),
-      perks: [t('plan_free_perk1'), t('plan_free_perk2'), t('plan_free_perk3'), t('plan_free_perk4')],
-    },
-    {
-      name: 'ITP Starter',
-      description: t('plan_starter_desc'),
-      perks: [t('plan_starter_perk1'), t('plan_starter_perk2'), t('plan_starter_perk3'), t('plan_starter_perk4'), t('plan_starter_perk5')],
-    },
-    {
-      name: 'ITP Pro',
-      description: t('plan_pro_desc'),
-      perks: [t('plan_pro_perk1'), t('plan_pro_perk2'), t('plan_pro_perk3'), t('plan_pro_perk4'), t('plan_pro_perk5')],
-    },
-  ];
+  // Localised plan overrides mapping
+  const getPlanOverride = (planName: string) => {
+    const normalized = planName.toLowerCase();
+    if (normalized.includes('free')) {
+      return {
+        displayName: 'Free',
+        description: t('plan_free_desc'),
+        perks: [t('plan_free_perk1'), t('plan_free_perk2'), t('plan_free_perk3'), t('plan_free_perk4')],
+      };
+    }
+    if (normalized.includes('starter')) {
+      return {
+        displayName: 'ITP Starter',
+        description: t('plan_starter_desc'),
+        perks: [t('plan_starter_perk1'), t('plan_starter_perk2'), t('plan_starter_perk3'), t('plan_starter_perk4'), t('plan_starter_perk5')],
+      };
+    }
+    if (normalized.includes('pro')) {
+      return {
+        displayName: 'ITP Pro',
+        description: t('plan_pro_desc'),
+        perks: [t('plan_pro_perk1'), t('plan_pro_perk2'), t('plan_pro_perk3'), t('plan_pro_perk4'), t('plan_pro_perk5')],
+      };
+    }
+    return null;
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-24 flex flex-col justify-center items-center bg-[#f8f9fa]">
+      <div className="min-h-[60vh] flex flex-col justify-center items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 mb-4" style={{ borderColor: theme.primary }} />
         <p className="text-slate-400 font-medium animate-pulse">{t('pricing_loading')}</p>
       </div>
@@ -132,7 +141,7 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] pt-24 pb-24">
+    <div className="pb-24 max-w-7xl mx-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h1 className="text-4xl font-extrabold text-[#020617] mb-6 sm:text-5xl tracking-tight">
@@ -160,8 +169,8 @@ export default function PricingPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-          {plans.map((plan, index) => {
-            const override = planOverrides[index];
+          {plans.map((plan) => {
+            const override = getPlanOverride(plan.name);
             const isPopular = plan.isPopular;
             const price = billingCycle === 'monthly' ? plan.priceMonthly : plan.priceYearly;
             const { symbol, value } = formatPriceParts(price, plan.currency);
@@ -185,7 +194,7 @@ export default function PricingPage() {
                 )}
 
                 <div className="mb-8">
-                  <h3 className="text-xl font-extrabold text-[#020617]">{override?.name ?? plan.name}</h3>
+                  <h3 className="text-xl font-extrabold text-[#020617]">{override?.displayName ?? plan.name}</h3>
                   <p className="mt-2 text-sm text-slate-500 font-medium leading-relaxed">{override?.description ?? plan.description}</p>
                 </div>
 

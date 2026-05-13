@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as adminController from '../controllers/admin.controller';
+import * as aiController from '../controllers/ai.controller';
 import { authMiddleware } from '../middleware/auth';
 import { adminAuthMiddleware } from '../middleware/adminAuth';
 
@@ -34,6 +35,9 @@ router.put('/tests/:testId/sections/:sectionId/questions/:questionId', adminCont
 router.put('/questions/:questionId', adminController.updateQuestion);
 router.delete('/tests/:testId/sections/:sectionId/questions/:questionId', adminController.deleteQuestion);
 router.delete('/questions/:questionId', adminController.deleteQuestion);
+
+// AI Tools
+router.post('/questions/:questionId/generate-explanation', aiController.generateExplanation);
 
 // Users
 router.get('/users', adminController.getUsers);

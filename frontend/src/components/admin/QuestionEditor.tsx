@@ -18,6 +18,7 @@ interface QuestionFormData {
   correctAnswer: any;
   points: number;
   explanation: string | null;
+  explanationAi?: string | null;
   groupLabel?: string | null;
   groupInstructions?: string | null;
 }
@@ -65,6 +66,7 @@ export default function QuestionEditor({
   const [correctAnswer, setCorrectAnswer] = useState<any>(initialData?.correctAnswer || '');
   const [points, setPoints] = useState(initialData?.points || 1);
   const [explanation, setExplanation] = useState(initialData?.explanation || '');
+  const [explanationAi, setExplanationAi] = useState(initialData?.explanationAi || '');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -115,6 +117,7 @@ export default function QuestionEditor({
         correctAnswer,
         points,
         explanation: explanation.trim() || null,
+        explanationAi: explanationAi.trim() || null,
         groupLabel: null,
         groupInstructions: null,
       });
@@ -186,6 +189,14 @@ export default function QuestionEditor({
         onChange={(e) => setExplanation(e.target.value)}
         placeholder="Explain why the correct answer is correct..."
         rows={3}
+      />
+
+      <Textarea
+        label="AI Explanation (optional)"
+        value={explanationAi}
+        onChange={(e) => setExplanationAi(e.target.value)}
+        placeholder="AI-generated explanation..."
+        rows={4}
       />
 
       <div className="flex justify-end gap-3 pt-2">

@@ -27,4 +27,5 @@ export const env = {
     pass: process.env.EMAIL_PASS || '',
     from: process.env.EMAIL_FROM || 'noreply@itpready.com',
   },
+  geminiApiKey: process.env.GEMINI_API_KEY || '',
 };

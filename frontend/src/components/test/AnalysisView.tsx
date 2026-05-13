@@ -7,7 +7,7 @@ import { User, Subscription } from '@/types/user';
 import api from '@/lib/api';
 import { getTier } from '@/lib/tier';
 import QuestionRenderer from '@/components/test/QuestionRenderer';
-import { Lock, Check, AlertCircle } from 'lucide-react';
+import { Lock, Check, AlertCircle, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
@@ -218,16 +218,27 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
                                         </div>
                                     )}
 
-                                    {showCorrectAnswer && !showExplanation && q.explanation && (
-                                        <div className="mt-2 p-2 bg-gray-50/50 rounded border border-gray-100 text-xs text-gray-400 flex items-center justify-between">
-                                            <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> Explanation hidden (Upgrade to Pro)</span>
-                                        </div>
-                                    )}
-
-                                    {showExplanation && q.explanation && (
-                                        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                                            <h4 className="font-semibold text-blue-900 text-sm mb-1">Explanation</h4>
-                                            <p className="text-blue-800 text-sm leading-relaxed">{q.explanation}</p>
+                                    {showExplanation && (q.explanation || q.explanationAi) && (
+                                        <div className="mt-4 space-y-4">
+                                            {q.explanation && (
+                                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                    <h4 className="font-bold text-slate-900 text-[10px] uppercase tracking-[0.15em] mb-2 opacity-50">Tutor Explanation</h4>
+                                                    <p className="text-slate-600 text-sm leading-relaxed">{q.explanation}</p>
+                                                </div>
+                                            )}
+                                            {q.explanationAi && (
+                                                <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 relative overflow-hidden group/ai">
+                                                    <div className="absolute top-0 right-0 p-3 opacity-[0.03] group-hover/ai:opacity-[0.07] transition-opacity">
+                                                        <Sparkles className="w-16 h-16 text-blue-600" />
+                                                    </div>
+                                                    <h4 className="font-bold text-blue-900 text-[10px] uppercase tracking-[0.15em] mb-2 flex items-center gap-2">
+                                                        <Sparkles className="w-3.5 h-3.5" /> AI Insight
+                                                    </h4>
+                                                    <div className="text-blue-800 text-sm leading-relaxed whitespace-pre-wrap">
+                                                        {q.explanationAi}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

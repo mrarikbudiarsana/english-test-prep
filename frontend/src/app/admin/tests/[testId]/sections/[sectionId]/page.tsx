@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Sparkles } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import QuestionEditor from '@/components/admin/QuestionEditor';
 import BulkQuestionImporter from '@/components/admin/BulkQuestionImporter';
@@ -27,6 +28,7 @@ export default function AdminSectionQuestionsPage() {
   const [showQuestionEditor, setShowQuestionEditor] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [showBulkImporter, setShowBulkImporter] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -88,6 +90,19 @@ export default function AdminSectionQuestionsPage() {
       setDeletingQuestionId(null);
     }
   };
+  
+  const handleGenerateAIExplanation = async (questionId: string) => {
+    setGeneratingId(questionId);
+    try {
+      const res = await api.post(`/admin/questions/${questionId}/generate-explanation`);
+      const explanation = res.data.explanation;
+      setQuestions((prev) => prev.map((q) => q.id === questionId ? { ...q, explanationAi: explanation } : q));
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to generate AI explanation');
+    } finally {
+      setGeneratingId(null);
+    }
+  };
 
   const handleBulkImport = async (bulkQuestions: Array<{ questionText: string; options: { key: string; text: string }[]; correctAnswer: string; explanation?: string; questionNumber?: number; }>) => {
     const response = await api.post(`/admin/sections/${sectionId}/questions/bulk`, { questions: bulkQuestions });
@@ -147,7 +162,20 @@ export default function AdminSectionQuestionsPage() {
                     {question.correctAnswer !== undefined && question.correctAnswer !== null && <p className="text-xs text-green-600 mt-1">Answer: {typeof question.correctAnswer === 'object' ? JSON.stringify(question.correctAnswer) : String(question.correctAnswer)}</p>}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0"><Button variant="ghost" size="sm" onClick={() => { setEditingQuestion(question); setShowQuestionEditor(true); }}>Edit</Button><Button variant="ghost" size="sm" onClick={() => handleQuestionDelete(question.id)} loading={deletingQuestionId === question.id} className="text-red-600 hover:text-red-800 hover:bg-red-50">Delete</Button></div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleGenerateAIExplanation(question.id)}
+                    loading={generatingId === question.id}
+                    title="Generate AI Explanation"
+                    className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                  >
+                    {!generatingId && <Sparkles className="w-4 h-4" />}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => { setEditingQuestion(question); setShowQuestionEditor(true); }}>Edit</Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleQuestionDelete(question.id)} loading={deletingQuestionId === question.id} className="text-red-600 hover:text-red-800 hover:bg-red-50">Delete</Button>
+                </div>
               </div>
             </Card>
           ))}
@@ -155,7 +183,7 @@ export default function AdminSectionQuestionsPage() {
       )}
 
       <Modal isOpen={showQuestionEditor} onClose={() => { setShowQuestionEditor(false); setEditingQuestion(null); }} title={editingQuestion?.id ? `Edit Question ${editingQuestion.questionNumber}` : 'Add New Question'} size="lg">
-        <QuestionEditor testType={test.testType} sectionType={section.sectionType} partNumber={section.partNumber ?? undefined} initialData={editingQuestion?.id ? { id: editingQuestion.id, questionNumber: editingQuestion.questionNumber, questionType: editingQuestion.questionType, questionText: editingQuestion.questionText, audioUrl: editingQuestion.audioUrl || null, questionData: editingQuestion.questionData, correctAnswer: editingQuestion.correctAnswer, points: editingQuestion.points, explanation: editingQuestion.explanation || null } : undefined} nextQuestionNumber={nextQuestionNumber} onSubmit={handleQuestionSubmit} onCancel={() => { setShowQuestionEditor(false); setEditingQuestion(null); }} />
+        <QuestionEditor testType={test.testType} sectionType={section.sectionType} partNumber={section.partNumber ?? undefined} initialData={editingQuestion?.id ? { id: editingQuestion.id, questionNumber: editingQuestion.questionNumber, questionType: editingQuestion.questionType, questionText: editingQuestion.questionText, audioUrl: editingQuestion.audioUrl || null, questionData: editingQuestion.questionData, correctAnswer: editingQuestion.correctAnswer, points: editingQuestion.points, explanation: editingQuestion.explanation || null, explanationAi: editingQuestion.explanationAi || null } : undefined} nextQuestionNumber={nextQuestionNumber} onSubmit={handleQuestionSubmit} onCancel={() => { setShowQuestionEditor(false); setEditingQuestion(null); }} />
       </Modal>
 
       <Modal isOpen={showBulkImporter} onClose={() => setShowBulkImporter(false)} title="Bulk Import Questions (TOEFL ITP)" size="lg">

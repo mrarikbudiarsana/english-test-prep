@@ -63,6 +63,7 @@ export interface Question {
   questionData: QuestionData;
   points: number;
   explanation?: string | null;
+  explanationAi?: string | null;
   correctAnswer?: AnswerData;
   groupLabel?: string | null;
   groupInstructions?: string | null;

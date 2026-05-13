@@ -107,10 +107,9 @@ export default function DashboardPage() {
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div>
-            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] mb-2 text-blue-100/80">
               {t('dash_welcome_back')}
-            </div>
+            </p>
             <h1 className="text-3xl md:text-5xl font-black mb-3 tracking-tight">
               {user?.displayName?.split(' ')[0] || 'Student'} 👋
             </h1>
