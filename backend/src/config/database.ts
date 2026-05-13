@@ -1,5 +1,6 @@
 import { Pool, types } from 'pg';
 import { env } from './env';
+import { logger } from '../utils/logger';
 
 // Force DECIMAL (OID 1700) to be parsed as number/float instead of string
 types.setTypeParser(1700, (val) => parseFloat(val));
@@ -10,7 +11,7 @@ export const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
+  logger.error('Unexpected error on idle client', { error: err.message });
   process.exit(-1);
 });
 
@@ -19,7 +20,7 @@ export async function query(text: string, params?: any[]) {
   const res = await pool.query(text, params);
   const duration = Date.now() - start;
   if (env.nodeEnv === 'development') {
-    console.log('Executed query', { text: text.substring(0, 80), duration, rows: res.rowCount });
+    logger.debug('Executed query', { text: text.substring(0, 80), duration, rows: res.rowCount });
   }
   return res;
 }

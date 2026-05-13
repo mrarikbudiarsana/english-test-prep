@@ -380,6 +380,44 @@ const translations = {
     en: "Thank you for your interest! We have registered your email to our early access waitlist. We'll drop you an email when Pro launches along with your 20% discount code!",
   },
   waitlist_already_joined: { id: 'Anda sudah bergabung dalam daftar tunggu paket ini.', en: 'You have already joined the waitlist for this plan.' },
+
+  // ─── Test Taking ────────────────────────────────────────────────────────────
+  test_finish: { id: 'Selesai Tes', en: 'Finish Test' },
+  test_next_section: { id: 'Bagian Selanjutnya', en: 'Next Section' },
+  test_prev: { id: 'Sebelumnya', en: 'Previous' },
+  test_next: { id: 'Selanjutnya', en: 'Next' },
+  test_mark_review: { id: 'Tandai untuk Review', en: 'Mark for Review' },
+  test_marked: { id: 'Ditandai', en: 'Marked' },
+  test_continue_questions: { id: 'Lanjut ke Pertanyaan', en: 'Continue to Questions' },
+  test_begin_reading: { id: 'Mulai Bagian Reading', en: 'Begin Reading Section' },
+  test_preparing: { id: 'Menyiapkan tes Anda...', en: 'Preparing your test environment...' },
+  test_preparing_practice: { id: 'Menyiapkan tes latihan Anda...', en: 'Preparing your practice test...' },
+  test_preparing_wait: { id: 'Mohon tunggu sebentar. Jangan tutup halaman ini.', en: 'Please wait while we set up your attempt. Do not close this page.' },
+  test_volume: { id: 'Volume', en: 'Volume' },
+  test_participant: { id: 'Peserta:', en: 'Participant:' },
+  test_question_progress: { id: 'Progress Pertanyaan', en: 'Question Progress' },
+  test_hide_progress: { id: 'Sembunyikan Progress', en: 'Hide Progress' },
+  test_show_progress: { id: 'Tampilkan Progress', en: 'Show Progress' },
+  test_answered: { id: 'terjawab', en: 'answered' },
+  test_submit_error: { id: 'Pengiriman gagal. Silakan coba lagi.', en: 'Submission failed. Please try again.' },
+
+  // ─── Test Overview Page (/tests/[testId]) additional ───────────────────────
+  test_overview_full_test: { id: 'Ujian Penuh', en: 'Full Test' },
+  test_overview_premium_test: { id: 'Tes Premium', en: 'Premium Test' },
+  test_overview_premium_body: { id: 'Berlangganan untuk mengakses tes ini atau gunakan tes gratis Anda.', en: 'Subscribe to access this test or use your free tests.' },
+  test_overview_no_free_left: { id: ' Tes gratis Anda sudah habis.', en: ' You have no free tests remaining.' },
+  test_overview_view_plans: { id: 'Lihat Paket', en: 'View Plans' },
+  test_overview_free: { id: 'Gratis', en: 'Free' },
+  test_overview_starting: { id: 'Memulai…', en: 'Starting…' },
+  test_overview_free_remaining: { id: 'Ini akan menggunakan 1 dari {count} tes gratis tersisa Anda', en: 'This will use 1 of your {count} free tests remaining' },
+  test_overview_practice_by_section: { id: 'Latihan per Bagian', en: 'Practice by Section' },
+  test_overview_test_not_found: { id: 'Tes tidak ditemukan', en: 'Test not found' },
+
+  // ─── Pricing Page additional ───────────────────────────────────────────────
+  pricing_cancel: { id: 'Batal', en: 'Cancel' },
+  pricing_done: { id: 'Selesai', en: 'Done' },
+  pricing_account_email: { id: 'Email Akun', en: 'Account Email' },
+  pricing_logged_in: { id: 'Masuk', en: 'Logged In' },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

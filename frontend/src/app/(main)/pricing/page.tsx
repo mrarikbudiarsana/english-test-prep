@@ -264,11 +264,11 @@ export default function PricingPage() {
                       <Mail className="w-4 h-4" />
                     </div>
                     <div className="text-left">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Account Email</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('pricing_account_email')}</p>
                       <p className="text-xs font-bold text-slate-700">{user.email}</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold bg-[#e8f4fd] text-[#08507f] px-2 py-1 rounded-full uppercase tracking-wider">Logged In</span>
+                  <span className="text-[10px] font-bold bg-[#e8f4fd] text-[#08507f] px-2 py-1 rounded-full uppercase tracking-wider">{t('pricing_logged_in')}</span>
                 </div>
               ) : (
                 <div className="max-w-sm mx-auto relative">
@@ -290,7 +290,7 @@ export default function PricingPage() {
                   onClick={() => setIsWaitlistOpen(false)}
                   className="w-full sm:w-1/3 py-3.5 px-4 rounded-2xl font-bold text-sm text-slate-500 hover:bg-slate-50 border border-slate-200/80 transition-all active:scale-[0.98]"
                 >
-                  Cancel
+                  {t('pricing_cancel')}
                 </button>
                 <button
                   type="submit"
@@ -325,7 +325,7 @@ export default function PricingPage() {
                 onClick={() => setIsWaitlistOpen(false)}
                 className="py-3 px-8 rounded-2xl font-bold text-sm bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-[0.98] max-w-xs"
               >
-                Done
+                {t('pricing_done')}
               </button>
             </div>
           )}

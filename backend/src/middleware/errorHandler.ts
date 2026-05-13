@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { logger } from '../utils/logger';
 
 export class AppError extends Error {
   statusCode: number;
@@ -38,7 +39,7 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   // Enhanced logging for production debugging
-  const errorDetails = {
+  logger.error('Unhandled Error:', {
     name: err.name,
     message: err.message,
     statusCode: err.statusCode,
@@ -46,9 +47,7 @@ export function errorHandler(
     path: req.path,
     method: req.method,
     timestamp: new Date().toISOString(),
-  };
-
-  console.error('[errorHandler] Detailed Error:', JSON.stringify(errorDetails));
+  });
 
   // Structural check: if the error has a statusCode (custom app error)
   if (err.statusCode && typeof err.statusCode === 'number') {

@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { Attempt, Section, Question, SectionType } from '@/types/test';
-import { User, Subscription } from '@/types/user'; // User might not have plan, using Subscription
+import { User, Subscription } from '@/types/user';
 import api from '@/lib/api';
+import { getTier } from '@/lib/tier';
 import QuestionRenderer from '@/components/test/QuestionRenderer';
-// Removed unused Tabs imports
 import { Lock, Check, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 
 interface AnalysisViewProps {
     attempt: Attempt;
@@ -26,13 +27,7 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
     const [loadingQuestions, setLoadingQuestions] = useState(false);
 
     // Determine Tier
-    const tier = useMemo(() => {
-        if (!userSubscription || userSubscription.status !== 'active') return 'free';
-        // Logic: Starter = Monthly, Pro = Yearly/Quarterly
-        if (userSubscription.planType === 'monthly') return 'starter';
-        if (userSubscription.planType === 'yearly' || userSubscription.planType === 'quarterly') return 'pro';
-        return 'free';
-    }, [userSubscription]);
+    const tier = getTier(user, userSubscription ?? null);
 
     useEffect(() => {
         async function init() {
@@ -95,10 +90,10 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
             try {
                 // Try a likely endpoint
                 const res = await api.get(`/attempts/${attempt.id}/responses`);
-                // Transform array to map
+                // Store the full response objects (including isCorrect, score) keyed by questionId
                 const map: Record<string, any> = {};
                 res.data.forEach((r: any) => {
-                    map[r.questionId] = r.answerData;
+                    map[r.questionId] = r;
                 });
                 setAnswers(map);
             } catch (e) {
@@ -134,9 +129,9 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
                     </p>
                 </div>
                 {tier !== 'pro' && (
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                    <Link href="/pricing" className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
                         Upgrade
-                    </button>
+                    </Link>
                 )}
             </div>
 
@@ -164,15 +159,16 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
                     <div className="py-10 text-center text-gray-500">Loading questions...</div>
                 ) : (
                     questions.map((q, index) => {
-                        const userAnswer = answers[q.id];
+                        const responseObj = answers[q.id];
+                        const userAnswer = responseObj?.answerData ?? null;
 
                         // Gating Logic
                         const showStatus = true; // All tiers see status
                         const showCorrectAnswer = tier !== 'free'; // Free tier hides correct answer
                         const showExplanation = tier === 'pro';    // Only Pro sees explanation
 
-                        // Helper to determining correctness
-                        const isCorrect = userAnswer?.isCorrect;
+                        // Correctness from the stored response object
+                        const isCorrect = responseObj?.isCorrect;
 
                         const statusColor = isCorrect === true ? 'text-green-600 bg-green-50 border-green-200' :
                             isCorrect === false ? 'text-red-600 bg-red-50 border-red-200' :

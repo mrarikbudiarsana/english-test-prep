@@ -33,7 +33,6 @@ export interface ExamConfig {
   scorePrecision: number;
   sections: SectionConfig[];
   theme: ExamTheme;
-  colors: { primary: string; secondary: string; gradient: string };
   testTypes: string[];
 }
 
@@ -65,7 +64,6 @@ export const examConfigs: Record<ExamType, ExamConfig> = {
       stat1Bg: '#e8f4fd',
       chartColor: '#08507f',
     },
-    colors: { primary: '#08507f', secondary: '#e8f4fd', gradient: 'from-[#063d61] to-[#08507f]' },
     testTypes: ['toefl_itp'],
   },
 };

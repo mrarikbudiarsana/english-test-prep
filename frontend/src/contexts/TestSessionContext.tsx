@@ -158,6 +158,7 @@ const TestSessionContext = createContext<TestSessionContextType | undefined>(und
 export function TestSessionProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(testSessionReducer, initialState);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveRef = useRef<() => Promise<void>>(async () => {});
 
   const autoSave = useCallback(async () => {
     if (!state.attemptId || !state.hasUnsavedChanges) return;
@@ -220,9 +221,14 @@ export function TestSessionProvider({ children }: { children: React.ReactNode })
 
   const submitSection = useCallback(async (sectionType: SectionType) => {
     if (!state.attemptId) return;
-    await autoSave();
-    await api.post(`/attempts/${state.attemptId}/submit-section`, { sectionType });
-    dispatch({ type: 'COMPLETE_SECTION', payload: { sectionType } });
+    try {
+      await autoSave();
+      await api.post(`/attempts/${state.attemptId}/submit-section`, { sectionType });
+      dispatch({ type: 'COMPLETE_SECTION', payload: { sectionType } });
+    } catch (error) {
+      console.error('Section submission failed:', error);
+      throw error; // Re-throw so calling code can show an error to the user
+    }
   }, [state.attemptId, autoSave]);
 
   const submitTest = useCallback(async () => {
@@ -231,16 +237,22 @@ export function TestSessionProvider({ children }: { children: React.ReactNode })
     try {
       await autoSave();
       await api.post(`/attempts/${state.attemptId}/submit`);
+    } catch (error) {
+      console.error('Test submission failed:', error);
+      throw error; // Re-throw so calling code can show an error to the user
     } finally {
       dispatch({ type: 'SET_SUBMITTING', payload: false });
     }
   }, [state.attemptId, autoSave]);
 
-  // Auto-save every 30 seconds
+  // Keep autoSaveRef in sync with latest autoSave
+  autoSaveRef.current = autoSave;
+
+  // Auto-save every 30 seconds — uses ref to avoid interval churn
   useEffect(() => {
     if (state.attemptId && state.timerRunning) {
       autoSaveTimerRef.current = setInterval(() => {
-        autoSave();
+        autoSaveRef.current();
       }, 30000);
     }
     return () => {
@@ -248,7 +260,7 @@ export function TestSessionProvider({ children }: { children: React.ReactNode })
         clearInterval(autoSaveTimerRef.current);
       }
     };
-  }, [state.attemptId, state.timerRunning, autoSave]);
+  }, [state.attemptId, state.timerRunning]);
 
   return (
     <TestSessionContext.Provider value={{ state, dispatch, autoSave, submitSection, submitTest }}>

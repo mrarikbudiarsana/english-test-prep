@@ -3,7 +3,7 @@ import React from 'react';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import ResultsContent from './ResultsContent';
-import { examNameFromTestType, usesBandScale } from '@/lib/utils';
+import { examNameFromTestType } from '@/lib/utils';
 
 type Props = {
   params: { attemptId: string } | Promise<{ attemptId: string }>;
@@ -45,8 +45,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const testTitle = shareInfo.testTitle || 'English Practice Test';
-  const isToeflItp = shareInfo.testType === 'toefl_itp';
-  const isBandScale = usesBandScale(shareInfo.testType || 'toefl_itp');
   const examName = examNameFromTestType(shareInfo.testType || 'toefl_itp');
   const isPartialTest = shareInfo.isPartialTest && shareInfo.singleSection;
 

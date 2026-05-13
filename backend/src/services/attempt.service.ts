@@ -2,14 +2,11 @@ import * as attemptModel from '../models/attempt.model';
 import * as testModel from '../models/test.model';
 import * as userModel from '../models/user.model';
 import * as subscriptionModel from '../models/subscription.model';
-import { query } from '../config/database';
+import { query, getClient } from '../config/database';
 import * as scoringService from './scoring.service';
 import { NotFoundError, ForbiddenError, ValidationError } from '../middleware/errorHandler';
 import { AttemptMode, SectionType } from '../types/test.types';
 
-const EXAM_TYPE_TO_TEST_TYPES: Record<string, string[]> = {
-  toefl_itp: ['toefl_itp'],
-};
 
 /** Map a DB test_type to its exam type for subscription checks. */
 function testTypeToExamType(_testType: string): string {
@@ -150,8 +147,6 @@ export async function getUserAttempts(
   userId: string,
   offset: number = 0,
   limit: number = 20,
-  _examType?: string,
-  _testType?: string,
   mode?: string,
 ) {
   return attemptModel.findByUserId(userId, offset, limit, ['toefl_itp'], mode);
@@ -181,6 +176,7 @@ export async function submitSection(attemptId: string, sectionType: SectionType)
 
 /**
  * Finalize an attempt, calculate overall score.
+ * Wrapped in a DB transaction to prevent inconsistent state if scoring fails midway.
  */
 export async function finalizeAttempt(attemptId: string) {
   const attempt = await getAttempt(attemptId);
@@ -188,32 +184,61 @@ export async function finalizeAttempt(attemptId: string) {
     return attempt;
   }
 
-  // Ensure all sections are scored before finalizing to guarantee complete and accurate scores
-  if (attempt.mode === 'full') {
-    await scoringService.scoreObjectiveSection(attemptId, 'listening', 'toefl_itp');
-    await scoringService.scoreObjectiveSection(attemptId, 'structure', 'toefl_itp');
-    await scoringService.scoreObjectiveSection(attemptId, 'reading', 'toefl_itp');
-  } else if (attempt.practiceSectionType) {
-    await scoringService.scoreObjectiveSection(attemptId, attempt.practiceSectionType as SectionType, 'toefl_itp');
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    // Use the transaction client for all scoring operations
+    const txQuery = (text: string, params?: any[]) => client.query(text, params);
+
+    // Ensure all sections are scored before finalizing
+    if (attempt.mode === 'full') {
+      await scoringService.scoreObjectiveSectionWithQuery(txQuery, attemptId, 'listening', 'toefl_itp');
+      await scoringService.scoreObjectiveSectionWithQuery(txQuery, attemptId, 'structure', 'toefl_itp');
+      await scoringService.scoreObjectiveSectionWithQuery(txQuery, attemptId, 'reading', 'toefl_itp');
+    } else if (attempt.practiceSectionType) {
+      await scoringService.scoreObjectiveSectionWithQuery(txQuery, attemptId, attempt.practiceSectionType as SectionType, 'toefl_itp');
+    }
+
+    // Re-read scores within the same transaction
+    const scoredResult = await txQuery(
+      `SELECT listening_score, reading_score, structure_score FROM attempts WHERE id = $1`,
+      [attemptId]
+    );
+    const scored = scoredResult.rows[0];
+
+    if (attempt.mode === 'section_practice') {
+      await txQuery(
+        `UPDATE attempts SET status = 'completed', completed_at = NOW(), updated_at = NOW() WHERE id = $1`,
+        [attemptId]
+      );
+    } else {
+      // Calculate final ITP score for full tests: (L + S + R) * 10 / 3
+      const overallScore = scoringService.calculateOverallBand(
+        scored.listening_score,
+        scored.reading_score,
+        null,
+        null,
+        scored.structure_score,
+        'toefl_itp'
+      );
+
+      await txQuery(
+        `UPDATE attempts SET overall_score = $1, status = 'completed', completed_at = NOW(), updated_at = NOW() WHERE id = $2`,
+        [overallScore, attemptId]
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
 
-  const finalAttempt = await getAttempt(attemptId);
-  if (finalAttempt.mode === 'section_practice') {
-    return attemptModel.complete(attemptId);
-  }
-
-  // Calculate final ITP score for full tests only: (Sum of section scaled scores) * 10 / 3
-  const overallScore = scoringService.calculateOverallBand(
-    finalAttempt.listeningScore,
-    finalAttempt.readingScore,
-    null,
-    null,
-    finalAttempt.structureScore,
-    'toefl_itp'
-  );
-
-  await attemptModel.updateScores(attemptId, { overallScore });
-  return attemptModel.complete(attemptId);
+  // Return the finalized attempt
+  return getAttempt(attemptId);
 }
 
 /**

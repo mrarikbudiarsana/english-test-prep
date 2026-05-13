@@ -1,4 +1,7 @@
 import express from 'express';
+import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
+import { logger } from './utils/logger';
 import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env';
@@ -10,10 +13,24 @@ import { query } from './config/database';
 
 const app = express();
 
+// Initialize Sentry only if DSN is provided
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    integrations: [
+      nodeProfilingIntegration(),
+    ],
+    tracesSampleRate: 1.0,
+    profilesSampleRate: 1.0,
+  });
+  // Sentry RequestHandler must be the first middleware on the app
+  Sentry.setupExpressErrorHandler(app);
+}
+
 // Full migrations are best-effort in serverless deployments; auth only waits for
 // the small schema guard below so a bundled migration-file issue cannot brick login.
 runMigrations(false).catch((err) => {
-  console.error('Failed to run database migrations on startup:', err);
+  logger.error('Failed to run database migrations on startup', { error: err.message });
 });
 
 const authSchemaReady = ensureAuthSchema();
@@ -83,7 +100,7 @@ app.get('/health', async (_req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Health check database error:', error);
+    logger.error('Health check database error', { error: error instanceof Error ? error.message : 'Unknown error' });
     res.status(500).json({
       status: 'error',
       database: 'disconnected',

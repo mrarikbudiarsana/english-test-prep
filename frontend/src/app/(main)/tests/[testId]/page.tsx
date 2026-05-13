@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { Test, Section } from '@/types/test';
 import { sectionTypeLabel, testTypeShortLabel, examNameFromTestType, sectionCountForTestType } from '@/lib/utils';
@@ -99,13 +99,12 @@ export default function TestOverviewPage() {
   const [autoStarted, setAutoStarted] = useState(false);
 
   const [mode, setMode] = useState<string | null>(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const modeParam = new URLSearchParams(window.location.search).get('mode');
-      setMode(modeParam);
-    }
-  }, []);
+    const modeParam = searchParams.get('mode');
+    setMode(modeParam);
+  }, [searchParams]);
 
   const examName = test ? examNameFromTestType(test.testType) : 'TOEFL ITP';
   const fullSectionCount = test ? sectionCountForTestType(test.testType) : 3;
@@ -131,7 +130,7 @@ export default function TestOverviewPage() {
     fetchTest();
   }, [testId]);
 
-  const handleStartTest = async (mode: 'full' | 'section_practice', sectionType?: string) => {
+  const handleStartTest = useCallback(async (mode: 'full' | 'section_practice', sectionType?: string) => {
     setStarting(true);
     
     try {
@@ -156,19 +155,17 @@ export default function TestOverviewPage() {
       setError(err.response?.data?.error || 'Failed to start test');
       setStarting(false);
     }
-  };
+  }, [testId, router]);
 
   useEffect(() => {
     if (!loading && test && access?.canAccess && !autoStarted) {
-      if (typeof window !== 'undefined') {
-        const sectionType = new URLSearchParams(window.location.search).get('section');
-        if (sectionType) {
-          setAutoStarted(true);
-          handleStartTest('section_practice', sectionType);
-        }
+      const sectionType = searchParams.get('section');
+      if (sectionType) {
+        setAutoStarted(true);
+        handleStartTest('section_practice', sectionType);
       }
     }
-  }, [loading, test, access, autoStarted]);
+  }, [loading, test, access, autoStarted, searchParams, handleStartTest]);
 
   const sectionGroups = sections.reduce((acc, section) => {
     if (!acc[section.sectionType]) {
@@ -201,10 +198,10 @@ export default function TestOverviewPage() {
           <div className="absolute h-8 w-8 rounded-full bg-slate-50"></div>
         </div>
         <h2 className="text-xl font-bold text-slate-800 animate-pulse">
-          Preparing your practice test...
+          {t('test_preparing_practice')}
         </h2>
         <p className="text-sm text-slate-500">
-          Please wait while we set up your attempt. Do not close this page.
+          {t('test_preparing_wait')}
         </p>
       </div>
     );
@@ -216,7 +213,7 @@ export default function TestOverviewPage() {
         <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <HiAcademicCap className="w-10 h-10 text-slate-300" />
         </div>
-        <p className="text-slate-500 font-semibold">Test not found</p>
+        <p className="text-slate-500 font-semibold">{t('test_overview_test_not_found')}</p>
       </div>
     );
   }
@@ -240,7 +237,7 @@ export default function TestOverviewPage() {
           {test.isFree && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wide">
               <HiLockOpen className="w-3.5 h-3.5" />
-              Free
+              {t('test_overview_free')}
             </span>
           )}
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold">
@@ -282,7 +279,7 @@ export default function TestOverviewPage() {
               )}
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Full Test</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t('test_overview_full_test')}</h2>
               <p className="text-sm text-slate-500 leading-relaxed">
                 {t('test_overview_full_desc')}
               </p>
@@ -303,7 +300,7 @@ export default function TestOverviewPage() {
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#08507f] text-white text-sm font-bold hover:bg-[#063d61] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <HiPlay className="w-4 h-4" />
-                {starting ? 'Starting…' : t('test_overview_start_full')}
+                {starting ? t('test_overview_starting') : t('test_overview_start_full')}
               </button>
             </>
           ) : (
@@ -313,10 +310,10 @@ export default function TestOverviewPage() {
                   <HiLockClosed className="w-4 h-4 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800 mb-0.5">Premium Test</h3>
+                  <h3 className="text-sm font-bold text-slate-800 mb-0.5">{t('test_overview_premium_test')}</h3>
                   <p className="text-xs text-slate-500">
-                    Subscribe to access this test or use your free tests.
-                    {access?.freeTestsRemaining === 0 && ' You have no free tests remaining.'}
+                    {t('test_overview_premium_body')}
+                    {access?.freeTestsRemaining === 0 && t('test_overview_no_free_left')}
                   </p>
                 </div>
               </div>
@@ -325,7 +322,7 @@ export default function TestOverviewPage() {
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-sm font-bold hover:bg-[#d97706] transition-colors"
               >
                 <HiSparkles className="w-3.5 h-3.5" />
-                View Plans
+                {t('test_overview_view_plans')}
               </Link>
             </div>
           )}
@@ -336,7 +333,7 @@ export default function TestOverviewPage() {
         <div>
           <div className="flex items-center gap-2.5 mb-2">
             <HiSparkles className="w-5 h-5 text-[#08507f]" />
-            <h2 className="text-xl font-bold text-slate-900">Practice by Section</h2>
+            <h2 className="text-xl font-bold text-slate-900">{t('test_overview_practice_by_section')}</h2>
           </div>
           <p className="text-slate-500 text-sm mb-5 leading-relaxed">
             {t('test_overview_practice_desc')}

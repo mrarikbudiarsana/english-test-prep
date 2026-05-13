@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { Attempt } from '@/types/test';
 import { formatDate, formatScore, examNameFromTestType } from '@/lib/utils';
+import { getTier } from '@/lib/tier';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getTestTypesForExam } from '@/config/examConfig';
@@ -88,9 +89,6 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'overview' | 'analysis'>('overview');
     const [subscription, setSubscription] = useState<Subscription | null>(null);
-    const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const pollingDelayRef = useRef(5000);
-    const MAX_POLLING_DELAY_MS = 20000;
     const routeAttemptId = Array.isArray(params?.attemptId) ? params.attemptId[0] : params?.attemptId;
     const resolvedAttemptId = (attemptId && attemptId !== 'undefined' ? attemptId : routeAttemptId)?.trim();
     const allowedTestTypes = user?.preferredExamType ? getTestTypesForExam(user.preferredExamType) : [];
@@ -98,7 +96,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     // Fetch subscription
     useEffect(() => {
         api.get('/subscriptions/current')
-            .then(res => setSubscription(res.data))
+            .then(res => setSubscription(res.data?.data))
             .catch(() => setSubscription(null));
     }, []);
 
@@ -114,20 +112,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
         }
     }, [attempt, isCompleted]);
 
-    const tier = (() => {
-        if (user?.role === 'admin') return 'pro';
-        if (!subscription || subscription.status !== 'active') return 'free';
-        if (subscription.planType === 'monthly') return 'starter';
-        if (subscription.planType === 'yearly' || subscription.planType === 'quarterly') return 'pro';
-        return 'free';
-    })();
-
-    const clearPollTimeout = useCallback(() => {
-        if (pollTimeoutRef.current) {
-            clearTimeout(pollTimeoutRef.current);
-            pollTimeoutRef.current = null;
-        }
-    }, []);
+    const tier = getTier(user, subscription);
 
     const fetchResults = useCallback(async () => {
         try {
@@ -138,13 +123,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
             }
             const res = await api.get(`/attempts/${resolvedAttemptId}/results`);
             setAttempt(res.data);
-
-            clearPollTimeout();
-            pollingDelayRef.current = 5000;
         } catch (error) {
-            clearPollTimeout();
-            setAttempt(null);
-            pollingDelayRef.current = 5000;
             if (isAxiosError(error)) {
                 const status = error.response?.status;
                 if (status === 401) {
@@ -168,7 +147,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
         } finally {
             setLoading(false);
         }
-    }, [clearPollTimeout, resolvedAttemptId, user?.role]);
+    }, [resolvedAttemptId, user?.role]);
 
     useEffect(() => {
         if (!resolvedAttemptId) {
@@ -176,10 +155,8 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
             setLoading(false);
             return;
         }
-        pollingDelayRef.current = 5000;
         void fetchResults();
-        return clearPollTimeout;
-    }, [clearPollTimeout, fetchResults, resolvedAttemptId]);
+    }, [fetchResults, resolvedAttemptId]);
 
     if (loading) {
         return (
@@ -199,7 +176,6 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                 <p className="text-gray-500">{errorMessage || 'Results not found'}</p>
                 <button
                     onClick={() => {
-                        pollingDelayRef.current = 5000;
                         void fetchResults();
                     }}
                     className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium"
@@ -246,7 +222,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
     const displayLabel = isPartialTest && singleSection
         ? `Your Estimated ${examName} ${singleSection.label} Scaled Score`
-        : 'Your Estimated TOEFL ITP Total Score';
+        : 'Your Estimated Total Score';
 
     const scorePrecision = 0;
     const navyBannerClass = 'bg-gradient-to-br from-white via-[#f8f9fa] to-[#e8f4fd] border-[#cbd5e1] shadow-[0_12px_35px_rgba(8,80,127,0.1)]';

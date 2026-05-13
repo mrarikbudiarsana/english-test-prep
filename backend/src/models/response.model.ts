@@ -103,12 +103,53 @@ export async function batchUpsert(
     audioDuration?: number;
   }>,
 ) {
-  const results = [];
-  for (const response of responses) {
-    const row = await upsert(response);
-    results.push(row);
+  if (responses.length === 0) return [];
+
+  // If only one response, use the single upsert for simplicity
+  if (responses.length === 1) {
+    const row = await upsert(responses[0]);
+    return [row];
   }
-  return results;
+
+  // Build a single multi-row INSERT ... ON CONFLICT query
+  const values: any[] = [];
+  const rowPlaceholders: string[] = [];
+
+  for (let i = 0; i < responses.length; i++) {
+    const r = responses[i];
+    const offset = i * 8;
+    rowPlaceholders.push(
+      `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8})`,
+    );
+    values.push(
+      r.attemptId,
+      r.questionId,
+      r.sectionId,
+      JSON.stringify(r.answerData),
+      r.writingText ?? null,
+      r.wordCount ?? null,
+      r.audioUrl ?? null,
+      r.audioDuration ?? null,
+    );
+  }
+
+  const result = await query(
+    `INSERT INTO responses (
+       attempt_id, question_id, section_id, answer_data,
+       writing_text, word_count, audio_url, audio_duration
+     )
+     VALUES ${rowPlaceholders.join(', ')}
+     ON CONFLICT (attempt_id, question_id) DO UPDATE SET
+       answer_data    = EXCLUDED.answer_data,
+       writing_text   = EXCLUDED.writing_text,
+       word_count     = EXCLUDED.word_count,
+       audio_url      = EXCLUDED.audio_url,
+       audio_duration = EXCLUDED.audio_duration,
+       answered_at    = NOW()
+     RETURNING ${SELECT_COLUMNS}`,
+    values,
+  );
+  return result.rows;
 }
 
 export async function updateScore(

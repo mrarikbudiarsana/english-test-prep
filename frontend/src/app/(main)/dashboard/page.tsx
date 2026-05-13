@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardStats } from '@/types/api';
 import { formatDate, formatScore } from '@/lib/utils';
 import { DashboardCharts } from './DashboardCharts';
+import { getTier } from '@/lib/tier';
 
 const NAVY = '#08507f';
 const NAVY_DARK = '#063d61';
@@ -62,12 +63,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<{ planType: string; status: string; expiresAt: string } | null>(null);
 
-  const tier = (() => {
-    if (!subscription || subscription.status !== 'active') return 'free';
-    if (subscription.planType === 'monthly') return 'starter';
-    if (subscription.planType === 'yearly' || subscription.planType === 'quarterly') return 'pro';
-    return 'free';
-  })();
+  const tier = getTier(user, subscription);
 
   useEffect(() => {
     async function fetchData() {

@@ -16,6 +16,7 @@ import {
   HiTrendingUp,
   HiTrendingDown,
 } from 'react-icons/hi';
+import { LayoutDashboard, Target, Trophy, ChevronRight, Filter, SortDesc, Calendar, Trash2 } from 'lucide-react';
 
 type FilterStatus = 'all' | AttemptStatus;
 type SortBy = 'date' | 'score';
@@ -156,10 +157,10 @@ export default function ResultsPage() {
 
   function getStatusBadge(status: AttemptStatus) {
     const styles = {
-      completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
-      scoring: 'bg-amber-50 text-amber-700 border-amber-200',
-      abandoned: 'bg-gray-50 text-gray-600 border-gray-200',
+      completed: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+      in_progress: 'bg-blue-50 text-blue-600 border-blue-100',
+      scoring: 'bg-amber-50 text-amber-600 border-amber-100',
+      abandoned: 'bg-slate-50 text-slate-500 border-slate-100',
     };
 
     const labels = {
@@ -169,7 +170,11 @@ export default function ResultsPage() {
       abandoned: 'Abandoned',
     };
 
-    return <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${styles[status]}`}>{labels[status]}</span>;
+    return (
+      <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${styles[status]}`}>
+        {labels[status]}
+      </span>
+    );
   }
 
   function getScoreChange(index: number) {
@@ -203,128 +208,210 @@ export default function ResultsPage() {
     );
   }
 
-  const StatBlock = ({
-    label, count, high, avg, accent, active, onClick, showScore
-  }: { label: string; count: number; high: string; avg: string; accent: string; active: boolean; onClick: () => void; showScore?: boolean }) => (
-    <button
-      onClick={onClick}
-      className={`text-left rounded-xl border transition-all overflow-hidden ${
-        active ? 'ring-2 ring-offset-2 scale-[1.02] shadow-md' : 'border-[#e8ecef] bg-white opacity-80 hover:opacity-100 hover:border-slate-300'
-      }`}
-      style={active ? { borderColor: accent, ringColor: accent } as any : {}}
-    >
-      <div className="px-5 py-3 border-b border-[#e8ecef] flex items-center gap-2" style={{ backgroundColor: `${accent}18` }}>
-        <span className="text-xs font-bold uppercase tracking-widest" style={{ color: accent }}>{label}</span>
-        <span className="ml-auto text-xs font-semibold text-[#5a6c7d]">{count} test{count !== 1 ? 's' : ''}</span>
+  const StatsHero = ({
+    activeCategory,
+    stats,
+    theme,
+    onCategoryChange
+  }: {
+    activeCategory: 'full' | 'section_practice';
+    stats: any;
+    theme: any;
+    onCategoryChange: (cat: 'full' | 'section_practice') => void;
+  }) => {
+    const isFull = activeCategory === 'full';
+    const high = isFull ? stats.fullHigh : stats.sectionHigh;
+    const avg = isFull ? stats.fullAvg : stats.sectionAvg;
+    const count = isFull ? stats.fullCount : stats.sectionCount;
+    const accentColor = isFull ? theme.primary : '#0e7490';
+
+    return (
+      <div className="space-y-6">
+        {/* Segmented Control */}
+        <div className="flex justify-center">
+          <div className="inline-flex p-1.5 bg-slate-100 rounded-2xl border border-slate-200/50 shadow-inner">
+            <button
+              onClick={() => onCategoryChange('full')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${
+                isFull ? 'bg-white text-slate-800 shadow-md scale-[1.02]' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <Trophy className={`w-4 h-4 ${isFull ? '' : 'opacity-40'}`} style={isFull ? { color: theme.primary } : {}} />
+              Full Practice
+            </button>
+            <button
+              onClick={() => onCategoryChange('section_practice')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${
+                !isFull ? 'bg-white text-slate-800 shadow-md scale-[1.02]' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <Target className={`w-4 h-4 ${!isFull ? '' : 'opacity-40'}`} style={!isFull ? { color: '#0e7490' } : {}} />
+              Section Practice
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Hero Card */}
+        <div 
+          className="relative overflow-hidden rounded-[2.5rem] p-8 md:p-10 border border-white shadow-2xl transition-all duration-500"
+          style={{ 
+            background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+            boxShadow: `0 30px 60px -15px ${accentColor}40`
+          }}
+        >
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+            {/* Main Metric */}
+            <div className="flex flex-col items-center md:items-start text-center md:text-left">
+              <div className="flex items-center gap-3 mb-2 opacity-80">
+                <Trophy className="w-5 h-5 text-white" />
+                <span className="text-xs font-bold text-white uppercase tracking-[0.2em]">Highest Scaled Score</span>
+              </div>
+              <div className="text-8xl md:text-9xl font-black text-white tracking-tighter leading-none mb-4 drop-shadow-2xl">
+                {high}
+              </div>
+              <div className="px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black text-white uppercase tracking-widest border border-white/20">
+                Based on your best performance
+              </div>
+            </div>
+
+            {/* Metric Grid */}
+            <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
+              <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-3xl p-6 flex flex-col items-center text-center hover:bg-white/15 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-3 text-white">
+                  <HiTrendingUp className="w-5 h-5" />
+                </div>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Average Score</p>
+                <p className="text-3xl font-black text-white">{avg}</p>
+              </div>
+              
+              <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-3xl p-6 flex flex-col items-center text-center hover:bg-white/15 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-3 text-white">
+                  <Target className="w-5 h-5" />
+                </div>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Tests Taken</p>
+                <p className="text-3xl font-black text-white">{count}</p>
+              </div>
+
+              <div className="col-span-2 bg-black/10 backdrop-blur-sm rounded-2xl p-4 flex items-center justify-center gap-3">
+                 <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.3em]">Performance Overview</span>
+                 <div className="flex gap-1">
+                    {[1,2,3,4,5].map(i => <div key={i} className="w-1 h-1 rounded-full bg-white/30" />)}
+                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      {showScore ? (
-        <div className="grid grid-cols-2 divide-x divide-[#e8ecef]">
-          <div className="px-5 py-4">
-            <p className="text-xs font-medium text-[#5a6c7d] mb-1">Highest Score</p>
-            <p className="text-2xl font-bold text-[#2c3e50]">{high}</p>
-          </div>
-          <div className="px-5 py-4">
-            <p className="text-xs font-medium text-[#5a6c7d] mb-1">Average Score</p>
-            <p className="text-2xl font-bold text-[#2c3e50]">{avg}</p>
-          </div>
-        </div>
-      ) : (
-        <div className="px-5 py-6 flex flex-col items-center justify-center text-center bg-slate-50/30">
-          <p className="text-xs font-semibold text-[#5a6c7d] opacity-70">Detailed results shown below</p>
-        </div>
-      )}
-    </button>
-  );
+    );
+  };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-12">
-      <div className="flex items-center justify-between">
-        <div>
-          <Link href="/dashboard" className="inline-flex items-center text-sm text-[#5a6c7d] hover:text-[#2c3e50] mb-3">
-            <HiArrowLeft className="w-4 h-4 mr-1" />
-            Back to Dashboard
-          </Link>
-          <h1 className="text-3xl font-bold text-[#2c3e50]">Test Results</h1>
-          <p className="text-[#5a6c7d] mt-1">Review your TOEFL ITP performance and track your score over time.</p>
-        </div>
-      </div>
+    <div className="relative min-h-screen">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-slate-50 to-transparent pointer-events-none -z-10" />
+      <div className="absolute top-40 right-[-10%] w-[40%] h-96 bg-blue-50/40 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-80 left-[-10%] w-[30%] h-80 bg-indigo-50/30 blur-[100px] rounded-full pointer-events-none -z-10" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <StatBlock
-          label="Full Practice"
-          count={stats.fullCount}
-          high={stats.fullHigh}
-          avg={stats.fullAvg}
-          accent={theme.primary}
-          active={activeCategory === 'full'}
-          onClick={() => { setActiveCategory('full'); setOffset(0); }}
-          showScore={true}
-        />
-        <StatBlock
-          label="Section Practice"
-          count={stats.sectionCount}
-          high={stats.sectionHigh}
-          avg={stats.sectionAvg}
-          accent="#0e7490"
-          active={activeCategory === 'section_practice'}
-          onClick={() => { setActiveCategory('section_practice'); setOffset(0); }}
-          showScore={false}
-        />
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-white rounded-xl p-4 border border-[#e8ecef]">
-        <div className="flex items-center gap-3">
-          <HiFilter className="w-5 h-5 text-[#5a6c7d]" />
-          <div className="flex gap-2">
-            {(['all', 'completed', 'in_progress', 'scoring'] as FilterStatus[]).map((status) => (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  filterStatus === status ? 'text-white shadow-sm' : 'bg-[#f8f9fa] text-[#5a6c7d] hover:bg-[#e8ecef]'
-                }`}
-                style={filterStatus === status ? { backgroundColor: theme.primary } : {}}
-              >
-                {status === 'all' ? 'All' : status.replace('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())}
-              </button>
-            ))}
+      <div className="max-w-6xl mx-auto space-y-10 pb-20 px-4 sm:px-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <Link href="/dashboard" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors mb-4 group">
+              <div className="w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center mr-3 group-hover:bg-slate-50 transition-colors">
+                <HiArrowLeft className="w-4 h-4" />
+              </div>
+              Back to Dashboard
+            </Link>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Test Results</h1>
+            <p className="text-slate-500 text-lg max-w-2xl font-medium leading-relaxed">
+              Review your TOEFL ITP performance and track your score over time with detailed analytics.
+            </p>
+          </div>
+          
+          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm">
+            <LayoutDashboard className="w-4 h-4 text-slate-400" />
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Performance Dashboard</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-[#5a6c7d]">Sort by:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortBy)}
-            className="px-4 py-2 bg-[#f8f9fa] border border-[#e8ecef] rounded-lg text-sm font-medium text-[#2c3e50] focus:outline-none focus:ring-2"
-            style={{ '--tw-ring-color': theme.primary } as React.CSSProperties}
-          >
-            <option value="date">Most Recent</option>
-            <option value="score">Highest Score</option>
-          </select>
+        <StatsHero 
+          activeCategory={activeCategory}
+          stats={stats}
+          theme={theme}
+          onCategoryChange={(cat) => { setActiveCategory(cat); setOffset(0); }}
+        />
+
+        <div className="flex flex-col lg:flex-row gap-6 items-stretch lg:items-center justify-between bg-white/70 backdrop-blur-md rounded-3xl p-5 border border-white shadow-xl shadow-slate-200/40">
+          <div className="flex items-center gap-5">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+              <Filter className="w-5 h-5" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(['all', 'completed', 'in_progress', 'scoring'] as FilterStatus[]).map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFilterStatus(status)}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                    filterStatus === status 
+                      ? 'text-white shadow-lg scale-[1.05]' 
+                      : 'bg-slate-100/50 text-slate-500 hover:bg-slate-200/70'
+                  }`}
+                  style={filterStatus === status ? { 
+                    backgroundColor: theme.primary,
+                    boxShadow: `0 8px 15px -3px ${theme.primary}40`
+                  } : {}}
+                >
+                  {status === 'all' ? 'All Results' : status.replace('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 pl-4 lg:pl-0 lg:border-l border-slate-200">
+            <div className="flex items-center gap-2 ml-auto lg:ml-4">
+              <SortDesc className="w-4 h-4 text-slate-400" />
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Sort by:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortBy)}
+                className="pl-3 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
+                style={{ '--tw-ring-color': theme.primary } as React.CSSProperties}
+              >
+                <option value="date">Most Recent</option>
+                <option value="score">Highest Score</option>
+              </select>
+            </div>
+          </div>
         </div>
-      </div>
 
       {attempts.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-[#e8ecef]">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 mx-auto border" style={{ backgroundColor: theme.secondary, borderColor: `${theme.primary}33` }}>
-            <HiChartBar className="h-8 w-8" style={{ color: theme.primary }} />
+        <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-[2.5rem] border border-slate-200/60 shadow-inner">
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 mx-auto border shadow-lg" style={{ backgroundColor: theme.secondary, borderColor: `${theme.primary}20` }}>
+            <HiChartBar className="h-10 w-10" style={{ color: theme.primary }} />
           </div>
-          <h3 className="text-xl font-bold text-[#2c3e50] mb-2">No test results yet</h3>
-          <p className="text-[#5a6c7d] mb-6">Start practicing to track your TOEFL ITP progress and see detailed feedback.</p>
+          <h3 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">No test results yet</h3>
+          <p className="text-slate-500 mb-10 max-w-md mx-auto font-medium leading-relaxed">Start your journey today. Take a practice test to see where you stand and how you can improve.</p>
           <Link
             href="/tests"
-            className="inline-flex items-center px-6 py-3 text-white rounded-xl font-semibold transition-all shadow-lg"
-            style={{ backgroundColor: theme.primary, boxShadow: `0 10px 15px -3px ${theme.secondary}` }}
+            className="inline-flex items-center px-8 py-4 text-white rounded-2xl font-bold transition-all hover:scale-[1.05] active:scale-[0.98] shadow-xl"
+            style={{ 
+              backgroundColor: theme.primary, 
+              boxShadow: `0 20px 30px -10px ${theme.primary}60` 
+            }}
           >
-            Browse Tests
+            Browse Practice Tests
+            <ChevronRight className="ml-2 w-5 h-5" />
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {attempts.map((attempt, index) => {
             const scoreChange = getScoreChange(index);
             const score = getDisplayScore(attempt);
+            const isCompleted = attempt.status === 'completed';
 
             return (
               <Link
@@ -333,114 +420,115 @@ export default function ResultsPage() {
                   ? `/tests/${attempt.testId}/take?attemptId=${attempt.id}&mode=${attempt.mode}${attempt.practiceSectionType ? `&section=${attempt.practiceSectionType}` : ''}`
                   : `/results/${attempt.id}`
                 }
-                className="block bg-white rounded-xl border border-[#e8ecef] hover:shadow-lg transition-all group"
+                className="block group"
               >
                 <div
-                  className="p-6 border border-[#e8ecef] rounded-xl transition-colors"
-                  style={{ borderColor: '#e8ecef' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${theme.primary}4D`; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e8ecef'; }}
+                  className="relative p-6 bg-white rounded-[2rem] border border-slate-200/60 transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] hover:-translate-y-1 group-hover:border-slate-300"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-5">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-6">
+                      {/* Circular Score Indicator */}
                       <div
-                        className="w-20 h-20 rounded-xl flex flex-col items-center justify-center font-bold transition-all border-2 bg-[#f8f9fa]"
+                        className="relative w-24 h-24 rounded-full flex flex-col items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110"
                         style={score !== null ? {
-                          backgroundColor: theme.secondary,
-                          color: theme.primary,
-                          borderColor: Number(score) >= 600 ? '#86efac' : Number(score) >= 500 ? '#93c5fd' : '#fcd34d',
-                        } : { borderColor: '#e8ecef' }}
+                          background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primary}dd 100%)`,
+                          boxShadow: `0 12px 20px -5px ${theme.primary}40`
+                        } : { 
+                          background: '#f1f5f9',
+                          border: '2px dashed #e2e8f0'
+                        }}
                       >
                         {score !== null ? (
                           <>
-                            <span className={attempt.mode === 'section_practice' ? 'text-lg' : 'text-2xl'} style={{ color: theme.primary }}>{score}</span>
-                            <span className="text-xs text-[#5a6c7d] font-medium">
+                            <span className="text-3xl font-black text-white leading-none mb-0.5">{score}</span>
+                            <span className="text-[9px] font-bold text-white/80 uppercase tracking-widest leading-none">
                               {attempt.mode === 'section_practice' ? 'Scaled' : 'Score'}
                             </span>
                           </>
                         ) : (
-                          <span className="text-[#5a6c7d] text-xs text-center px-2">
-                            {'No score'}
+                          <span className="text-slate-400 font-bold text-[10px] uppercase tracking-widest text-center px-2">
+                            TBD
                           </span>
                         )}
+                        
+                        {/* Decorative ring */}
+                        <div className="absolute inset-[-4px] rounded-full border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       </div>
 
-                      <div className="flex-1">
-                        <div className="flex items-start gap-3 mb-2">
-                          <h3
-                            className="text-lg font-bold text-[#2c3e50] transition-colors"
-                            style={{ color: '#2c3e50' }}
-                            onMouseEnter={(e) => { e.currentTarget.style.color = theme.primary; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.color = '#2c3e50'; }}
-                          >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
+                          <h3 className="text-xl font-black text-slate-800 truncate group-hover:text-blue-900 transition-colors">
                             {attempt.test?.title || 'Untitled Test'}
                           </h3>
                           {scoreChange !== null && (
-                            <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg ${
-                              scoreChange > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                            <div className={`flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg ${
+                              scoreChange > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'
                             }`}>
                               {scoreChange > 0 ? <HiTrendingUp className="w-3 h-3" /> : <HiTrendingDown className="w-3 h-3" />}
                               {Math.abs(Number(scoreChange)).toFixed(0)}
-                            </span>
+                            </div>
                           )}
+                          {getStatusBadge(attempt.status)}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-[#5a6c7d] mb-3">
-                          <span className="flex items-center gap-1.5">
-                            <HiClock className="w-4 h-4" />
+                        <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs font-bold text-slate-400 mb-4">
+                          <span className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg">
+                            <Calendar className="w-3.5 h-3.5" />
                             {formatDate(attempt.completedAt || attempt.startedAt)}
                           </span>
-                          <span className="text-[#e8ecef]">|</span>
-                          <span className="capitalize">{attempt.mode?.replace('_', ' ')}</span>
+                          <span className="w-1 h-1 rounded-full bg-slate-200" />
+                          <span className="uppercase tracking-widest text-[10px] text-slate-500">{attempt.mode?.replace('_', ' ')}</span>
                           {attempt.practiceSectionType && (
                             <>
-                              <span className="text-[#e8ecef]">|</span>
-                              <span className="capitalize">{attempt.practiceSectionType}</span>
+                              <span className="w-1 h-1 rounded-full bg-slate-200" />
+                              <span className="uppercase tracking-widest text-[10px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md font-black">{attempt.practiceSectionType}</span>
                             </>
                           )}
                         </div>
 
-                        {score !== null && (
-                          <div className="grid grid-cols-3 gap-3">
-                            <div className="bg-[#f8f9fa] rounded-lg p-2 text-center border border-[#e8ecef]">
-                              <p className="text-xs text-[#5a6c7d] font-medium mb-0.5">L</p>
-                              <p className="text-base font-bold text-[#5a6c7d]">{attempt.listeningScore}</p>
-                            </div>
-                            <div className="bg-[#f8f9fa] rounded-lg p-2 text-center border border-[#e8ecef]">
-                              <p className="text-xs text-[#5a6c7d] font-medium mb-0.5">S</p>
-                              <p className="text-base font-bold text-[#5a6c7d]">{attempt.structureScore}</p>
-                            </div>
-                            <div className="bg-[#f8f9fa] rounded-lg p-2 text-center border border-[#e8ecef]">
-                              <p className="text-xs text-[#5a6c7d] font-medium mb-0.5">R</p>
-                              <p className="text-base font-bold text-[#5a6c7d]">{attempt.readingScore}</p>
-                            </div>
+                        {isCompleted && (
+                          <div className="flex gap-2">
+                            {[
+                              { label: 'L', val: attempt.listeningScore, color: 'indigo' },
+                              { label: 'S', val: attempt.structureScore, color: 'blue' },
+                              { label: 'R', val: attempt.readingScore, color: 'cyan' }
+                            ].map(s => (
+                              <div key={s.label} className="flex items-center gap-2 bg-slate-50/80 border border-slate-100 px-3 py-1.5 rounded-xl">
+                                <span className={`text-[10px] font-black text-${s.color}-600 w-4`}>{s.label}</span>
+                                <span className="text-sm font-black text-slate-700 tabular-nums">{s.val || '-'}</span>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-3">
-                      {getStatusBadge(attempt.status)}
-                      {attempt.status === 'in_progress' && (
-                        <button
-                          className="text-xs font-semibold text-gray-500 hover:text-red-600 transition-colors"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (!deletingAttemptId) {
-                              handleDeleteAttempt(attempt.id);
-                            }
-                          }}
-                          disabled={deletingAttemptId === attempt.id}
-                          aria-label="Delete in-progress attempt"
-                        >
-                          {deletingAttemptId === attempt.id ? 'Deleting...' : 'Delete'}
-                        </button>
-                      )}
-                       <button className="text-sm font-semibold flex items-center gap-1 transition-colors" style={{ color: theme.primary }}>
-                        {attempt.status === 'in_progress' ? 'Resume Test' : (score !== null ? 'View Score Report' : 'View Details')}
-                        <span className="group-hover:translate-x-1 transition-transform">-&gt;</span>
-                      </button>
+                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-4 shrink-0">
+                      <div className="flex items-center gap-2">
+                        {attempt.status === 'in_progress' && (
+                          <button
+                            className="p-2.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all active:scale-95"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (!deletingAttemptId) {
+                                handleDeleteAttempt(attempt.id);
+                              }
+                            }}
+                            disabled={deletingAttemptId === attempt.id}
+                            title="Delete Draft"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
+                        <div className="w-10 h-10 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center text-slate-300 group-hover:text-blue-600 group-hover:border-blue-100 group-hover:bg-blue-50 transition-all duration-500">
+                          <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+                        </div>
+                      </div>
+                      
+                      <span className="text-xs font-black text-blue-600 uppercase tracking-widest hidden md:block">
+                        {attempt.status === 'in_progress' ? 'Resume Test' : 'View Report'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -451,24 +539,33 @@ export default function ResultsPage() {
       )}
 
       {total > limit && (
-        <div className="flex items-center justify-center gap-2 pt-6">
+        <div className="flex items-center justify-center gap-6 pt-12">
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 border border-[#e8ecef] rounded-lg text-sm font-medium text-[#2c3e50] hover:bg-[#f8f9fa] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
           >
+            <HiArrowLeft className="w-4 h-4" />
             Previous
           </button>
-          <span className="text-sm text-[#5a6c7d] px-4">Showing {offset + 1}-{Math.min(offset + limit, total)} of {total}</span>
+          
+          <div className="flex items-center bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 shadow-inner">
+             <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
+              {offset + 1} — {Math.min(offset + limit, total)} <span className="text-slate-300 mx-1">of</span> {total}
+             </span>
+          </div>
+
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 border border-[#e8ecef] rounded-lg text-sm font-medium text-[#2c3e50] hover:bg-[#f8f9fa] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
           >
             Next
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       )}
     </div>
+  </div>
   );
 }

@@ -178,7 +178,7 @@ export default function AdminEditTestPage() {
       </Card>
 
       <Modal isOpen={showSectionEditor} onClose={() => { setShowSectionEditor(false); setEditingSection(null); }} title={editingSection ? 'Edit Section' : 'Add New Section'} size="lg">
-        <SectionEditor testType={test.testType} existingSections={sections} initialData={editingSection || undefined} onSubmit={handleSectionSubmit} onCancel={() => { setShowSectionEditor(false); setEditingSection(null); }} />
+        <SectionEditor existingSections={sections} initialData={editingSection || undefined} onSubmit={handleSectionSubmit} onCancel={() => { setShowSectionEditor(false); setEditingSection(null); }} />
       </Modal>
     </div>
   );

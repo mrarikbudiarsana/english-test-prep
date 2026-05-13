@@ -31,7 +31,6 @@ interface SectionFormData {
 }
 
 interface SectionEditorProps {
-  testType: string;
   existingSections?: Section[];
   initialData?: Partial<Section>;
   onSubmit: (data: SectionFormData) => void | Promise<void>;

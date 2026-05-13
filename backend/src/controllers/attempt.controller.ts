@@ -60,10 +60,8 @@ export async function getUserAttempts(
   try {
     const offset = parseInt(req.query.offset as string) || 0;
     const limit = parseInt(req.query.limit as string) || 20;
-    const examType = req.query.examType as string | undefined;
-    const testType = req.query.testType as string | undefined;
     const mode = req.query.mode as string | undefined;
-    const result = await attemptService.getUserAttempts(req.user!.id, offset, limit, examType, testType, mode);
+    const result = await attemptService.getUserAttempts(req.user!.id, offset, limit, mode);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
@@ -81,6 +79,8 @@ export async function updateSection(
   try {
     const attemptId = req.params.attemptId as string;
     const { sectionType } = req.body;
+    // Verify ownership before allowing section change
+    await attemptService.getAttempt(attemptId, req.user!.id);
     const attempt = await attemptService.updateCurrentSection(attemptId, sectionType);
     res.json({ data: attempt });
   } catch (error) {
@@ -96,7 +96,27 @@ export async function saveResponses(
   try {
     const attemptId = req.params.attemptId as string;
     const { responses } = req.body;
-    const enriched = responses.map((r: any) => ({ ...r, attemptId }));
+
+    // Verify ownership
+    await attemptService.getAttempt(attemptId, req.user!.id);
+
+    // Validate array
+    if (!Array.isArray(responses) || responses.length === 0) {
+      res.status(400).json({ error: 'responses must be a non-empty array' });
+      return;
+    }
+    if (responses.length > 200) {
+      res.status(400).json({ error: 'Too many responses in a single request (max 200)' });
+      return;
+    }
+
+    // Allowlist only safe fields
+    const enriched = responses.map((r: any) => ({
+      attemptId,
+      questionId: r.questionId,
+      sectionId: r.sectionId,
+      answerData: r.answerData,
+    }));
     const saved = await responseModel.batchUpsert(enriched);
     res.json({ data: saved });
   } catch (error) {
@@ -104,21 +124,8 @@ export async function saveResponses(
   }
 }
 
-export async function autoSave(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const attemptId = req.params.attemptId as string;
-    const { responses } = req.body;
-    const enriched = responses.map((r: any) => ({ ...r, attemptId }));
-    const saved = await responseModel.batchUpsert(enriched);
-    res.json({ data: saved });
-  } catch (error) {
-    next(error);
-  }
-}
+// autoSave uses the same logic as saveResponses
+export const autoSave = saveResponses;
 
 export async function submitSection(
   req: Request,
@@ -128,6 +135,8 @@ export async function submitSection(
   try {
     const attemptId = req.params.attemptId as string;
     const { sectionType } = req.body;
+    // Verify ownership before allowing section submission
+    await attemptService.getAttempt(attemptId, req.user!.id);
     const result = await attemptService.submitSection(attemptId, sectionType);
     res.json({ data: result });
   } catch (error) {
@@ -142,6 +151,8 @@ export async function submitTest(
 ): Promise<void> {
   try {
     const attemptId = req.params.attemptId as string;
+    // Verify ownership before allowing test submission
+    await attemptService.getAttempt(attemptId, req.user!.id);
     const result = await attemptService.finalizeAttempt(attemptId);
     res.json({ data: result });
   } catch (error) {

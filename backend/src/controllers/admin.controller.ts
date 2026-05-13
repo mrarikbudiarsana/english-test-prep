@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as adminService from '../services/admin.service';
+import * as attemptService from '../services/attempt.service';
 
 // ---------- Test CRUD ----------
 
@@ -65,14 +66,11 @@ export async function getTestById(
   next: NextFunction
 ): Promise<void> {
   const testId = req.params.testId as string;
-  console.log(`[AdminController] Requesting test detail for ID: ${testId}`);
 
   try {
     const test = await adminService.getTestById(testId);
-    console.log(`[AdminController] Test found: ${test.title}`);
     res.json({ data: test });
   } catch (error) {
-    console.log(`[AdminController] Error fetching test: ${error instanceof Error ? error.message : String(error)}`);
     next(error);
   }
 }
@@ -267,11 +265,6 @@ export async function getUserAttempts(
     const userId = req.params.userId as string;
     const offset = parseInt(req.query.offset as string) || 0;
     const limit = parseInt(req.query.limit as string) || 20;
-
-    // We import attemptService directly here since adminService doesn't wrap this yet
-    // and we want to reuse the existing logic.
-    // Ideally this should go through adminService but for now this is efficient.
-    const attemptService = require('../services/attempt.service');
     const result = await attemptService.getUserAttempts(userId, offset, limit);
 
     res.json({ data: result.rows, total: result.total, offset, limit });

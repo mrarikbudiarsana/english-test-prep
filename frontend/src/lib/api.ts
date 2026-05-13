@@ -32,8 +32,19 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid - redirect to login
-      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+      // Only redirect to login for non-background requests.
+      // Background calls (auth checks, subscription polling) should fail silently
+      // and let the AuthContext handle the sign-out flow.
+      const requestUrl = error.config?.url || '';
+      const silentEndpoints = ['/auth/me', '/subscriptions/current'];
+      const isSilent = silentEndpoints.some(ep => requestUrl.includes(ep));
+
+      if (
+        typeof window !== 'undefined' &&
+        !isSilent &&
+        !window.location.pathname.startsWith('/login') &&
+        !window.location.pathname.startsWith('/register')
+      ) {
         window.location.href = '/login';
       }
     }

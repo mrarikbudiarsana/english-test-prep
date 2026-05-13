@@ -116,7 +116,8 @@ export async function findByUserId(
               'deliveryModel', t.delivery_model,
               'isPublished', t.is_published,
               'isFree', t.is_free
-            ) as test
+            ) as test,
+            COUNT(*) OVER() AS _total_count
      FROM attempts a
      JOIN tests t ON a.test_id = t.id
      LEFT JOIN (
@@ -132,40 +133,16 @@ export async function findByUserId(
     attemptsParams,
   );
 
-  const countParams: any[] = [userId];
-  let countParamCounter = 2;
-  let countFilter = '';
-
-  if (hasTestTypeFilter) {
-    countFilter += ` AND t.test_type = ANY($${countParamCounter}::text[])`;
-    countParams.push(testTypes);
-    countParamCounter++;
-  }
-
-  if (hasModeFilter) {
-    countFilter += ` AND a.mode = $${countParamCounter}`;
-    countParams.push(mode);
-    countParamCounter++;
-  }
-
-  const countResult = await query(
-    `SELECT COUNT(*)
-     FROM attempts a
-     JOIN tests t ON a.test_id = t.id
-     LEFT JOIN (
-       SELECT attempt_id, COUNT(*) as response_count
-       FROM responses
-       GROUP BY attempt_id
-     ) r ON a.id = r.attempt_id
-     WHERE a.user_id = $1
-       AND (a.status != 'in_progress' OR COALESCE(r.response_count, 0) > 0)
-       ${countFilter}`,
-    countParams,
-  );
+  const total = result.rows.length > 0
+    ? parseInt(result.rows[0]._total_count, 10)
+    : 0;
 
   return {
-    rows: result.rows.map(transformAttemptRow),
-    total: parseInt(countResult.rows[0].count, 10),
+    rows: result.rows.map((row: any) => {
+      const { _total_count, ...rest } = row;
+      return transformAttemptRow(rest);
+    }),
+    total,
   };
 }
 
