@@ -9,6 +9,5 @@ export default withSentryConfig(nextConfig, {
   // Silent in builds since user might not have set up auth tokens yet
   silent: true,
   widenClientFileUpload: true,
-  hideSourceMaps: true,
   disableLogger: true,
 });
