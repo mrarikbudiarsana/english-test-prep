@@ -71,31 +71,33 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     playingRef.current = false;
 
     const handleLoadedMetadata = () => {
-      if (isFinite(audio.duration)) {
+      if (isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
       }
     };
     const handleDurationChange = () => {
-      if (isFinite(audio.duration)) {
+      if (isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
       }
-    };
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
     };
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('durationchange', handleDurationChange);
-    audio.addEventListener('timeupdate', handleTimeUpdate);
+    // Remove timeupdate listener as we use RAF for high-precision updates when playing,
+    // and seek/pause handle their own state updates.
+    
     listenersRef.current = {
       audio,
       loadedmetadata: handleLoadedMetadata,
       durationchange: handleDurationChange,
-      timeupdate: handleTimeUpdate,
+      timeupdate: () => {}, // No-op placeholder
     };
 
     audio.addEventListener('canplay', () => {
       setIsLoaded(true);
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        setDuration(audio.duration);
+      }
     });
 
     audio.addEventListener('ended', () => {
@@ -103,6 +105,8 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
       setHasPlayed(true);
       playingRef.current = false;
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      // Ensure we reach exactly the end
+      setCurrentTime(audio.duration);
       onEndRef.current?.();
     });
 

@@ -50,30 +50,10 @@ export default function AudioPlayer({
     return `${m}:${String(s).padStart(2, '0')}`;
   }, []);
 
-  const progress = useMemo(() => {
-    if (!duration) return 0;
-    return (currentTime / duration) * 100;
-  }, [currentTime, duration]);
-
-  const handleProgressClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (disabled || disableScrubbing || !duration) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      seek(Math.max(0, Math.min((clickX / rect.width) * duration, duration)));
-    },
-    [disabled, disableScrubbing, duration, seek],
-  );
-
   const handlePlayPause = useCallback(() => {
     if (disabled) return;
     isPlaying ? pause() : play();
   }, [disabled, isPlaying, play, pause]);
-
-  const durationDisplay = useMemo(() => {
-    if (!isLoaded || !duration || !isFinite(duration)) return '--:--';
-    return formatTime(duration);
-  }, [duration, formatTime, isLoaded]);
 
   const isFinished = !canPlay && !disabled;
 
@@ -162,41 +142,46 @@ export default function AudioPlayer({
           )}
         </button>
 
-        {/* Progress section */}
-        <div className="flex-1 flex flex-col gap-1 min-w-0">
-          {/* Track */}
-          <div
-            className={cn(
-              'relative h-2 w-full rounded-full overflow-hidden bg-slate-100',
-              disabled || disableScrubbing ? 'cursor-default' : 'cursor-pointer',
-            )}
-            onClick={handleProgressClick}
-          >
-            <div
-              className="h-full rounded-full transition-all duration-150"
-              style={{
-                width: `${Math.min(100, Math.max(0, progress))}%`,
-                background: isFinished
-                  ? 'linear-gradient(90deg, #059669, #34d399)'
-                  : 'linear-gradient(90deg, #08507f, #2563eb)',
-              }}
-            />
+        {/* Time / Countdown section */}
+        <div className="flex-1 flex items-center justify-between min-w-0">
+          <div className="flex flex-col">
+            <span className={cn(
+              "text-[10px] font-bold uppercase tracking-widest mb-0.5",
+              isPlaying ? "text-blue-500" : "text-slate-400"
+            )}>
+              {isFinished ? 'Status' : isPlaying ? 'Playing' : 'Ready'}
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className={cn(
+                "text-xl font-mono font-bold tabular-nums tracking-tight",
+                isFinished ? "text-emerald-600" : "text-slate-700"
+              )}>
+                {isFinished ? 'Finished' : formatTime(Math.max(0, duration - currentTime))}
+              </span>
+              {!isFinished && duration > 0 && (
+                <span className="text-xs font-medium text-slate-400">
+                  remaining
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Time row */}
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-mono font-semibold tabular-nums text-slate-500">
-              {formatTime(currentTime)}
-            </span>
-            <span
-              className={cn(
-                'text-[11px] font-mono font-semibold tabular-nums',
-                durationDisplay === '--:--' ? 'text-slate-300' : 'text-slate-400',
-              )}
-            >
-              {durationDisplay}
-            </span>
-          </div>
+          {/* Simple visual indicator (optional, but keep it minimal) */}
+          {!isFinished && isPlaying && (
+            <div className="flex items-center gap-1 h-4 px-2">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="w-1 bg-blue-400/60 rounded-full animate-pulse"
+                  style={{ 
+                    height: '100%', 
+                    animationDelay: `${i * 0.15}s`,
+                    animationDuration: '0.8s'
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
