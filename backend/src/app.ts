@@ -34,6 +34,7 @@ runMigrations(false).catch((err) => {
   logger.error('Failed to run database migrations on startup', { error: err.message });
 });
 
+const systemSettingsReady = ensureSystemSettingsSchema();
 const authSchemaReady = ensureAuthSchema();
 
 const allowedOrigins = env.corsOrigin
@@ -74,9 +75,9 @@ app.use(generalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/api/v1/auth', async (_req, _res, next) => {
+app.use('/api/v1', async (_req, _res, next) => {
   try {
-    await authSchemaReady;
+    await Promise.all([authSchemaReady, systemSettingsReady]);
     next();
   } catch (error) {
     next(error);
@@ -137,6 +138,27 @@ async function ensureAuthSchema() {
       ADD COLUMN IF NOT EXISTS country VARCHAR(100),
       ADD COLUMN IF NOT EXISTS city VARCHAR(100)
   `);
+}
+
+async function ensureSystemSettingsSchema() {
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        key VARCHAR(255) PRIMARY KEY,
+        value JSONB NOT NULL,
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    
+    // Initialize maintenance_mode if not present
+    await query(`
+      INSERT INTO system_settings (key, value)
+      VALUES ('maintenance_mode', 'false'::jsonb)
+      ON CONFLICT (key) DO NOTHING
+    `);
+  } catch (error) {
+    logger.error('Failed to ensure system_settings schema', { error: error instanceof Error ? error.message : 'Unknown error' });
+  }
 }
 
 export default app;

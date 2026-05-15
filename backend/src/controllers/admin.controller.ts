@@ -360,12 +360,15 @@ export async function updateSettings(
   try {
     const { maintenanceMode } = req.body;
     
+    console.log('Updating settings:', { maintenanceMode });
+    
     if (maintenanceMode !== undefined) {
       await settingsService.setSetting('maintenance_mode', maintenanceMode);
     }
     
     res.json({ message: 'Settings updated successfully' });
   } catch (error) {
+    console.error('Error in updateSettings controller:', error);
     next(error);
   }
 }
