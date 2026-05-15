@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { generalLimiter } from './middleware/rateLimiter';
+import { maintenanceMiddleware } from './middleware/maintenance';
 import routes from './routes';
 import { runMigrations } from './migrate';
 import { query } from './config/database';
@@ -82,6 +83,9 @@ app.use('/api/v1/auth', async (_req, _res, next) => {
   }
 });
 
+// Maintenance check
+app.use(maintenanceMiddleware);
+
 // API routes
 app.use('/api/v1', routes);
 
@@ -107,6 +111,18 @@ app.get('/health', async (_req, res) => {
       error: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()
     });
+  }
+});
+
+// System Status (Public)
+app.get('/api/v1/system/status', async (_req, res) => {
+  try {
+    const maintenanceMode = await query('SELECT value FROM system_settings WHERE key = $1', ['maintenance_mode']);
+    res.json({
+      maintenanceMode: maintenanceMode.rows[0]?.value === true
+    });
+  } catch (error) {
+    res.json({ maintenanceMode: false });
   }
 });
 

@@ -52,4 +52,8 @@ router.get('/dashboard/stats', adminController.getDashboardStats);
 // Results (all completed attempts)
 router.get('/results', adminController.getAllResults);
 
+// System Settings
+router.get('/settings', adminController.getSettings);
+router.post('/settings', adminController.updateSettings);
+
 export default router;

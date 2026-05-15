@@ -4,6 +4,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Toaster } from 'react-hot-toast';
 import MigrationBanner from "@/components/layout/MigrationBanner";
+import { MaintenanceGuard } from "@/components/layout/MaintenanceGuard";
 
 export const metadata: Metadata = {
   title: "ITP Ready — TOEFL ITP Practice Tests by English with Arik",
@@ -32,17 +33,19 @@ export default function RootLayout({
         <MigrationBanner />
         <LanguageProvider>
           <AuthProvider>
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                style: {
-                  borderRadius: '12px',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                  fontSize: '14px',
-                },
-              }}
-            />
-            {children}
+            <MaintenanceGuard>
+              <Toaster
+                position="top-center"
+                toastOptions={{
+                  style: {
+                    borderRadius: '12px',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    fontSize: '14px',
+                  },
+                }}
+              />
+              {children}
+            </MaintenanceGuard>
           </AuthProvider>
         </LanguageProvider>
       </body>

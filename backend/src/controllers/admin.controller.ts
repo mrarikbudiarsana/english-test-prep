@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as adminService from '../services/admin.service';
 import * as attemptService from '../services/attempt.service';
+import * as settingsService from '../services/settings.service';
 
 // ---------- Test CRUD ----------
 
@@ -315,6 +316,43 @@ export async function assignPackage(
     const { planType, examType } = req.body;
     const subscription = await adminService.assignPackage(userId, planType, examType);
     res.json({ data: subscription });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ---------- Settings ----------
+
+export async function getSettings(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const maintenanceMode = await settingsService.isMaintenanceMode();
+    res.json({
+      data: {
+        maintenanceMode
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateSettings(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { maintenanceMode } = req.body;
+    
+    if (maintenanceMode !== undefined) {
+      await settingsService.setSetting('maintenance_mode', maintenanceMode);
+    }
+    
+    res.json({ message: 'Settings updated successfully' });
   } catch (error) {
     next(error);
   }

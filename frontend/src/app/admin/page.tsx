@@ -12,6 +12,8 @@ import {
   HiCurrencyDollar,
   HiPlus
 } from 'react-icons/hi';
+import { HiOutlineWrenchScrewdriver } from 'react-icons/hi2';
+import { toast } from 'react-hot-toast';
 
 interface AdminDashboardStats {
   totalTests: number;
@@ -27,10 +29,36 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [updatingSettings, setUpdatingSettings] = useState(false);
 
   useEffect(() => {
     fetchStats();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await api.get('/admin/settings');
+      setMaintenanceMode(response.data.maintenanceMode);
+    } catch (err) {
+      console.error('Failed to fetch settings:', err);
+    }
+  };
+
+  const toggleMaintenance = async () => {
+    try {
+      setUpdatingSettings(true);
+      const newValue = !maintenanceMode;
+      await api.post('/admin/settings', { maintenanceMode: newValue });
+      setMaintenanceMode(newValue);
+      toast.success(newValue ? 'Maintenance Mode Enabled' : 'Maintenance Mode Disabled');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to update maintenance mode');
+    } finally {
+      setUpdatingSettings(false);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -211,51 +239,51 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-8">
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-800">Quick Operations</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Link
-              href="/admin/tests/new"
-              className="group flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-[#08507f] to-[#0a629b] text-white shadow-lg shadow-blue-900/10 hover:-translate-y-0.5 transition-all"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition-colors">
-                  <HiPlus className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-bold">Create New Mock Test</p>
-                  <p className="text-xs text-blue-100/70">Start building a new TOEFL ITP set</p>
-                </div>
-              </div>
-              <HiPlus className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
+        </div>
+      </div>
 
-            <Link
-              href="/admin/users"
-              className="flex items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
-            >
-              <div className="p-2 rounded-lg bg-orange-50 text-orange-600">
-                <HiUsers className="w-5 h-5" />
+      {/* System Management */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold text-slate-800">System Management</h2>
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-red-50 text-red-600">
+                <HiOutlineWrenchScrewdriver className="w-6 h-6" />
               </div>
-              <div className="flex-1">
-                <p className="font-bold text-slate-800 text-sm">Review New Registrations</p>
-                <p className="text-xs text-slate-400">Manage student access and roles</p>
+              <div>
+                <h3 className="font-bold text-slate-900">Maintenance Mode</h3>
+                <p className="text-sm text-slate-500 mt-1 max-w-md">
+                  When enabled, all non-admin users will be redirected to a maintenance page. 
+                  Admins can still access the entire platform for testing and configuration.
+                </p>
               </div>
-            </Link>
-
-            <Link
-              href="/admin/pricing"
-              className="flex items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
-            >
-              <div className="p-2 rounded-lg bg-green-50 text-green-600">
-                <HiCurrencyDollar className="w-5 h-5" />
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider ${
+                maintenanceMode 
+                  ? 'bg-red-100 text-red-700 animate-pulse' 
+                  : 'bg-green-100 text-green-700'
+              }`}>
+                {maintenanceMode ? 'Active (Site Blocked)' : 'Inactive (Live)'}
               </div>
-              <div className="flex-1">
-                <p className="font-bold text-slate-800 text-sm">Subscription Plans</p>
-                <p className="text-xs text-slate-400">Configure institutional access levels</p>
-              </div>
-            </Link>
+              
+              <button
+                onClick={toggleMaintenance}
+                disabled={updatingSettings}
+                className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg ${
+                  maintenanceMode
+                    ? 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                    : 'bg-red-600 text-white hover:bg-red-700 shadow-red-200'
+                } disabled:opacity-50 flex items-center gap-2`}
+              >
+                {updatingSettings ? (
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : null}
+                {maintenanceMode ? 'Disable Maintenance' : 'Enable Maintenance'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

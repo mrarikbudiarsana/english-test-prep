@@ -48,6 +48,13 @@ api.interceptors.response.use(
         window.location.href = '/login';
       }
     }
+
+    if (error.response?.status === 503 && error.response?.data?.code === 'MAINTENANCE_MODE') {
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/maintenance')) {
+        window.location.href = '/maintenance';
+      }
+    }
+
     return Promise.reject(error);
   }
 );
