@@ -238,7 +238,52 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+      <div className="grid grid-cols-1 gap-8">
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-slate-800">Quick Operations</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Link
+              href="/admin/tests/new"
+              className="group flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-[#08507f] to-[#0a629b] text-white shadow-lg shadow-blue-900/10 hover:-translate-y-0.5 transition-all"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition-colors">
+                  <HiPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-bold">Create New Mock Test</p>
+                  <p className="text-xs text-blue-100/70">Start building a new TOEFL ITP set</p>
+                </div>
+              </div>
+              <HiPlus className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </Link>
 
+            <Link
+              href="/admin/users"
+              className="flex items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
+            >
+              <div className="p-2 rounded-lg bg-orange-50 text-orange-600">
+                <HiUsers className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-slate-800 text-sm">Review New Registrations</p>
+                <p className="text-xs text-slate-400">Manage student access and roles</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/admin/pricing"
+              className="flex items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
+            >
+              <div className="p-2 rounded-lg bg-green-50 text-green-600">
+                <HiCurrencyDollar className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-slate-800 text-sm">Subscription Plans</p>
+                <p className="text-xs text-slate-400">Configure institutional access levels</p>
+              </div>
+            </Link>
+          </div>
         </div>
       </div>
 
