@@ -329,14 +329,26 @@ export async function getSettings(
   next: NextFunction
 ): Promise<void> {
   try {
+    // Adding console log to debug on Vercel
+    console.log('Admin settings requested by:', req.user?.email);
+    
     const maintenanceMode = await settingsService.isMaintenanceMode();
+    
+    console.log('Maintenance mode status:', maintenanceMode);
+    
     res.json({
       data: {
-        maintenanceMode
+        maintenanceMode: !!maintenanceMode // Ensure boolean
       }
     });
   } catch (error) {
-    next(error);
+    console.error('Error in getSettings controller:', error);
+    // Fallback to false if everything fails
+    res.json({
+      data: {
+        maintenanceMode: false
+      }
+    });
   }
 }
 

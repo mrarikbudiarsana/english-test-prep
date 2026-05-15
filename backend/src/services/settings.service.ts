@@ -26,8 +26,14 @@ export async function getSetting<T>(key: string, defaultValue: T): Promise<T> {
     );
 
     let value = defaultValue;
-    if (result.rows.length > 0) {
+    if (result && result.rows && result.rows.length > 0) {
       value = result.rows[0].value;
+      
+      // Handle cases where JSONB might return string "true"/"false" instead of boolean
+      if (typeof defaultValue === 'boolean' && typeof value === 'string') {
+        if (value === 'true') value = true as any;
+        if (value === 'false') value = false as any;
+      }
     }
 
     // Update cache
@@ -38,7 +44,8 @@ export async function getSetting<T>(key: string, defaultValue: T): Promise<T> {
 
     return value;
   } catch (error) {
-    logger.error(`Error fetching system setting ${key}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
+    // Log the error but don't crash the request
+    console.error(`Error fetching system setting ${key}:`, error);
     return defaultValue;
   }
 }
