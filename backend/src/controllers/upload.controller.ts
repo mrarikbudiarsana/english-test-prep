@@ -57,3 +57,17 @@ export async function uploadVideo(
     next(error);
   }
 }
+
+export async function getSignature(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const folder = (req.query.folder as string) || 'general';
+    const signData = uploadService.generateSignature(folder);
+    res.json(signData);
+  } catch (error) {
+    next(error);
+  }
+}

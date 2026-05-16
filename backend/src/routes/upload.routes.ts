@@ -10,6 +10,7 @@ const upload = multer({
 
 const router = Router();
 
+router.get('/sign', authMiddleware, uploadController.getSignature);
 router.post('/audio', authMiddleware, upload.single('audio'), uploadController.uploadAudio);
 router.post('/video', authMiddleware, upload.single('video'), uploadController.uploadVideo);
 router.post('/image', authMiddleware, upload.single('image'), uploadController.uploadImage);

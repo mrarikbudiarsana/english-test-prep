@@ -1,4 +1,5 @@
 import cloudinary from '../config/cloudinary';
+import { env } from '../config/env';
 import { ValidationError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import crypto from 'crypto';
@@ -68,5 +69,27 @@ export async function uploadFile(
     });
     throw new ValidationError(`Failed to upload file: ${error.message || 'Unknown error'}`);
   }
+}
+
+/**
+ * Generate a signature for a signed upload to Cloudinary directly from the frontend.
+ */
+export function generateSignature(folder: string) {
+  const timestamp = Math.round(new Date().getTime() / 1000);
+  const signature = cloudinary.utils.api_sign_request(
+    {
+      timestamp: timestamp,
+      folder: folder,
+    },
+    env.cloudinary.apiSecret
+  );
+
+  return {
+    signature,
+    timestamp,
+    cloudName: env.cloudinary.cloudName,
+    apiKey: env.cloudinary.apiKey,
+    folder,
+  };
 }
 

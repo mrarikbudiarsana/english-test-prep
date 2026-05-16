@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, type ChangeEvent } from 'react';
+import axios from 'axios';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Progress } from '@/components/ui/Progress';
@@ -35,28 +36,42 @@ export default function AudioUploader({ onUpload, currentUrl }: AudioUploaderPro
     setError(null);
     setUploading(true);
     setProgress(0);
-
-    const formData = new FormData();
-    formData.append('audio', file);
-
     try {
-      console.log('Starting audio upload...', file.name);
-      const response = await api.post('/upload/audio', formData, {
+      console.log('Starting direct audio upload...', file.name);
+      
+      // 1. Get signature from our backend
+      const { data: signData } = await api.get('/upload/sign', {
+        params: { folder: 'audio' }
+      });
+      console.log('Received upload signature');
+
+      // 2. Prepare Cloudinary form data
+      const cloudinaryFormData = new FormData();
+      cloudinaryFormData.append('file', file);
+      cloudinaryFormData.append('api_key', signData.apiKey);
+      cloudinaryFormData.append('timestamp', signData.timestamp);
+      cloudinaryFormData.append('signature', signData.signature);
+      cloudinaryFormData.append('folder', signData.folder);
+
+      // 3. Upload directly to Cloudinary
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/auto/upload`;
+      
+      const response = await axios.post(cloudinaryUrl, cloudinaryFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const pct = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             setProgress(pct);
-            console.log(`Upload progress: ${pct}%`);
+            console.log(`Cloudinary upload progress: ${pct}%`);
           }
         },
       });
       
-      console.log('Upload response received:', response.data);
-      const url = response.data.url || response.data.data?.url;
+      console.log('Cloudinary response received:', response.data);
+      const url = response.data.secure_url;
       
       if (!url) {
-        throw new Error('Server responded without a file URL');
+        throw new Error('Cloudinary responded without a secure URL');
       }
 
       setUploadedUrl(url);
