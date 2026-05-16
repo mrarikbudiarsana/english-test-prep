@@ -25,6 +25,7 @@ const fieldMap: Record<string, string> = {
   moduleStage: 'module_stage',
   modulePath: 'module_path',
   taskType: 'task_type',
+  audioThinkingTime: 'audio_thinking_time',
 };
 
 const SELECT_COLUMNS = `
@@ -49,6 +50,7 @@ const SELECT_COLUMNS = `
   module_stage      AS "moduleStage",
   module_path       AS "modulePath",
   task_type         AS "taskType",
+  audio_thinking_time AS "audioThinkingTime",
   created_at        AS "createdAt",
   updated_at        AS "updatedAt"
 `;
@@ -110,6 +112,7 @@ export async function create(data: {
   moduleStage?: number;
   modulePath?: string;
   taskType?: string;
+  audioThinkingTime?: number;
 }) {
   const result = await query(
     `INSERT INTO sections (
@@ -117,9 +120,9 @@ export async function create(data: {
        duration_minutes, audio_url, passage_text, passage_title,
        task_description, task_number, min_words, image_url,
        part_number, speaking_prompts, preparation_time, response_time,
-       module_stage, module_path, task_type
+       module_stage, module_path, task_type, audio_thinking_time
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.testId,
@@ -142,6 +145,7 @@ export async function create(data: {
       data.moduleStage ?? null,
       data.modulePath ?? null,
       data.taskType ?? null,
+      data.audioThinkingTime ?? 0,
     ],
   );
   return result.rows[0];
@@ -169,6 +173,7 @@ export async function update(
     moduleStage: number;
     modulePath: string;
     taskType: string;
+    audioThinkingTime: number;
   }>,
 ) {
   const entries = Object.entries(data).filter(([, v]) => v !== undefined);

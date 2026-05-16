@@ -28,6 +28,7 @@ interface SectionFormData {
   moduleStage?: number | null;
   modulePath?: string | null;
   taskType?: string | null;
+  audioThinkingTime?: number;
 }
 
 interface SectionEditorProps {
@@ -62,6 +63,7 @@ export default function SectionEditor({ existingSections = [], initialData, onSu
   const [passageTitle, setPassageTitle] = useState(initialData?.passageTitle || '');
   const [passageText, setPassageText] = useState(initialData?.passageText || '');
   const [partNumber, setPartNumber] = useState(initialData?.partNumber || 1);
+  const [audioThinkingTime, setAudioThinkingTime] = useState<number>(initialData?.audioThinkingTime ?? 0);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -125,6 +127,7 @@ export default function SectionEditor({ existingSections = [], initialData, onSu
         moduleStage: null,
         modulePath: null,
         taskType: null,
+        audioThinkingTime: sectionType === 'listening' ? audioThinkingTime : 0,
       });
     } finally {
       setLoading(false);
@@ -181,6 +184,17 @@ export default function SectionEditor({ existingSections = [], initialData, onSu
           ) : (
             <AudioUploader onUpload={(url) => setAudioUrl(url || null)} currentUrl={audioUrl} />
           )}
+          <Input
+            type="number"
+            label="Audio Thinking Time (seconds)"
+            value={audioThinkingTime.toString()}
+            onChange={(e) => setAudioThinkingTime(parseInt(e.target.value) || 0)}
+            min={0}
+            placeholder="e.g. 12"
+          />
+          <p className="text-xs text-purple-700 -mt-2">
+            Adds a pause after audio playback ends before automatically moving to the next question. Set to 0 if your audio files already include silent thinking time.
+          </p>
         </div>
       )}
 

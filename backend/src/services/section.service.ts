@@ -52,6 +52,7 @@ export async function createSection(
     moduleStage?: number;
     modulePath?: string;
     taskType?: string;
+    audioThinkingTime?: number;
   },
 ) {
   // Verify the test exists
@@ -98,6 +99,7 @@ export async function createSection(
     moduleStage: data.moduleStage,
     modulePath: data.modulePath,
     taskType: data.taskType,
+    audioThinkingTime: data.audioThinkingTime,
   });
 }
 
@@ -129,6 +131,7 @@ export async function updateSection(
     moduleStage: number;
     modulePath: string;
     taskType: string;
+    audioThinkingTime: number;
   }>,
 ) {
   const existing = await sectionModel.findById(id);

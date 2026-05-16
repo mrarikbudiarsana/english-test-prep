@@ -44,6 +44,7 @@ export interface Section {
   taskType?: string | null;
   questionCount?: number;
   audioCount?: number;
+  audioThinkingTime?: number;
 }
 
 export interface SpeakingPrompt {

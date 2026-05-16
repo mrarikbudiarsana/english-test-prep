@@ -110,6 +110,7 @@ export async function createSection(
     moduleStage?: number;
     modulePath?: string;
     taskType?: string;
+    audioThinkingTime?: number;
   },
 ) {
   return sectionService.createSection(testId, data);
@@ -140,6 +141,7 @@ export async function updateSection(
     moduleStage: number;
     modulePath: string;
     taskType: string;
+    audioThinkingTime: number;
   }>,
 ) {
   return sectionService.updateSection(id, data);
@@ -500,6 +502,7 @@ export async function duplicateTest(testId: string, createdBy: string) {
         moduleStage: section.moduleStage || undefined,
         modulePath: section.modulePath || undefined,
         taskType: section.taskType || undefined,
+        audioThinkingTime: section.audioThinkingTime || undefined,
       });
 
       // 5. Get all questions for this section

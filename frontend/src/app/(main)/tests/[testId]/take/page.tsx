@@ -142,7 +142,6 @@ function TestTakingContent() {
   const directionsTransitionTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [testTitle, setTestTitle] = useState<string>('');
-  const [audioThinkingTime, setAudioThinkingTime] = useState<number>(0);
   const [thinkingTimeLeft, setThinkingTimeLeft] = useState<number | null>(null);
   const [globalVolume, setGlobalVolume] = useState<number>(1);
   const [isToeflReadingProgressOpen, setIsToeflReadingProgressOpen] = useState(false);
@@ -154,7 +153,6 @@ function TestTakingContent() {
       try {
         const res = await api.get(`/tests/${testId}`);
         setTestTitle(res.data.title);
-        setAudioThinkingTime(res.data.audioThinkingTime || 0);
       } catch (err) {
         console.error('Failed to load test details:', err);
       }
@@ -526,8 +524,9 @@ function TestTakingContent() {
 
   const handleAudioEnd = () => {
     if (state.currentSectionType === 'listening') {
-      if (audioThinkingTime > 0) {
-        setThinkingTimeLeft(audioThinkingTime);
+      const sectionThinkingTime = currentSectionPart?.audioThinkingTime ?? 0;
+      if (sectionThinkingTime > 0) {
+        setThinkingTimeLeft(sectionThinkingTime);
       } else {
         handleNextQuestion();
       }
