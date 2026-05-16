@@ -13,6 +13,7 @@ const fieldMap: Record<string, string> = {
   durationMinutes: 'duration_minutes',
   deliveryModel: 'delivery_model',
   blueprintJson: 'blueprint_json',
+  audioThinkingTime: 'audio_thinking_time',
 };
 
 const SELECT_COLUMNS = `
@@ -25,6 +26,7 @@ const SELECT_COLUMNS = `
   is_published     AS "isPublished",
   is_free          AS "isFree",
   duration_minutes AS "durationMinutes",
+  audio_thinking_time AS "audioThinkingTime",
   created_by       AS "createdBy",
   created_at       AS "createdAt",
   updated_at       AS "updatedAt"
@@ -131,6 +133,7 @@ export async function create(data: {
   isFree?: boolean;
   createdBy?: string;
   durationMinutes?: number;
+  audioThinkingTime?: number;
 }) {
   const deliveryModel = data.deliveryModel ?? 'legacy';
   
@@ -140,8 +143,8 @@ export async function create(data: {
   const durationMinutes = data.durationMinutes ?? durationMap[data.testType] ?? 120;
 
   const result = await query(
-    `INSERT INTO tests (title, description, test_type, delivery_model, blueprint_json, is_free, duration_minutes, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO tests (title, description, test_type, delivery_model, blueprint_json, is_free, duration_minutes, audio_thinking_time, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.title,
@@ -151,6 +154,7 @@ export async function create(data: {
       data.blueprintJson != null ? JSON.stringify(data.blueprintJson) : null,
       data.isFree ?? false,
       durationMinutes,
+      data.audioThinkingTime ?? 0,
       data.createdBy ?? null,
     ],
   );
@@ -167,6 +171,7 @@ export async function update(
     isFree: boolean;
     durationMinutes: number;
     blueprintJson: any;
+    audioThinkingTime: number;
   }>,
 ) {
   const entries = Object.entries(data).filter(([, v]) => v !== undefined);

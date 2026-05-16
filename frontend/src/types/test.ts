@@ -15,6 +15,7 @@ export interface Test {
   isPublished: boolean;
   isFree: boolean;
   durationMinutes: number;
+  audioThinkingTime?: number;
   createdAt: string;
   sections?: Section[];
 }

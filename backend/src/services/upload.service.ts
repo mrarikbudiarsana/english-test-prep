@@ -43,7 +43,7 @@ export async function uploadFile(
             logger.error('Cloudinary upload stream callback error:', { error, uniqueId });
             reject(error);
           } else {
-            logger.info('Cloudinary upload successful', { public_id: result.public_id, uniqueId });
+            logger.info('Cloudinary upload successful', { public_id: result?.public_id, uniqueId });
             resolve(result);
           }
         }

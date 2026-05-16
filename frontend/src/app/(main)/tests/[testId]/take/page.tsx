@@ -142,6 +142,8 @@ function TestTakingContent() {
   const directionsTransitionTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [testTitle, setTestTitle] = useState<string>('');
+  const [audioThinkingTime, setAudioThinkingTime] = useState<number>(0);
+  const [thinkingTimeLeft, setThinkingTimeLeft] = useState<number | null>(null);
   const [globalVolume, setGlobalVolume] = useState<number>(1);
   const [isToeflReadingProgressOpen, setIsToeflReadingProgressOpen] = useState(false);
   const [toeflReadingMobileView, setToeflReadingMobileView] = useState<'passage' | 'question'>('question');
@@ -152,6 +154,7 @@ function TestTakingContent() {
       try {
         const res = await api.get(`/tests/${testId}`);
         setTestTitle(res.data.title);
+        setAudioThinkingTime(res.data.audioThinkingTime || 0);
       } catch (err) {
         console.error('Failed to load test details:', err);
       }
@@ -500,6 +503,9 @@ function TestTakingContent() {
   }, [activePartIndex, currentQuestionIndex, currentSectionParts, exitDirectionsView, getResolvedPartNumber, mode, questions, selectQuestionIndex, state.currentSectionType, viewingDirections]);
 
   const handleNextQuestion = () => {
+    // Clear any active thinking time countdown if user manually advances
+    setThinkingTimeLeft(null);
+
     if (state.currentSectionType === 'listening') {
       handleToeflNavigation('next');
       return;
@@ -520,9 +526,30 @@ function TestTakingContent() {
 
   const handleAudioEnd = () => {
     if (state.currentSectionType === 'listening') {
-      handleNextQuestion();
+      if (audioThinkingTime > 0) {
+        setThinkingTimeLeft(audioThinkingTime);
+      } else {
+        handleNextQuestion();
+      }
     }
   };
+
+  // Countdown effect for Audio Thinking Time
+  useEffect(() => {
+    if (thinkingTimeLeft === null) return;
+    
+    if (thinkingTimeLeft <= 0) {
+      setThinkingTimeLeft(null);
+      handleNextQuestion();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setThinkingTimeLeft(prev => prev !== null ? prev - 1 : null);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [thinkingTimeLeft]);
 
   const handlePreviousQuestion = () => {
     if (state.currentSectionType === 'listening') {
@@ -944,13 +971,23 @@ function TestTakingContent() {
               </button>
             </div>
 
-            <button
-              onClick={handleNextQuestion}
-              className="flex items-center gap-2 px-6 py-2 bg-[#08507f] text-white text-[13px] font-bold uppercase tracking-wider rounded border-b-2 border-[#064066] hover:bg-[#064066] transition-all active:translate-y-0.5 active:border-b-0 group"
-            >
-              {navigatorActionLabel}
-              <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
-            </button>
+            <div className="flex items-center gap-4">
+              {thinkingTimeLeft !== null && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-md animate-pulse">
+                  <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">
+                    Thinking Time: {thinkingTimeLeft}s
+                  </span>
+                </div>
+              )}
+              <button
+                onClick={handleNextQuestion}
+                className="flex items-center gap-2 px-6 py-2 bg-[#08507f] text-white text-[13px] font-bold uppercase tracking-wider rounded border-b-2 border-[#064066] hover:bg-[#064066] transition-all active:translate-y-0.5 active:border-b-0 group"
+              >
+                {thinkingTimeLeft !== null ? 'Skip' : navigatorActionLabel}
+                <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
           </div>
         </footer>
       )}

@@ -13,6 +13,7 @@ interface TestFormData {
   testType: TestType;
   isFree: boolean;
   durationMinutes: number;
+  audioThinkingTime?: number;
 }
 
 interface TestFormProps {
@@ -29,6 +30,7 @@ export default function TestForm({ initialData, onSubmit, loading }: TestFormPro
   const [testType, setTestType] = useState<TestType>(initialData?.testType || 'toefl_itp');
   const [isFree, setIsFree] = useState(initialData?.isFree ?? false);
   const [durationMinutes, setDurationMinutes] = useState<number>(initialData?.durationMinutes ?? 115);
+  const [audioThinkingTime, setAudioThinkingTime] = useState<number>(initialData?.audioThinkingTime ?? 0);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = (): boolean => {
@@ -42,7 +44,7 @@ export default function TestForm({ initialData, onSubmit, loading }: TestFormPro
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    await onSubmit({ title: title.trim(), description: description.trim(), testType, isFree, durationMinutes });
+    await onSubmit({ title: title.trim(), description: description.trim(), testType, isFree, durationMinutes, audioThinkingTime });
   };
 
   return (
@@ -79,6 +81,18 @@ export default function TestForm({ initialData, onSubmit, loading }: TestFormPro
         onChange={(e) => setDurationMinutes(parseInt(e.target.value) || 0)}
         min={1}
       />
+
+      <Input
+        type="number"
+        label="Audio Thinking Time (seconds)"
+        value={audioThinkingTime.toString()}
+        onChange={(e) => setAudioThinkingTime(parseInt(e.target.value) || 0)}
+        min={0}
+        placeholder="e.g. 12"
+      />
+      <p className="text-xs text-gray-500 -mt-4">
+        Adds a pause after audio playback ends before automatically moving to the next question. Set to 0 if your audio files already include silent thinking time.
+      </p>
 
       <label className="flex items-center gap-3 cursor-pointer">
         <input

@@ -57,6 +57,7 @@ export async function createTest(
     testType: string;
     isFree?: boolean;
     durationMinutes?: number;
+    audioThinkingTime?: number;
   },
   createdBy: string,
 ) {
@@ -68,6 +69,7 @@ export async function createTest(
     blueprintJson: null,
     isFree: data.isFree,
     durationMinutes: data.durationMinutes,
+    audioThinkingTime: data.audioThinkingTime,
     createdBy,
   });
   clearTestCaches();
@@ -83,6 +85,7 @@ export async function updateTest(
     isPublished: boolean;
     isFree: boolean;
     durationMinutes: number;
+    audioThinkingTime: number;
   }>,
 ) {
   const existing = await testModel.findById(id);

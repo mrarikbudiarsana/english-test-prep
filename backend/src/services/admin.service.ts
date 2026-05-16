@@ -32,6 +32,7 @@ export async function createTest(
     testType: string;
     isFree?: boolean;
     durationMinutes?: number;
+    audioThinkingTime?: number;
   },
 ) {
   return testService.createTest(data, createdBy);
@@ -49,6 +50,7 @@ export async function updateTest(
     isPublished: boolean;
     isFree: boolean;
     durationMinutes: number;
+    audioThinkingTime: number;
   }>,
 ) {
   return testService.updateTest(id, data);
