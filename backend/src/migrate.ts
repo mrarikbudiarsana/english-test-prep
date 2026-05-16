@@ -48,7 +48,8 @@ export async function runMigrations(shouldEndPool = false) {
         console.log(`Executed ${file}`);
       } catch (error) {
         await client.query('ROLLBACK');
-        console.error(`Failed to execute ${file}:`, error);
+        console.error(`DATABASE MIGRATION ERROR: Failed to execute ${file}`);
+        console.error(`Error Details:`, error instanceof Error ? error.message : error);
         throw error;
       }
     }

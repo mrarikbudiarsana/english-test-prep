@@ -61,9 +61,9 @@ export function errorHandler(
     return;
   }
 
-  res.status(500).json({
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred',
+  res.status(err.statusCode || 500).json({
+    error: err.statusCode ? err.message : 'Internal server error',
+    message: err.message, // Always include message for debugging
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 }
