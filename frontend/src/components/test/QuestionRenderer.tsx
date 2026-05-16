@@ -81,6 +81,7 @@ export default function QuestionRenderer({
             onChange={handleChange}
             readOnly={readOnly}
             correctAnswer={readOnly ? (question.correctAnswer as string | string[] | undefined) : undefined}
+            questionId={question.id}
           />
         );
 

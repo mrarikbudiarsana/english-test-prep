@@ -45,6 +45,9 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(email, password, displayName);
+      // Success: The useEffect will handle redirect, but we stop loading to be safe
+      // and prevent the "hanging" feeling if redirect is slow.
+      setLoading(false);
     } catch (err: any) {
       setError(err.message || t('register_err_fallback'));
       setLoading(false);

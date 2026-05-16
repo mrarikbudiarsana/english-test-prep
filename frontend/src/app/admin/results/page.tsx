@@ -73,7 +73,7 @@ export default function AdminResultsPage() {
   const [offset, setOffset] = useState(0);
   const [search, setSearch] = useState('');
 
-  const fetchResults = useCallback(async (currentOffset: number, append: boolean) => {
+  const fetchResults = useCallback(async (currentOffset: number, append: boolean, searchQuery: string) => {
     try {
       if (append) {
         setLoadingMore(true);
@@ -82,7 +82,7 @@ export default function AdminResultsPage() {
         setError(null);
       }
       const response = await api.get('/admin/results', {
-        params: { offset: currentOffset, limit: PAGE_SIZE },
+        params: { offset: currentOffset, limit: PAGE_SIZE, search: searchQuery },
       });
       const rows: ResultRow[] = response.data.data || response.data;
       const totalCount: number = response.data.total ?? rows.length;
@@ -97,21 +97,16 @@ export default function AdminResultsPage() {
     }
   }, []);
 
+  // Handle search with debounce effect
   useEffect(() => {
-    fetchResults(0, false);
-  }, [fetchResults]);
+    const timer = setTimeout(() => {
+      fetchResults(0, false, search);
+    }, 400); // 400ms debounce
 
-  const filtered = search.trim()
-    ? results.filter((r) => {
-        const q = search.toLowerCase();
-        return (
-          (r.userName || '').toLowerCase().includes(q) ||
-          r.userEmail.toLowerCase().includes(q) ||
-          r.testTitle.toLowerCase().includes(q) ||
-          testTypeLabel(r.testType).toLowerCase().includes(q)
-        );
-      })
-    : results;
+    return () => clearTimeout(timer);
+  }, [search, fetchResults]);
+
+  const filtered = results;
 
   if (loading) {
     return (
@@ -163,7 +158,7 @@ export default function AdminResultsPage() {
         <Card>
           <div className="text-center py-4">
             <p className="text-red-600 mb-2">{error}</p>
-            <button onClick={() => fetchResults(0, false)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            <button onClick={() => fetchResults(0, false, search)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
               Try again
             </button>
           </div>
@@ -290,7 +285,7 @@ export default function AdminResultsPage() {
           {!search && results.length < total && (
             <div className="flex flex-col items-center gap-2">
               <button
-                onClick={() => fetchResults(offset, true)}
+                onClick={() => fetchResults(offset, true, search)}
                 disabled={loadingMore}
                 className="px-6 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-wait transition-colors shadow-sm"
               >

@@ -120,13 +120,8 @@ export async function findByUserId(
             COUNT(*) OVER() AS _total_count
      FROM attempts a
      JOIN tests t ON a.test_id = t.id
-     LEFT JOIN (
-       SELECT attempt_id, COUNT(*) as response_count
-       FROM responses
-       GROUP BY attempt_id
-     ) r ON a.id = r.attempt_id
      WHERE a.user_id = $1
-       AND (a.status != 'in_progress' OR COALESCE(r.response_count, 0) > 0)
+       AND (a.status != 'in_progress' OR EXISTS (SELECT 1 FROM responses r WHERE r.attempt_id = a.id))
        ${queryFilter}
      ORDER BY a.created_at DESC
      OFFSET $2 LIMIT $3`,
@@ -370,7 +365,15 @@ function calculateSectionAverage(attempts: any[], field: string): number | null 
   return valid.reduce((sum, a) => sum + a[field], 0) / valid.length;
 }
 
-export async function findAllCompleted(offset: number = 0, limit: number = 50) {
+export async function findAllCompleted(offset: number = 0, limit: number = 50, search?: string) {
+  let searchClause = '';
+  const params: any[] = [offset, limit];
+
+  if (search) {
+    searchClause = `AND (u.email ILIKE $3 OR u.display_name ILIKE $3 OR t.title ILIKE $3)`;
+    params.push(`%${search}%`);
+  }
+
   const result = await query(
     `SELECT
         a.id,
@@ -394,14 +397,18 @@ export async function findAllCompleted(offset: number = 0, limit: number = 50) {
      FROM attempts a
      JOIN tests t ON a.test_id = t.id
      JOIN users u ON a.user_id = u.id
-     WHERE a.status = 'completed'
+     WHERE a.status = 'completed' ${searchClause}
      ORDER BY a.completed_at DESC NULLS LAST
      OFFSET $1 LIMIT $2`,
-    [offset, limit],
+    params,
   );
 
   const countResult = await query(
-    `SELECT COUNT(*) FROM attempts WHERE status = 'completed'`,
+    `SELECT COUNT(*) FROM attempts a
+     JOIN users u ON a.user_id = u.id
+     JOIN tests t ON a.test_id = t.id
+     WHERE a.status = 'completed' ${searchClause}`,
+    search ? [params[2]] : [],
   );
 
   return {

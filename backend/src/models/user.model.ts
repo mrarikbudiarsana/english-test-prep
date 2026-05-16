@@ -70,8 +70,8 @@ export async function create(data: {
   city?: string | null;
 }) {
   const result = await query(
-    `INSERT INTO users (firebase_uid, email, display_name, photo_url, country, city)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO users (firebase_uid, email, display_name, photo_url, country, city, preferred_exam_type)
+     VALUES ($1, $2, $3, $4, $5, $6, 'toefl_itp')
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.firebaseUid,

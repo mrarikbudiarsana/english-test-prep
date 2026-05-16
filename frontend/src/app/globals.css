@@ -121,7 +121,8 @@ body {
 .toefl-itp-passage-content .toefl-line-text {
   margin: 0;
   font: inherit;
-  white-space: pre;
+  white-space: pre-wrap; /* Changed from pre to pre-wrap for mobile responsiveness */
+  word-break: break-word;
   line-height: 1.6;
   color: inherit;
 }
@@ -182,7 +183,7 @@ body {
   background: #fafafa;
 }
 
-.toefl-itp-option:hover {
+.toefl-itp-option:hover:not(.selected) {
   border-color: #94a3b8;
   background: white;
 }

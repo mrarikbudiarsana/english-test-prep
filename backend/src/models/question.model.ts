@@ -63,6 +63,22 @@ const SELECT_COLUMNS = `
   updated_at       AS "updatedAt"
 `;
 
+const SELECT_COLUMNS_PUBLIC = `
+  id,
+  section_id       AS "sectionId",
+  question_number  AS "questionNumber",
+  question_type    AS "questionType",
+  question_text    AS "questionText",
+  question_data    AS "questionData",
+  points,
+  group_label      AS "groupLabel",
+  group_instructions AS "groupInstructions",
+  audio_url        AS "audioUrl",
+  item_payload     AS "itemPayload",
+  created_at       AS "createdAt",
+  updated_at       AS "updatedAt"
+`;
+
 // ---------- queries ----------
 
 export async function findById(id: string) {
@@ -84,25 +100,38 @@ export async function findBySectionId(sectionId: string) {
   return result.rows;
 }
 
+export async function findBySectionIdPublic(sectionId: string) {
+  const result = await query(
+    `SELECT ${SELECT_COLUMNS_PUBLIC}
+     FROM questions
+     WHERE section_id = $1
+     ORDER BY question_number ASC`,
+    [sectionId],
+  );
+  return result.rows;
+}
+
 export async function findByTestId(testId: string) {
   const result = await query(
-    `SELECT q.id,
-            q.section_id       AS "sectionId",
-            q.question_number  AS "questionNumber",
-            q.question_type    AS "questionType",
-            q.question_text    AS "questionText",
-            q.question_data    AS "questionData",
-            q.correct_answer   AS "correctAnswer",
-            q.points,
-            q.explanation,
-            q.explanation_ai   AS "explanationAi",
-            q.group_label      AS "groupLabel",
-            q.group_instructions AS "groupInstructions",
-            q.audio_url        AS "audioUrl",
-            q.created_at       AS "createdAt",
-            q.updated_at       AS "updatedAt",
-            s.section_type     AS "sectionType",
-            s.section_order    AS "sectionOrder"
+    `SELECT q.*, s.section_type AS "sectionType", s.section_order AS "sectionOrder"
+     FROM questions q
+     JOIN sections s ON s.id = q.section_id
+     WHERE s.test_id = $1
+     ORDER BY s.section_order ASC, q.question_number ASC`,
+    [testId],
+  );
+  return result.rows;
+}
+
+export async function findByTestIdPublic(testId: string) {
+  const result = await query(
+    `SELECT q.id, q.section_id AS "sectionId", q.question_number AS "questionNumber",
+            q.question_type AS "questionType", q.question_text AS "questionText",
+            q.question_data AS "questionData", q.points, q.group_label AS "groupLabel",
+            q.group_instructions AS "groupInstructions", q.audio_url AS "audioUrl",
+            q.item_payload AS "itemPayload", q.created_at AS "createdAt",
+            q.updated_at AS "updatedAt", s.section_type AS "sectionType",
+            s.section_order AS "sectionOrder"
      FROM questions q
      JOIN sections s ON s.id = q.section_id
      WHERE s.test_id = $1

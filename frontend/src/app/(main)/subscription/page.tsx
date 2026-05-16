@@ -232,10 +232,10 @@ export default function SubscriptionPage() {
       {/* Free tier info */}
       <div className="bg-gray-50 rounded-xl p-6 text-center">
         <p className="text-gray-600">
-          Free tier: {user?.freeTestsRemaining || 0} practice tests remaining.
+          Free tests are available for everyone to try.
           {paymentAvailable
-            ? ' Subscribe to unlock unlimited access.'
-            : ' Payment integration coming soon - stay tuned!'}
+            ? ' Subscribe to unlock all premium practice tests and full score analysis.'
+            : ' Payment integration coming soon — stay tuned!'}
         </p>
       </div>
     </div>

@@ -189,7 +189,7 @@ export default function AudioPlayer({
       {disabled && (
         <div className="px-4 pb-3 -mt-1">
           <p className="text-[11px] text-slate-400 italic">
-            Audio playback is disabled in review mode.
+            Audio playback is currently disabled.
           </p>
         </div>
       )}

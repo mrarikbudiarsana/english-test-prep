@@ -16,35 +16,34 @@ function testTypeToExamType(_testType: string): string {
 /**
  * Check whether a user has access to take a test.
  */
-export async function checkTestAccess(userId: string, testId: string): Promise<{ canAccess: boolean; reason: string; freeTestsRemaining?: number; requiredExamType?: string }> {
+export async function checkTestAccess(userId: string, testId: string): Promise<{
+  canAccess: boolean;
+  reason: string;
+  activeAttemptId?: string;
+  requiredExamType?: string;
+}> {
   const test = await testModel.findById(testId);
   if (!test) {
     return { canAccess: false, reason: 'test_not_found' };
   }
 
+  // Check for any active in-progress attempt
+  const existingAttempts = await attemptModel.findByUserId(userId, 0, 5, [test.testType], 'full');
+  const activeAttempt = existingAttempts.rows.find(a => a.status === 'in_progress');
+
   if (test.isFree) {
-    return { canAccess: true, reason: 'free_test' };
+    return { canAccess: true, reason: 'free_test', activeAttemptId: activeAttempt?.id };
   }
 
   const examType = testTypeToExamType(test.testType);
   const activeSub = await subscriptionModel.findActiveByUserIdAndExam(userId, examType);
   if (activeSub) {
-    return { canAccess: true, reason: 'has_subscription' };
-  }
-
-  const user = await userModel.findById(userId);
-  if (user && user.freeTestsRemaining > 0) {
-    return {
-      canAccess: true,
-      reason: 'has_free_tests',
-      freeTestsRemaining: user.freeTestsRemaining,
-    };
+    return { canAccess: true, reason: 'has_subscription', activeAttemptId: activeAttempt?.id };
   }
 
   return {
     canAccess: false,
     reason: 'no_access',
-    freeTestsRemaining: user?.freeTestsRemaining ?? 0,
     requiredExamType: examType,
   };
 }
@@ -72,15 +71,12 @@ export async function startAttempt(
     throw new ForbiddenError('You do not have access to this test.');
   }
 
-  if (!test.isFree) {
-    const examType = testTypeToExamType(test.testType);
-    const activeSub = await subscriptionModel.findActiveByUserIdAndExam(userId, examType);
-    if (!activeSub) {
-      const updated = await userModel.decrementFreeTests(userId);
-      if (!updated) {
-        throw new ForbiddenError('No free tests remaining.');
-      }
-    }
+  // Smart Resume: Check if there is already an in-progress attempt for this test/mode
+  const existingAttempts = await attemptModel.findByUserId(userId, 0, 1, [test.testType], mode);
+  const activeAttempt = existingAttempts.rows.find(a => a.status === 'in_progress' && (!practiceSectionType || a.practiceSectionType === practiceSectionType));
+
+  if (activeAttempt) {
+    return activeAttempt;
   }
 
   return attemptModel.create({
@@ -115,13 +111,13 @@ export async function getShareInfo(id: string) {
   }
 
   const sections: { type: string; label: string; score: number }[] = [];
-  if (attempt.listeningScore && attempt.listeningScore > 0) {
+  if (attempt.listeningScore != null) {
     sections.push({ type: 'listening', label: 'Listening Comprehension', score: attempt.listeningScore });
   }
-  if (attempt.structureScore && attempt.structureScore > 0) {
+  if (attempt.structureScore != null) {
     sections.push({ type: 'structure', label: 'Structure and Written Expression', score: attempt.structureScore });
   }
-  if (attempt.readingScore && attempt.readingScore > 0) {
+  if (attempt.readingScore != null) {
     sections.push({ type: 'reading', label: 'Reading Comprehension', score: attempt.readingScore });
   }
 

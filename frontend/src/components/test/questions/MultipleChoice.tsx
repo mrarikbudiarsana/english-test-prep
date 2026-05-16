@@ -10,6 +10,7 @@ interface MultipleChoiceProps {
   onChange: (answer: string | string[]) => void;
   readOnly?: boolean;
   correctAnswer?: string | string[];
+  questionId?: string;
 }
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -20,6 +21,7 @@ export default function MultipleChoice({
   onChange,
   readOnly = false,
   correctAnswer,
+  questionId,
 }: MultipleChoiceProps) {
   const { options, multiSelect, expectedAnswers } = data;
 
@@ -143,6 +145,7 @@ export default function MultipleChoice({
                 onChange={() =>
                   multiSelect ? handleMultiSelect(optionKey) : handleSingleSelect(optionKey)
                 }
+                name={questionId ? `q-${questionId}` : undefined}
                 disabled={readOnly}
                 className={cn(
                   'h-4 w-4 shrink-0 appearance-none rounded-full border-2 transition-all duration-150 flex items-center justify-center',

@@ -57,10 +57,15 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
 
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.removeAttribute('src');
+      // Crucial: Clear source and remove from DOM memory
+      audioRef.current.src = "";
+      audioRef.current.load();
+      audioRef.current = null;
     }
-
-    const audio = new Audio(url);
+ 
+    const audio = new Audio();
+    // Set src after listener setup to ensure we don't miss early events
+    audio.src = url;
     audio.preload = 'metadata';
     audioRef.current = audio;
     setHasPlayed(false);

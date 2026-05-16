@@ -28,14 +28,10 @@ if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
 }
 
-// Full migrations are best-effort in serverless deployments; auth only waits for
-// the small schema guard below so a bundled migration-file issue cannot brick login.
-runMigrations(false).catch((err) => {
+// Migrations are handled by the migrationsReady promise and the /api/v1 gate below.
+const migrationsReady = runMigrations(false).catch((err) => {
   logger.error('Failed to run database migrations on startup', { error: err.message });
 });
-
-const systemSettingsReady = ensureSystemSettingsSchema();
-const authSchemaReady = ensureAuthSchema();
 
 const allowedOrigins = env.corsOrigin
   .split(',')
@@ -58,12 +54,14 @@ app.use(cors({
       return;
     }
 
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes(origin) || origin.endsWith('.englishwitharik.com') || origin === 'https://englishwitharik.com') {
       callback(null, true);
       return;
     }
 
-    callback(new Error(`CORS origin not allowed: ${origin}`));
+    const error = new Error(`CORS origin not allowed: ${origin}`);
+    (error as any).statusCode = 403; // Forbidden
+    callback(error);
   },
   credentials: true,
 }));
@@ -77,7 +75,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/v1', async (_req, _res, next) => {
   try {
-    await Promise.all([authSchemaReady, systemSettingsReady]);
+    await migrationsReady;
     next();
   } catch (error) {
     next(error);
@@ -130,35 +128,6 @@ app.get('/api/v1/system/status', async (_req, res) => {
 // Error handler
 app.use(errorHandler);
 
-async function ensureAuthSchema() {
-  await query(`
-    ALTER TABLE users
-      ADD COLUMN IF NOT EXISTS preferred_exam_type VARCHAR(20)
-        CHECK (preferred_exam_type IN ('ielts', 'toefl_ibt', 'toefl_itp', 'pte')),
-      ADD COLUMN IF NOT EXISTS country VARCHAR(100),
-      ADD COLUMN IF NOT EXISTS city VARCHAR(100)
-  `);
-}
-
-async function ensureSystemSettingsSchema() {
-  try {
-    await query(`
-      CREATE TABLE IF NOT EXISTS system_settings (
-        key VARCHAR(255) PRIMARY KEY,
-        value JSONB NOT NULL,
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    
-    // Initialize maintenance_mode if not present
-    await query(`
-      INSERT INTO system_settings (key, value)
-      VALUES ('maintenance_mode', 'false'::jsonb)
-      ON CONFLICT (key) DO NOTHING
-    `);
-  } catch (error) {
-    logger.error('Failed to ensure system_settings schema', { error: error instanceof Error ? error.message : 'Unknown error' });
-  }
-}
+// Schema initialization is now handled by migrations and the migrationsReady gate.
 
 export default app;

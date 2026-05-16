@@ -299,8 +299,9 @@ export async function getAllResults(
   try {
     const offset = parseInt(req.query.offset as string) || 0;
     const limit = parseInt(req.query.limit as string) || 50;
-    const result = await adminService.getAllResults(offset, limit);
-    res.json({ data: result.rows, total: result.total, offset, limit });
+    const search = req.query.search as string;
+    const result = await adminService.getAllResults(offset, limit, search);
+    res.json({ data: result.rows, total: result.total, offset, limit, search });
   } catch (error) {
     next(error);
   }

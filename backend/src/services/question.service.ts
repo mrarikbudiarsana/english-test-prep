@@ -73,7 +73,7 @@ export async function getQuestionsBySectionId(sectionId: string) {
     throw new NotFoundError('Section not found');
   }
 
-  let questions = await questionModel.findBySectionId(sectionId);
+  let questions = await questionModel.findBySectionIdPublic(sectionId);
 
   // Writing and speaking sections store their content on the section itself (no
   // question rows needed for content). However the responses table requires a

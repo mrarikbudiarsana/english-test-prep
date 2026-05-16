@@ -23,8 +23,8 @@ import Link from 'next/link';
 
 type AccessCheckResult = {
   canAccess: boolean;
-  reason: 'free_test' | 'has_subscription' | 'has_free_tests' | 'no_access' | 'test_not_found';
-  freeTestsRemaining?: number;
+  reason: 'free_test' | 'has_subscription' | 'no_access' | 'test_not_found';
+  activeAttemptId?: string;
   requiredExamType?: string;
 };
 
@@ -288,19 +288,22 @@ export default function TestOverviewPage() {
 
           {access?.canAccess ? (
             <>
-              {access.reason === 'has_free_tests' && (
-                <p className="text-sm text-amber-600 mb-4 flex items-center gap-1.5">
-                  <HiSparkles className="w-3.5 h-3.5" />
-                  This will use 1 of your {access.freeTestsRemaining} free tests remaining
-                </p>
-              )}
               <button
                 onClick={() => handleStartTest('full')}
                 disabled={starting}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#08507f] text-white text-sm font-bold hover:bg-[#063d61] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <HiPlay className="w-4 h-4" />
-                {starting ? t('test_overview_starting') : t('test_overview_start_full')}
+                {access.activeAttemptId ? (
+                  <>
+                    <HiSparkles className="w-4 h-4" />
+                    {starting ? t('test_overview_starting') : 'Resume Test'}
+                  </>
+                ) : (
+                  <>
+                    <HiPlay className="w-4 h-4" />
+                    {starting ? t('test_overview_starting') : t('test_overview_start_full')}
+                  </>
+                )}
               </button>
             </>
           ) : (
@@ -313,7 +316,6 @@ export default function TestOverviewPage() {
                   <h3 className="text-sm font-bold text-slate-800 mb-0.5">{t('test_overview_premium_test')}</h3>
                   <p className="text-xs text-slate-500">
                     {t('test_overview_premium_body')}
-                    {access?.freeTestsRemaining === 0 && t('test_overview_no_free_left')}
                   </p>
                 </div>
               </div>

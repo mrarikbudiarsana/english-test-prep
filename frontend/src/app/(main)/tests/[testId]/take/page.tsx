@@ -136,7 +136,6 @@ function TestTakingContent() {
   const [activePartIndex, setActivePartIndex] = useState(0);
   const [viewingDirections, setViewingDirections] = useState(false);
   const [isDirectionsTransitioning, setIsDirectionsTransitioning] = useState(false);
-  const [toeflReviewUnlocked, setToeflReviewUnlocked] = useState(false);
   const directionsTransitionTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [testTitle, setTestTitle] = useState<string>('');
@@ -374,15 +373,6 @@ function TestTakingContent() {
     focusQuestionAtIndex(index);
   }, [focusQuestionAtIndex]);
 
-  const startToeflReview = useCallback(() => {
-    setToeflReviewUnlocked(true);
-    setViewingDirections(false);
-    const firstUnansweredIndex = questions.findIndex(q => !state.answeredQuestions.has(q.id));
-    const reviewIndex = firstUnansweredIndex !== -1 ? firstUnansweredIndex : 0;
-    if (reviewIndex >= 0) {
-      setCurrentQuestionIndex(reviewIndex);
-    }
-  }, [questions, state.answeredQuestions]);
 
   const exitDirectionsView = useCallback(() => {
     if (!viewingDirections) return;
@@ -449,7 +439,8 @@ function TestTakingContent() {
             setViewingDirections(getResolvedPartNumber(activePartIndex) !== getResolvedPartNumber(nextPartIdx));
           }
         } else {
-          startToeflReview();
+          // In Listening, when you reach the end, you finish the section (no review)
+          openSubmitModal(mode === 'full' && SECTION_ORDER.indexOf(state.currentSectionType!) < SECTION_ORDER.length - 1 ? 'section' : 'test');
         }
         return;
       }
@@ -471,11 +462,8 @@ function TestTakingContent() {
             }
           }
         } else {
-          if (state.currentSectionType === 'structure') {
-            openSubmitModal(mode === 'full' && SECTION_ORDER.indexOf(state.currentSectionType) < SECTION_ORDER.length - 1 ? 'section' : 'test');
-          } else {
-            startToeflReview();
-          }
+          // Finish section directly when reaching the end of Listening or Structure
+          openSubmitModal(mode === 'full' && SECTION_ORDER.indexOf(state.currentSectionType!) < SECTION_ORDER.length - 1 ? 'section' : 'test');
         }
       } else {
         if (currentQuestionIndex < questions.length - 1) {
@@ -483,7 +471,7 @@ function TestTakingContent() {
         }
       }
     } else {
-      if (state.currentSectionType === 'listening' && getResolvedPartNumber(activePartIndex) >= 2) return;
+      if (state.currentSectionType === 'listening') return;
 
       if (viewingDirections) {
         if (activePartIndex > 0) {
@@ -506,10 +494,10 @@ function TestTakingContent() {
         }
       }
     }
-  }, [activePartIndex, currentQuestionIndex, currentSectionParts, exitDirectionsView, getResolvedPartNumber, mode, questions, selectQuestionIndex, startToeflReview, state.currentSectionType, viewingDirections]);
+  }, [activePartIndex, currentQuestionIndex, currentSectionParts, exitDirectionsView, getResolvedPartNumber, mode, questions, selectQuestionIndex, state.currentSectionType, viewingDirections]);
 
   const handleNextQuestion = () => {
-    if (state.currentSectionType === 'listening' && !toeflReviewUnlocked) {
+    if (state.currentSectionType === 'listening') {
       handleToeflNavigation('next');
       return;
     }
@@ -520,11 +508,6 @@ function TestTakingContent() {
 
     if (currentQuestionIndex < questions.length - 1) {
       selectQuestionIndex(currentQuestionIndex + 1);
-    } else if (state.currentSectionType === 'listening' && unansweredCount() > 0) {
-      const firstUnansweredIndex = questions.findIndex(q => !state.answeredQuestions.has(q.id));
-      if (firstUnansweredIndex !== -1) {
-        selectQuestionIndex(firstUnansweredIndex);
-      }
     } else if (mode === 'full' && SECTION_ORDER.indexOf(state.currentSectionType!) < SECTION_ORDER.length - 1) {
       openSubmitModal('section');
     } else {
@@ -539,7 +522,7 @@ function TestTakingContent() {
   };
 
   const handlePreviousQuestion = () => {
-    if (state.currentSectionType === 'listening' && !toeflReviewUnlocked) {
+    if (state.currentSectionType === 'listening') {
       handleToeflNavigation('prev');
       return;
     }
@@ -554,9 +537,19 @@ function TestTakingContent() {
 
   const handleSubmitSection = async () => {
     if (state.currentSectionType) {
-      if (state.currentSectionType === 'listening' && unansweredCount() > 0) {
-        setShowSubmitModal(false);
-        startToeflReview();
+      if (state.currentSectionType === 'listening') {
+        // No review for listening, proceed to submission directly
+        timer.stop();
+        try {
+          setError(null);
+          await submitSection(state.currentSectionType);
+          setShowSubmitModal(false);
+          advanceToNextSection();
+        } catch {
+          setError(t('test_submit_error'));
+          setShowSubmitModal(false);
+          timer.start(timer.timeRemaining);
+        }
         return;
       }
       timer.stop();
@@ -607,11 +600,9 @@ function TestTakingContent() {
   const topActionLabel = mode === 'full' && upcomingSectionType ? t('test_next_section') : t('test_finish');
   const navigatorActionLabel = currentQuestionIndex < questions.length - 1 ? t('test_next') : topActionLabel;
   
-  const isListeningReviewAudioLocked = state.currentSectionType === 'listening' && toeflReviewUnlocked;
 
   useEffect(() => {
     setActivePartIndex(0);
-    setToeflReviewUnlocked(false);
     setIsToeflReadingProgressOpen(false);
     setToeflReadingMobileView('question');
   }, [state.currentSectionType]);
@@ -666,10 +657,8 @@ function TestTakingContent() {
   const toeflPhaseLabel = useMemo(() => {
     if (!state.currentSectionType) return null;
     if (viewingDirections) return 'Directions';
-    if (state.currentSectionType === 'listening' && !toeflReviewUnlocked) return 'First Pass';
-    if (state.currentSectionType === 'listening' && toeflReviewUnlocked) return 'Review';
     return 'Active Section';
-  }, [state.currentSectionType, viewingDirections, toeflReviewUnlocked]);
+  }, [state.currentSectionType, viewingDirections]);
 
   const currentPartLabel = useMemo(() => getToeflPartLabel(state.currentSectionType, activePartIndex), [getToeflPartLabel, state.currentSectionType, activePartIndex]);
 
@@ -761,17 +750,17 @@ function TestTakingContent() {
                 ) : (
                   <div className="w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
                     {currentSectionPart?.audioUrl && (
-                      <AudioPlayer src={currentSectionPart.audioUrl} playOnce autoPlay disabled={isListeningReviewAudioLocked} disableScrubbing={state.currentSectionType === 'listening'} volume={globalVolume} onEnd={handleAudioEnd} />
+                      <AudioPlayer src={currentSectionPart.audioUrl} playOnce autoPlay disabled={false} disableScrubbing={state.currentSectionType === 'listening'} volume={globalVolume} onEnd={handleAudioEnd} />
                     )}
                     <div className="mt-8">
                       {isPartBCMode ? (
                         <div className="space-y-12">
                           {questions.filter(q => q.sectionId === currentSectionPart?.id).map((q, i) => (
-                            <QuestionRenderer key={q.id} question={q} answer={state.answers[q.id]} onAnswerChange={handleAnswerChange} displayNumber={partNumberOffset + i + 1} isActive={questions.indexOf(q) === currentQuestionIndex} disableAudio={isListeningReviewAudioLocked} disableScrubbing={state.currentSectionType === 'listening'} volume={globalVolume} />
+                             <QuestionRenderer key={q.id} question={q} answer={state.answers[q.id]} onAnswerChange={handleAnswerChange} displayNumber={partNumberOffset + i + 1} isActive={questions.indexOf(q) === currentQuestionIndex} disableScrubbing={state.currentSectionType === 'listening'} volume={globalVolume} />
                           ))}
                         </div>
                       ) : currentQuestion && (
-                        <QuestionRenderer question={currentQuestion} answer={state.answers[currentQuestion.id]} onAnswerChange={handleAnswerChange} displayNumber={currentQuestionIndex + 1} isActive={true} onAudioEnd={handleAudioEnd} playOnce autoPlay disableAudio={isListeningReviewAudioLocked} disableScrubbing={state.currentSectionType === 'listening'} volume={globalVolume} />
+                         <QuestionRenderer question={currentQuestion} answer={state.answers[currentQuestion.id]} onAnswerChange={handleAnswerChange} displayNumber={currentQuestionIndex + 1} isActive={true} onAudioEnd={handleAudioEnd} playOnce autoPlay disableScrubbing={state.currentSectionType === 'listening'} volume={globalVolume} />
                       )}
                     </div>
                   </div>
@@ -900,13 +889,18 @@ function TestTakingContent() {
             <QuestionNavigator
               totalQuestions={questions.length}
               currentIndex={currentQuestionIndex}
-              onSelect={idx => (state.currentSectionType !== 'listening' || toeflReviewUnlocked) && selectQuestionIndex(idx)}
+              onSelect={idx => state.currentSectionType !== 'listening' && selectQuestionIndex(idx)}
               answeredIndices={new Set(questions.map((q, i) => state.answers[q.id] ? i : -1).filter(i => i !== -1))}
               flaggedIndices={new Set(questions.map((q, i) => state.flaggedQuestions.has(q.id) ? i : -1).filter(i => i !== -1))}
-              allowNavigation={state.currentSectionType !== 'listening' || toeflReviewUnlocked}
+              allowNavigation={state.currentSectionType !== 'listening'}
               variant="grid"
               hideActions
             />
+            {state.currentSectionType === 'listening' && (
+              <p className="mt-4 text-[10px] text-center text-slate-400 font-medium italic leading-relaxed">
+                Navigation is disabled for the Listening section to maintain exam authenticity.
+              </p>
+            )}
           </aside>
         )}
       </div>
@@ -919,7 +913,7 @@ function TestTakingContent() {
               <button
                 onClick={handlePreviousQuestion}
                 className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                disabled={currentQuestionIndex === 0 && !isPartBCMode || (state.currentSectionType === 'listening' && !toeflReviewUnlocked)}
+                disabled={currentQuestionIndex === 0 && !isPartBCMode || (state.currentSectionType === 'listening')}
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
                 {t('test_prev')}

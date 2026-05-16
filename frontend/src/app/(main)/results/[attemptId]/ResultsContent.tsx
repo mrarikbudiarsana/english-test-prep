@@ -344,11 +344,13 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Analysis</h3>
                             {tier !== 'free' ? (
                                 <CriterionAnalytics
-                                    criteria={sections.map(s => ({
-                                        label: s.label,
-                                        short: s.type.substring(0, 3).toUpperCase(),
-                                        band: s.score || 0
-                                    }))}
+                                    criteria={sections
+                                        .filter(s => s.score !== null)
+                                        .map(s => ({
+                                            label: s.label,
+                                            short: s.type.substring(0, 3).toUpperCase(),
+                                            band: s.score || 0
+                                        }))}
                                     color="#08507f"
                                     maxScore={68}
                                 />

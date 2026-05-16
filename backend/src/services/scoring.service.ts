@@ -277,6 +277,8 @@ export async function scoreObjectiveSectionWithQuery(
   let rawScore = 0;
   const maxRawScore = calculateSectionMaxRawScore(questions as Question[]);
 
+  const responseUpdates: Array<{ id: string; isCorrect: boolean; points: number }> = [];
+
   for (const q of questions) {
     const response = responses.find(r => r.question_id === q.id);
     if (response) {
@@ -290,11 +292,28 @@ export async function scoreObjectiveSectionWithQuery(
         rawScore += points;
       }
 
-      await queryFn(
-        `UPDATE responses SET is_correct = $1, score = $2 WHERE id = $3`,
-        [isCorrect, points, response.id]
-      );
+      responseUpdates.push({ id: response.id, isCorrect, points });
     }
+  }
+
+  // Batch update all responses in a single query
+  if (responseUpdates.length > 0) {
+    const values: any[] = [];
+    const valuePlaceholders: string[] = [];
+    responseUpdates.forEach((u, i) => {
+      const offset = i * 3;
+      valuePlaceholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
+      values.push(u.id, u.isCorrect, u.points);
+    });
+
+    await queryFn(
+      `UPDATE responses AS r SET
+         is_correct = v.is_correct,
+         score = v.score
+       FROM (VALUES ${valuePlaceholders.join(', ')}) AS v(id, is_correct, score)
+       WHERE r.id = v.id::uuid`,
+      values
+    );
   }
 
   const scaledScore = convertToBand(rawScore, sectionType, 'toefl_itp', maxRawScore);

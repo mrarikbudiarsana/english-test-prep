@@ -353,8 +353,8 @@ export async function getUsers(offset: number = 0, limit: number = 20) {
 /**
  * Admin: Get all completed test results with pagination, sorted latest first.
  */
-export async function getAllResults(offset: number = 0, limit: number = 50) {
-  return attemptModel.findAllCompleted(offset, limit);
+export async function getAllResults(offset: number = 0, limit: number = 50, search?: string) {
+  return attemptModel.findAllCompleted(offset, limit, search);
 }
 
 /**

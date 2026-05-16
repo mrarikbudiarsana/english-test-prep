@@ -102,12 +102,11 @@ export default function TestCatalogPage() {
             <div className="flex-shrink-0 lg:max-w-xs w-full lg:w-auto flex items-center justify-between lg:justify-start gap-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm p-5 shadow-inner">
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#08507f] shadow-lg">
-                  <HiLockOpen className="w-6 h-6" />
+                  <HiAcademicCap className="w-6 h-6" />
                 </div>
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200">{t('tests_free_access')}</p>
                   <p className="text-sm font-bold text-white">
-                    <span className="text-lg font-black text-amber-400">{user.freeTestsRemaining}</span>{' '}
                     {t('tests_remaining')}
                   </p>
                 </div>
