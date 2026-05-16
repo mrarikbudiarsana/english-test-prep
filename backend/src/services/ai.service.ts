@@ -31,6 +31,55 @@ export async function generateQuestionExplanation(questionId: string) {
   }
 }
 
+export async function generateReadingQuestions(sectionId: string) {
+  const section = await SectionModel.findById(sectionId);
+  if (!section || section.sectionType !== 'reading') {
+    throw new Error('Valid reading section with passage text is required');
+  }
+
+  const model = genAI.getGenerativeModel({ 
+    model: 'gemini-1.5-flash',
+    generationConfig: { responseMimeType: 'application/json' }
+  });
+
+  const prompt = `
+    You are an expert TOEFL ITP test creator.
+    Based on the following reading passage, generate 10 high-quality multiple-choice questions in TOEFL ITP style.
+    
+    Reading Passage:
+    ${section.passageText}
+    
+    Requirements:
+    1. Questions should vary in type: Main Idea, Vocabulary in Context, Factual Information, Negative Factual, and Inference.
+    2. Each question must have exactly 4 options (A, B, C, D).
+    3. The correct answer must be clearly indicated.
+    4. Provide a brief explanation for each question.
+    5. Ensure the language level is appropriate for TOEFL ITP.
+    
+    Output Format (JSON):
+    {
+      "questions": [
+        {
+          "questionText": "...",
+          "options": ["Option A", "Option B", "Option C", "Option D"],
+          "correctAnswer": "Option A",
+          "explanation": "..."
+        }
+      ]
+    }
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const data = JSON.parse(response.text());
+    return data.questions;
+  } catch (error: any) {
+    logger.error('Error generating AI questions', { error: error.message, sectionId });
+    throw new Error('Failed to generate AI questions');
+  }
+}
+
 function buildPrompt(question: any, section: any) {
   let context = '';
   

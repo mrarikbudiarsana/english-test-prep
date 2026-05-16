@@ -20,6 +20,7 @@ const SELECT_COLUMNS = `
   structure_raw        AS "structureRaw",
   structure_score      AS "structureScore",
   overall_score        AS "overallScore",
+  is_preview           AS "isPreview",
   created_at           AS "createdAt",
   updated_at           AS "updatedAt"
 `;
@@ -55,6 +56,7 @@ function transformAttemptRow(row: any) {
     structureRaw: row.structure_raw,
     structureScore: row.structure_score,
     overallScore: row.overall_score,
+    isPreview: row.is_preview,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     test: row.test || null,
@@ -121,6 +123,7 @@ export async function findByUserId(
      FROM attempts a
      JOIN tests t ON a.test_id = t.id
      WHERE a.user_id = $1
+       AND NOT a.is_preview
        AND (a.status != 'in_progress' OR EXISTS (SELECT 1 FROM responses r WHERE r.attempt_id = a.id))
        ${queryFilter}
      ORDER BY a.created_at DESC
@@ -146,16 +149,18 @@ export async function create(data: {
   testId: string;
   mode?: string;
   practiceSectionType?: string;
+  isPreview?: boolean;
 }) {
   const result = await query(
-    `INSERT INTO attempts (user_id, test_id, mode, practice_section_type)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO attempts (user_id, test_id, mode, practice_section_type, is_preview)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING ${SELECT_COLUMNS}`,
     [
       data.userId,
       data.testId,
       data.mode ?? 'full',
       data.practiceSectionType ?? null,
+      data.isPreview ?? false,
     ],
   );
   return result.rows[0];
@@ -305,7 +310,7 @@ export async function getStatsForUser(userId: string, examType?: string, mode?: 
       t.test_type AS "testType"
      FROM attempts a
      JOIN tests t ON a.test_id = t.id
-     WHERE a.user_id = $1 AND a.status = 'completed'
+     WHERE a.user_id = $1 AND a.status = 'completed' AND NOT a.is_preview
      ${filterClause}
      ORDER BY a.completed_at DESC
      LIMIT 50`,
@@ -397,17 +402,18 @@ export async function findAllCompleted(offset: number = 0, limit: number = 50, s
      FROM attempts a
      JOIN tests t ON a.test_id = t.id
      JOIN users u ON a.user_id = u.id
-     WHERE a.status = 'completed' ${searchClause}
+     WHERE a.status = 'completed' AND NOT a.is_preview ${searchClause}
      ORDER BY a.completed_at DESC NULLS LAST
      OFFSET $1 LIMIT $2`,
     params,
   );
 
   const countResult = await query(
-    `SELECT COUNT(*) FROM attempts a
+    `SELECT COUNT(*)     FROM attempts a
      JOIN users u ON a.user_id = u.id
      JOIN tests t ON a.test_id = t.id
-     WHERE a.status = 'completed' ${searchClause}`,
+     WHERE a.status = 'completed' AND NOT a.is_preview ${searchClause}
+`,
     search ? [params[2]] : [],
   );
 

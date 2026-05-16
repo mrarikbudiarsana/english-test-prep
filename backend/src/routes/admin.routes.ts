@@ -16,6 +16,8 @@ router.post('/tests', adminController.createTest);
 router.put('/tests/:testId', adminController.updateTest);
 router.delete('/tests/:testId', adminController.deleteTest);
 router.post('/tests/:testId/publish', adminController.publishTest);
+router.post('/tests/:testId/duplicate', adminController.duplicateTest);
+router.post('/sections/:sectionId/ai-generate-questions', adminController.generateAIReadingQuestions);
 
 // Section CRUD
 router.post('/tests/:testId/sections', adminController.createSection);
@@ -51,6 +53,7 @@ router.get('/dashboard/stats', adminController.getDashboardStats);
 
 // Results (all completed attempts)
 router.get('/results', adminController.getAllResults);
+router.get('/results/export', adminController.exportResults);
 
 // System Settings
 router.get('/settings', adminController.getSettings);

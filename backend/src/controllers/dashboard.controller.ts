@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as dashboardService from '../services/dashboard.service';
+import * as settingsService from '../services/settings.service';
 
 export async function getStats(
   req: Request,
@@ -40,6 +41,19 @@ export async function getProgress(
   try {
     const progress = await dashboardService.getProgress(req.user!.id);
     res.json({ data: progress });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAnnouncement(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const announcement = await settingsService.getAnnouncement();
+    res.json({ data: announcement });
   } catch (error) {
     next(error);
   }

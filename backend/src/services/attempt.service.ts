@@ -56,9 +56,10 @@ export async function startAttempt(
   testId: string,
   mode: AttemptMode = 'full',
   practiceSectionType?: SectionType,
+  isPreview: boolean = false,
 ) {
   const test = await testModel.findById(testId);
-  if (!test || !test.isPublished) {
+  if (!test || (!test.isPublished && !isPreview)) {
     throw new NotFoundError('Test not found');
   }
 
@@ -66,9 +67,11 @@ export async function startAttempt(
     throw new ValidationError('Practice section type is required for section practice mode');
   }
 
-  const accessResult = await checkTestAccess(userId, testId);
-  if (!accessResult.canAccess) {
-    throw new ForbiddenError('You do not have access to this test.');
+  if (!isPreview) {
+    const accessResult = await checkTestAccess(userId, testId);
+    if (!accessResult.canAccess) {
+      throw new ForbiddenError('You do not have access to this test.');
+    }
   }
 
   // Smart Resume: Check if there is already an in-progress attempt for this test/mode
@@ -84,6 +87,7 @@ export async function startAttempt(
     testId,
     mode,
     practiceSectionType: practiceSectionType || undefined,
+    isPreview,
   });
 }
 

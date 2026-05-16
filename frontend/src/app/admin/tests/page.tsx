@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Copy, Eye, Loader2 } from 'lucide-react';
 import type { Test } from '@/types/test';
 import { testTypeShortLabel } from '@/lib/utils';
 
@@ -17,6 +18,8 @@ export default function AdminTestsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTests();
@@ -47,6 +50,36 @@ export default function AdminTestsPage() {
       alert(err.response?.data?.error || 'Failed to delete test');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleDuplicate = async (testId: string) => {
+    setDuplicatingId(testId);
+    try {
+      const response = await api.post(`/admin/tests/${testId}/duplicate`);
+      const newTest = response.data.data || response.data;
+      setTests((prev) => [newTest, ...prev]);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to duplicate test');
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
+
+  const handlePreview = async (testId: string) => {
+    setPreviewingId(testId);
+    try {
+      const response = await api.post('/attempts', {
+        testId,
+        mode: 'full',
+        isPreview: true
+      });
+      const attempt = response.data.data || response.data;
+      router.push(`/tests/${testId}/take?attemptId=${attempt.id}&preview=true`);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to start preview');
+    } finally {
+      setPreviewingId(null);
     }
   };
 
@@ -164,6 +197,26 @@ export default function AdminTestsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePreview(test.id)}
+                          loading={previewingId === test.id}
+                          title="Preview Test"
+                          className="text-orange-600 hover:text-orange-800 hover:bg-orange-50"
+                        >
+                          {previewingId !== test.id && <Eye className="w-4 h-4" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDuplicate(test.id)}
+                          loading={duplicatingId === test.id}
+                          title="Duplicate Test"
+                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                        >
+                          {duplicatingId !== test.id && <Copy className="w-4 h-4" />}
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"

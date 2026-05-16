@@ -4,7 +4,9 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { HiDownload } from 'react-icons/hi';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { formatDate } from '@/lib/utils';
 
@@ -72,6 +74,7 @@ export default function AdminResultsPage() {
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
   const [search, setSearch] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   const fetchResults = useCallback(async (currentOffset: number, append: boolean, searchQuery: string) => {
     try {
@@ -106,6 +109,51 @@ export default function AdminResultsPage() {
     return () => clearTimeout(timer);
   }, [search, fetchResults]);
 
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      const response = await api.get('/admin/results/export', {
+        params: { search }
+      });
+      const data = response.data.data || response.data;
+      
+      if (!Array.isArray(data) || data.length === 0) {
+        alert('No data to export');
+        return;
+      }
+
+      const headers = ['Student Name', 'Student Email', 'Test Title', 'Test Type', 'Mode', 'Score', 'Listening', 'Structure', 'Reading', 'Completed At'];
+      const rows = data.map(row => [
+        `"${row.userName || 'No name'}"`,
+        `"${row.userEmail}"`,
+        `"${row.testTitle}"`,
+        `"${testTypeLabel(row.testType)}"`,
+        `"${row.mode}"`,
+        row.overallScore ?? '',
+        row.listeningScore ?? '',
+        row.structureScore ?? '',
+        row.readingScore ?? '',
+        row.completedAt ? new Date(row.completedAt).toLocaleString() : ''
+      ]);
+
+      const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `itp_ready_results_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export data');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const filtered = results;
 
   if (loading) {
@@ -134,6 +182,16 @@ export default function AdminResultsPage() {
         <span className="text-sm text-gray-500 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">
           {total} completed results
         </span>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleExport} 
+          loading={exporting}
+          className="flex items-center gap-2"
+        >
+          {!exporting && <HiDownload className="w-4 h-4" />}
+          Export CSV
+        </Button>
       </div>
 
       {/* Search */}

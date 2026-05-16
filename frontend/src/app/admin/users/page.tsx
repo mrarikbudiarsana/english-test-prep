@@ -22,7 +22,7 @@ export default function AdminUsersPage() {
   const [offset, setOffset] = useState(0);
   const [search, setSearch] = useState('');
 
-  const fetchUsers = useCallback(async (currentOffset: number, append: boolean) => {
+  const fetchUsers = useCallback(async (currentOffset: number, append: boolean, searchQuery: string) => {
     try {
       if (append) {
         setLoadingMore(true);
@@ -31,7 +31,7 @@ export default function AdminUsersPage() {
         setError(null);
       }
       const response = await api.get('/admin/users', {
-        params: { offset: currentOffset, limit: PAGE_SIZE },
+        params: { offset: currentOffset, limit: PAGE_SIZE, search: searchQuery },
       });
       const rows: User[] = response.data.data || response.data;
       const totalCount: number = response.data.total ?? rows.length;
@@ -47,18 +47,13 @@ export default function AdminUsersPage() {
   }, []);
 
   useEffect(() => {
-    fetchUsers(0, false);
-  }, [fetchUsers]);
+    const timer = setTimeout(() => {
+      fetchUsers(0, false, search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search, fetchUsers]);
 
-  const filtered = search.trim()
-    ? users.filter((u) => {
-        const q = search.toLowerCase();
-        return (
-          (u.displayName || '').toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q)
-        );
-      })
-    : users;
+  const filtered = users;
 
   const handleRoleChange = async (userId: string, newRole: 'user' | 'admin') => {
     setUpdatingUserId(userId);
@@ -118,7 +113,7 @@ export default function AdminUsersPage() {
         <Card>
           <div className="text-center py-4">
             <p className="text-red-600 mb-2">{error}</p>
-            <button onClick={() => fetchUsers(0, false)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            <button onClick={() => fetchUsers(0, false, search)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
               Try again
             </button>
           </div>
@@ -236,7 +231,7 @@ export default function AdminUsersPage() {
           {!search && users.length < total && (
             <div className="flex justify-center">
               <button
-                onClick={() => fetchUsers(offset, true)}
+                onClick={() => fetchUsers(offset, true, search)}
                 disabled={loadingMore}
                 className="px-6 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-wait transition-colors shadow-sm"
               >

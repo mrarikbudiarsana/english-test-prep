@@ -3,6 +3,7 @@ import * as sectionService from './section.service';
 import * as questionService from './question.service';
 import * as userModel from '../models/user.model';
 import * as testModel from '../models/test.model';
+import * as aiService from './ai.service';
 import * as attemptModel from '../models/attempt.model';
 import * as sectionModel from '../models/section.model';
 import * as questionModel from '../models/question.model';
@@ -346,8 +347,8 @@ export async function bulkCreateQuestions(
 /**
  * Admin: Get all users with pagination.
  */
-export async function getUsers(offset: number = 0, limit: number = 20) {
-  return userModel.findAll(offset, limit);
+export async function getUsers(offset: number = 0, limit: number = 20, search?: string) {
+  return userModel.findAll(offset, limit, search);
 }
 
 /**
@@ -355,6 +356,13 @@ export async function getUsers(offset: number = 0, limit: number = 20) {
  */
 export async function getAllResults(offset: number = 0, limit: number = 50, search?: string) {
   return attemptModel.findAllCompleted(offset, limit, search);
+}
+
+/**
+ * Admin: Get all completed test results for export.
+ */
+export async function exportResults(search?: string) {
+  return attemptModel.findAllCompleted(0, 10000, search);
 }
 
 /**
@@ -386,6 +394,43 @@ export async function getDashboardStats() {
      ORDER BY count DESC`
   );
 
+  // Difficult questions (lowest success rate)
+  const difficultQuestionsQuery = await query(
+    `SELECT 
+       q.id, 
+       q.question_number AS "questionNumber", 
+       s.title AS "sectionTitle", 
+       t.title AS "testTitle",
+       COUNT(r.id)::int AS "totalResponses",
+       SUM(CASE WHEN r.is_correct = TRUE THEN 1 ELSE 0 END)::int AS "correctResponses"
+     FROM responses r
+     JOIN questions q ON r.question_id = q.id
+     JOIN sections s ON q.section_id = s.id
+     JOIN tests t ON s.test_id = t.id
+     JOIN attempts a ON r.attempt_id = a.id
+     WHERE NOT a.is_preview
+     GROUP BY q.id, s.id, t.id
+     HAVING COUNT(r.id) > 0
+     ORDER BY (SUM(CASE WHEN r.is_correct = TRUE THEN 1 ELSE 0 END)::float / COUNT(r.id)) ASC
+     LIMIT 5`
+  );
+
+  // Top performers
+  const topPerformersQuery = await query(
+    `SELECT 
+       u.id, 
+       u.display_name AS "displayName", 
+       u.email, 
+       AVG(a.overall_score)::float AS "avgScore",
+       COUNT(a.id)::int AS "totalAttempts"
+     FROM attempts a
+     JOIN users u ON a.user_id = u.id
+     WHERE a.status = 'completed' AND NOT a.is_preview AND a.overall_score IS NOT NULL
+     GROUP BY u.id
+     ORDER BY "avgScore" DESC
+     LIMIT 5`
+  );
+
   return {
     totalUsers: usersResult.total,
     totalTests: testsResult.total,
@@ -394,6 +439,8 @@ export async function getDashboardStats() {
       countries: countriesQuery.rows,
       cities: citiesQuery.rows,
     },
+    difficultQuestions: difficultQuestionsQuery.rows,
+    topPerformers: topPerformersQuery.rows,
   };
 }
 
@@ -402,4 +449,127 @@ export async function getDashboardStats() {
  */
 export async function assignPackage(userId: string, planType: string, examType?: string) {
   return subscriptionService.assignManualSubscription(userId, planType, examType);
+}
+
+/**
+ * Admin: Duplicate a test with all its sections and questions.
+ */
+export async function duplicateTest(testId: string, createdBy: string) {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Get original test
+    const test = await testModel.findById(testId);
+    if (!test) throw new Error('Test not found');
+
+    // 2. Create new test
+    const newTest = await testService.createTest({
+      title: `${test.title} (Copy)`,
+      description: test.description || undefined,
+      testType: test.testType,
+      isFree: test.isFree,
+      durationMinutes: test.durationMinutes,
+    }, createdBy);
+
+    // 3. Get all sections
+    const sections = await sectionModel.findByTestId(testId);
+
+    for (const section of sections) {
+      // 4. Create new section
+      const newSection = await sectionModel.create({
+        testId: newTest.id,
+        sectionType: section.sectionType,
+        sectionOrder: section.sectionOrder,
+        title: section.title || undefined,
+        instructions: section.instructions || undefined,
+        durationMinutes: section.durationMinutes,
+        audioUrl: section.audioUrl || undefined,
+        passageText: section.passageText || undefined,
+        passageTitle: section.passageTitle || undefined,
+        taskDescription: section.taskDescription || undefined,
+        taskNumber: section.taskNumber || undefined,
+        minWords: section.minWords || undefined,
+        imageUrl: section.imageUrl || undefined,
+        partNumber: section.partNumber || undefined,
+        speakingPrompts: section.speakingPrompts,
+        preparationTime: section.preparationTime || undefined,
+        responseTime: section.responseTime || undefined,
+        moduleStage: section.moduleStage || undefined,
+        modulePath: section.modulePath || undefined,
+        taskType: section.taskType || undefined,
+      });
+
+      // 5. Get all questions for this section
+      const questions = await query(
+        'SELECT * FROM questions WHERE section_id = $1 ORDER BY question_number ASC',
+        [section.id]
+      );
+
+      for (const q of questions.rows) {
+        // 6. Create new question
+        await query(
+          `INSERT INTO questions (
+            section_id, question_number, question_type, 
+            question_text, question_data, correct_answer, 
+            points, explanation, explanation_ai, 
+            group_label, group_instructions, item_payload,
+            audio_url
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+          [
+            newSection.id,
+            q.question_number,
+            q.question_type,
+            q.question_text,
+            q.question_data,
+            q.correct_answer,
+            q.points,
+            q.explanation,
+            q.explanation_ai,
+            q.group_label,
+            q.group_instructions,
+            q.item_payload,
+            q.audio_url
+          ]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    return newTest;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+export async function generateAIReadingQuestions(sectionId: string) {
+  const aiQuestions = await aiService.generateReadingQuestions(sectionId);
+  
+  // Transform AI questions to our DB format
+  const questionsToCreate = aiQuestions.map((q: any, index: number) => {
+    // Map options ["Text A", "Text B", ...] to [{key: "A", text: "Text A"}, ...]
+    const optionKeys = ['A', 'B', 'C', 'D'];
+    const formattedOptions = q.options.map((opt: string, i: number) => ({
+      key: optionKeys[i] || String.fromCharCode(65 + i),
+      text: opt
+    }));
+
+    // Find the key for the correct answer
+    // If Gemini returns "Option A" and our option is "Option A", the key is "A"
+    const correctOptionIndex = q.options.findIndex((opt: string) => opt === q.correctAnswer);
+    const correctKey = correctOptionIndex !== -1 ? optionKeys[correctOptionIndex] : 'A';
+
+    return {
+      questionNumber: index + 1,
+      questionText: q.questionText,
+      options: formattedOptions,
+      correctAnswer: correctKey,
+      explanation: q.explanation,
+    };
+  });
+
+  return bulkCreateQuestions(sectionId, questionsToCreate);
 }

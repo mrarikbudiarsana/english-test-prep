@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils';
 import QuestionNavigator from '@/components/test/QuestionNavigator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Eye } from 'lucide-react';
+import Link from 'next/link';
 
 const SECTION_ORDER: SectionType[] = ['listening', 'structure', 'reading'];
 
@@ -123,6 +125,7 @@ function TestTakingContent() {
   const attemptId = attemptIdParam && attemptIdParam !== 'undefined' ? attemptIdParam : '';
   const mode = searchParams.get('mode') || 'full';
   const practiceSection = searchParams.get('section') as SectionType | null;
+  const isPreview = searchParams.get('preview') === 'true';
 
   const [sections, setSections] = useState<Section[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -678,6 +681,15 @@ function TestTakingContent() {
 
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden text-slate-800">
+      {isPreview && (
+        <div className="shrink-0 bg-orange-600 text-white px-6 py-2 text-center text-[10px] sm:text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-4 z-[60]">
+          <Eye className="w-4 h-4" />
+          <span>Preview Mode — Your results will not be saved or affect any analytics.</span>
+          <Link href={testId ? `/admin/tests/${testId}` : '/admin/tests'} className="underline hover:text-white/80 ml-4">
+            Exit Preview
+          </Link>
+        </div>
+      )}
       {/* Redesigned Premium Header */}
       <header className="shrink-0 z-50 bg-white border-b border-slate-100 px-6 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
         <div className="flex items-center justify-between">

@@ -4,6 +4,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import AuthGuard from '@/components/auth/AuthGuard';
 import Navbar from '@/components/layout/Navbar';
+import AnnouncementBanner from '@/components/layout/AnnouncementBanner';
 
 import { LayoutProvider, useLayout } from '@/contexts/LayoutContext';
 
@@ -20,6 +21,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AnnouncementBanner />
       {showNavbar && <Navbar />}
       <div className="flex">
         <main

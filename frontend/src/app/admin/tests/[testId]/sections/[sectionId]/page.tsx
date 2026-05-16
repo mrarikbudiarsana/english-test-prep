@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import QuestionEditor from '@/components/admin/QuestionEditor';
 import BulkQuestionImporter from '@/components/admin/BulkQuestionImporter';
@@ -29,6 +29,8 @@ export default function AdminSectionQuestionsPage() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [generatingBulk, setGeneratingBulk] = useState(false);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
   const [showBulkImporter, setShowBulkImporter] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -104,12 +106,62 @@ export default function AdminSectionQuestionsPage() {
     }
   };
 
+  const handleBulkGenerateAI = async () => {
+    const missing = questions.filter((q) => !q.explanationAi);
+    if (missing.length === 0) {
+      alert('All questions already have AI explanations.');
+      return;
+    }
+    if (!window.confirm(`Generate AI explanations for ${missing.length} questions? This may take a minute.`)) return;
+
+    setGeneratingBulk(true);
+    let successCount = 0;
+
+    for (const q of missing) {
+      try {
+        setGeneratingId(q.id);
+        const res = await api.post(`/admin/questions/${q.id}/generate-explanation`);
+        const explanation = res.data.explanation;
+        setQuestions((prev) => prev.map((item) => item.id === q.id ? { ...item, explanationAi: explanation } : item));
+        successCount++;
+      } catch (err) {
+        console.error(`Failed for Q${q.questionNumber}:`, err);
+      }
+    }
+
+    setGeneratingId(null);
+    setGeneratingBulk(false);
+    alert(`Successfully generated ${successCount} explanations.`);
+  };
+
   const handleBulkImport = async (bulkQuestions: Array<{ questionText: string; options: { key: string; text: string }[]; correctAnswer: string; explanation?: string; questionNumber?: number; }>) => {
     const response = await api.post(`/admin/sections/${sectionId}/questions/bulk`, { questions: bulkQuestions });
     const result = response.data.data || response.data;
     const created = result.questions || [];
     setQuestions((prev) => [...prev, ...created].sort((a: Question, b: Question) => a.questionNumber - b.questionNumber));
     setShowBulkImporter(false);
+  };
+
+  const handleAIGenerateQuestions = async () => {
+    if (!section?.passageText) {
+      alert('Please add a passage text first before generating questions.');
+      return;
+    }
+    if (!window.confirm('This will generate 10 questions based on the passage text using AI. Continue?')) return;
+    
+    setGeneratingQuestions(true);
+    try {
+      const res = await api.post(`/admin/sections/${sectionId}/ai-generate-questions`);
+      const data = res.data.data || res.data;
+      const newQuestions = Array.isArray(data) ? data : (data.questions || []);
+      
+      setQuestions((prev) => [...prev, ...newQuestions].sort((a: Question, b: Question) => a.questionNumber - b.questionNumber));
+      alert(`Successfully generated ${newQuestions.length} questions!`);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to generate questions');
+    } finally {
+      setGeneratingQuestions(false);
+    }
   };
 
   const getQuestionPreview = (question: Question) => question.questionText?.slice(0, 140) || 'Untitled question';
@@ -133,17 +185,57 @@ export default function AdminSectionQuestionsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="default">{sectionTypeLabel(section.sectionType)}</Badge>
+          <Button
+            variant="outline"
+            onClick={handleBulkGenerateAI}
+            loading={generatingBulk}
+            className="text-purple-600 border-purple-200 hover:bg-purple-50"
+            title="Generate AI explanations for all missing items"
+          >
+            {!generatingBulk && <Sparkles className="w-4 h-4 mr-1" />}
+            AI Auto-Explain
+          </Button>
+          {section.sectionType === 'reading' && (
+            <Button
+              variant="outline"
+              onClick={handleAIGenerateQuestions}
+              loading={generatingQuestions}
+              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              title="Generate 10 questions using AI"
+            >
+              {!generatingQuestions && <Sparkles className="w-4 h-4 mr-1" />}
+              AI Generate (Beta)
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setShowBulkImporter(true)}>Bulk Import</Button>
           <Button onClick={() => { setEditingQuestion(null); setShowQuestionEditor(true); }}>Add Question</Button>
         </div>
       </div>
 
       <Card>
-        <div className="grid gap-3 sm:grid-cols-4 text-sm">
+        <div className={`grid gap-3 ${section.sectionType === 'listening' ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} text-sm`}>
           <div><p className="text-gray-500">Section</p><p className="font-semibold text-gray-900">{sectionTypeLabel(section.sectionType)}</p></div>
           <div><p className="text-gray-500">Part</p><p className="font-semibold text-gray-900">{section.partNumber || '-'}</p></div>
           <div><p className="text-gray-500">Duration</p><p className="font-semibold text-gray-900">{section.durationMinutes} min</p></div>
           <div><p className="text-gray-500">Questions</p><p className="font-semibold text-gray-900">{questions.length}</p></div>
+          {section.sectionType === 'listening' && (
+            <div>
+              <p className="text-gray-500">Audio</p>
+              <div className="font-semibold">
+                {section.partNumber === 1 ? (
+                  <span className={questions.every(q => q.audioUrl) ? 'text-green-600' : 'text-red-600'}>
+                    {questions.filter(q => q.audioUrl).length}/{questions.length} Ready
+                  </span>
+                ) : (
+                  section.audioUrl ? (
+                    <span className="text-green-600 flex items-center gap-1"><Volume2 className="w-4 h-4" /> Present</span>
+                  ) : (
+                    <span className="text-red-600 flex items-center gap-1"><VolumeX className="w-4 h-4" /> Missing</span>
+                  )
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -157,7 +249,21 @@ export default function AdminSectionQuestionsPage() {
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-700">{question.questionNumber}</div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1"><Badge variant={getQuestionTypeColor(question.questionType) as any}>{questionTypeLabel(question.questionType)}</Badge><span className="text-xs text-gray-400">{question.points} pt{question.points !== 1 ? 's' : ''}</span></div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant={getQuestionTypeColor(question.questionType) as any}>{questionTypeLabel(question.questionType)}</Badge>
+                      <span className="text-xs text-gray-400">{question.points} pt{question.points !== 1 ? 's' : ''}</span>
+                      {section.sectionType === 'listening' && section.partNumber === 1 && (
+                        question.audioUrl ? (
+                          <span className="inline-flex items-center text-[10px] font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-100 ml-1">
+                            <Volume2 className="w-3 h-3 mr-1" /> Audio
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-[10px] font-medium text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">
+                            <VolumeX className="w-3 h-3 mr-1" /> Missing Audio
+                          </span>
+                        )
+                      )}
+                    </div>
                     <p className="text-sm text-gray-700">{getQuestionPreview(question)}</p>
                     {question.correctAnswer !== undefined && question.correctAnswer !== null && <p className="text-xs text-green-600 mt-1">Answer: {typeof question.correctAnswer === 'object' ? JSON.stringify(question.correctAnswer) : String(question.correctAnswer)}</p>}
                   </div>

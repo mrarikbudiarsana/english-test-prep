@@ -41,6 +41,8 @@ export interface Section {
   moduleStage?: number | null;
   modulePath?: string | null;
   taskType?: string | null;
+  questionCount?: number;
+  audioCount?: number;
 }
 
 export interface SpeakingPrompt {

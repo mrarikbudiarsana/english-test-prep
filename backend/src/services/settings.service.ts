@@ -75,3 +75,9 @@ export async function setSetting(key: string, value: any): Promise<void> {
 export async function isMaintenanceMode(): Promise<boolean> {
   return await getSetting<boolean>('maintenance_mode', false);
 }
+
+export async function getAnnouncement(): Promise<{ message: string; active: boolean }> {
+  const message = await getSetting<string>('announcement_message', '');
+  const active = await getSetting<boolean>('announcement_active', false);
+  return { message, active };
+}

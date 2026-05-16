@@ -217,8 +217,9 @@ export async function getUsers(
   try {
     const offset = parseInt(req.query.offset as string) || 0;
     const limit = parseInt(req.query.limit as string) || 50;
-    const result = await adminService.getUsers(offset, limit);
-    res.json({ data: result.rows, total: result.total, offset, limit });
+    const search = req.query.search as string;
+    const result = await adminService.getUsers(offset, limit, search);
+    res.json({ data: result.rows, total: result.total, offset, limit, search });
   } catch (error) {
     next(error);
   }
@@ -307,6 +308,20 @@ export async function getAllResults(
   }
 }
 
+export async function exportResults(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const search = req.query.search as string;
+    const result = await adminService.exportResults(search);
+    res.json({ data: result.rows });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function assignPackage(
   req: Request,
   res: Response,
@@ -334,22 +349,17 @@ export async function getSettings(
     console.log('Admin settings requested by:', req.user?.email);
     
     const maintenanceMode = await settingsService.isMaintenanceMode();
-    
-    console.log('Maintenance mode status:', maintenanceMode);
+    const announcement = await settingsService.getAnnouncement();
     
     res.json({
       data: {
-        maintenanceMode: !!maintenanceMode // Ensure boolean
+        maintenanceMode: !!maintenanceMode,
+        announcementMessage: announcement.message,
+        announcementActive: announcement.active
       }
     });
   } catch (error) {
-    console.error('Error in getSettings controller:', error);
-    // Fallback to false if everything fails
-    res.json({
-      data: {
-        maintenanceMode: false
-      }
-    });
+    next(error);
   }
 }
 
@@ -359,17 +369,48 @@ export async function updateSettings(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { maintenanceMode } = req.body;
-    
-    console.log('Updating settings:', { maintenanceMode });
+    const { maintenanceMode, announcementMessage, announcementActive } = req.body;
     
     if (maintenanceMode !== undefined) {
       await settingsService.setSetting('maintenance_mode', maintenanceMode);
+    }
+    if (announcementMessage !== undefined) {
+      await settingsService.setSetting('announcement_message', announcementMessage);
+    }
+    if (announcementActive !== undefined) {
+      await settingsService.setSetting('announcement_active', announcementActive);
     }
     
     res.json({ message: 'Settings updated successfully' });
   } catch (error) {
     console.error('Error in updateSettings controller:', error);
+    next(error);
+  }
+}
+
+export async function duplicateTest(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const testId = req.params.testId as string;
+    const test = await adminService.duplicateTest(testId, req.user!.id);
+    res.status(201).json({ data: test });
+  } catch (error) {
+    next(error);
+  }
+}
+export async function generateAIReadingQuestions(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const sectionId = req.params.sectionId as string;
+    const questions = await adminService.generateAIReadingQuestions(sectionId);
+    res.status(201).json({ data: questions });
+  } catch (error) {
     next(error);
   }
 }

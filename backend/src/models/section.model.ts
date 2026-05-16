@@ -65,7 +65,9 @@ export async function findById(id: string) {
 
 export async function findByTestId(testId: string) {
   const result = await query(
-    `SELECT ${SELECT_COLUMNS}
+    `SELECT ${SELECT_COLUMNS},
+            (SELECT COUNT(*)::int FROM questions q WHERE q.section_id = sections.id) AS "questionCount",
+            (SELECT COUNT(*)::int FROM questions q WHERE q.section_id = sections.id AND q.audio_url IS NOT NULL) AS "audioCount"
      FROM sections
      WHERE test_id = $1
      ORDER BY section_order ASC`,
@@ -76,7 +78,9 @@ export async function findByTestId(testId: string) {
 
 export async function findByTestIdAndType(testId: string, sectionType: string) {
   const result = await query(
-    `SELECT ${SELECT_COLUMNS}
+    `SELECT ${SELECT_COLUMNS},
+            (SELECT COUNT(*)::int FROM questions q WHERE q.section_id = sections.id) AS "questionCount",
+            (SELECT COUNT(*)::int FROM questions q WHERE q.section_id = sections.id AND q.audio_url IS NOT NULL) AS "audioCount"
      FROM sections
      WHERE test_id = $1 AND section_type = $2
      ORDER BY section_order ASC`,

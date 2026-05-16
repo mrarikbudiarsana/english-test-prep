@@ -140,16 +140,29 @@ export async function decrementFreeTests(id: string) {
   return result.rows[0] || null;
 }
 
-export async function findAll(offset: number = 0, limit: number = 20) {
+export async function findAll(offset: number = 0, limit: number = 20, search?: string) {
+  let whereClause = '';
+  const values: any[] = [offset, limit];
+
+  if (search) {
+    whereClause = 'WHERE display_name ILIKE $3 OR email ILIKE $3';
+    values.push(`%${search}%`);
+  }
+
   const result = await query(
     `SELECT ${SELECT_COLUMNS}
      FROM users
+     ${whereClause}
      ORDER BY created_at DESC
      OFFSET $1 LIMIT $2`,
-    [offset, limit],
+    values,
   );
 
-  const countResult = await query('SELECT COUNT(*) FROM users');
+  const countResult = await query(
+    `SELECT COUNT(*) FROM users ${whereClause}`,
+    search ? [`%${search}%`] : []
+  );
+
   return {
     rows: result.rows,
     total: parseInt(countResult.rows[0].count, 10),
