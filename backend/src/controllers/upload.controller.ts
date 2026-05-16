@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as uploadService from '../services/upload.service';
+import { logger } from '../utils/logger';
 
 export async function uploadAudio(
   req: Request,
@@ -12,7 +13,9 @@ export async function uploadAudio(
       res.status(400).json({ error: 'No audio file provided' });
       return;
     }
+    logger.info('Received audio upload request', { filename: file.originalname, size: file.size });
     const url = await uploadService.uploadFile(file, 'audio');
+    logger.info('Audio upload completed', { url });
     res.json({ url });
   } catch (error) {
     next(error);

@@ -40,20 +40,31 @@ export default function AudioUploader({ onUpload, currentUrl }: AudioUploaderPro
     formData.append('audio', file);
 
     try {
+      console.log('Starting audio upload...', file.name);
       const response = await api.post('/upload/audio', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const pct = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             setProgress(pct);
+            console.log(`Upload progress: ${pct}%`);
           }
         },
       });
+      
+      console.log('Upload response received:', response.data);
       const url = response.data.url || response.data.data?.url;
+      
+      if (!url) {
+        throw new Error('Server responded without a file URL');
+      }
+
       setUploadedUrl(url);
       onUpload(url);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to upload audio file');
+      console.error('Audio upload error:', err);
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to upload audio file';
+      setError(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -116,7 +127,12 @@ export default function AudioUploader({ onUpload, currentUrl }: AudioUploaderPro
       )}
 
       {uploading && (
-        <Progress value={progress} label="Uploading..." showValue color="blue" />
+        <Progress 
+          value={progress} 
+          label={progress === 100 ? "Processing..." : "Uploading..."} 
+          showValue 
+          color="blue" 
+        />
       )}
 
       {error && (

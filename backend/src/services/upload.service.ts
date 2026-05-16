@@ -1,5 +1,6 @@
 import cloudinary from '../config/cloudinary';
 import { ValidationError } from '../middleware/errorHandler';
+import { logger } from '../utils/logger';
 import crypto from 'crypto';
 import path from 'path';
 import { Readable } from 'stream';
@@ -19,40 +20,52 @@ export async function uploadFile(
   const uniqueId = crypto.randomUUID();
   const ext = path.extname(file.originalname) || '';
 
+  logger.info('Starting file upload to Cloudinary', {
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size,
+    folder,
+    uniqueId,
+  });
+
   try {
-    // Convert buffer to stream for Cloudinary
-    const stream = Readable.from(file.buffer);
-
-    // Determine resource type based on file mimetype
-    let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'auto';
-    if (file.mimetype.startsWith('audio/')) {
-      resourceType = 'video'; // Cloudinary uses 'video' for audio files
-    } else if (file.mimetype.startsWith('image/')) {
-      resourceType = 'image';
-    }
-
-    // Upload to Cloudinary
+    // Upload to Cloudinary using a promise-wrapped stream
     const result = await new Promise<any>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           folder: folder,
           public_id: uniqueId,
-          resource_type: resourceType,
-          format: ext.replace('.', '') || undefined,
+          resource_type: 'auto', // Cloudinary detects type automatically (image, video/audio, raw)
         },
         (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
+          if (error) {
+            logger.error('Cloudinary upload stream callback error:', { error, uniqueId });
+            reject(error);
+          } else {
+            logger.info('Cloudinary upload successful', { public_id: result.public_id, uniqueId });
+            resolve(result);
+          }
         }
       );
 
-      stream.pipe(uploadStream);
+      // Explicitly handle stream errors
+      uploadStream.on('error', (err) => {
+        logger.error('Cloudinary upload stream error event:', { err, uniqueId });
+        reject(err);
+      });
+
+      // CRITICAL: end() the stream with the buffer to ensure it finishes correctly.
+      // Using .end(buffer) is more reliable than .pipe() for in-memory buffers.
+      uploadStream.end(file.buffer);
     });
 
-    // Return the secure URL
     return result.secure_url;
   } catch (error: any) {
-    console.error('Error uploading to Cloudinary:', error);
+    logger.error('Error in uploadFile service:', {
+      message: error.message,
+      stack: error.stack,
+      uniqueId,
+    });
     throw new ValidationError(`Failed to upload file: ${error.message || 'Unknown error'}`);
   }
 }
