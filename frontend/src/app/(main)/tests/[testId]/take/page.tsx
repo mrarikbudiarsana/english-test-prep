@@ -427,13 +427,7 @@ function TestTakingContent() {
       }
 
       if (state.currentSectionType === 'listening' && getResolvedPartNumber(activePartIndex) >= 2) {
-        const currentPartQuestions = questions.filter(q => q.sectionId === currentSectionPart.id);
-        const localIndex = currentPartQuestions.findIndex(q => questions.indexOf(q) === currentQuestionIndex);
-
-        if (localIndex !== -1 && localIndex < currentPartQuestions.length - 1) {
-          const nextQuestion = currentPartQuestions[localIndex + 1];
-          selectQuestionIndex(questions.indexOf(nextQuestion));
-        } else if (activePartIndex < currentSectionParts.length - 1) {
+        if (activePartIndex < currentSectionParts.length - 1) {
           const nextPartIdx = activePartIndex + 1;
           const nextPart = currentSectionParts[nextPartIdx];
           const firstQOfNextPart = questions.find(q => q.sectionId === nextPart.id);
@@ -627,7 +621,10 @@ function TestTakingContent() {
   
   // Standardized Labels
   const topActionLabel = mode === 'full' && upcomingSectionType ? t('test_next_section') : t('test_finish');
-  const navigatorActionLabel = currentQuestionIndex < questions.length - 1 ? t('test_next') : topActionLabel;
+  const isPartBCModeTop = state.currentSectionType === 'listening' && getResolvedPartNumber(activePartIndex) >= 2;
+  const navigatorActionLabel = isPartBCModeTop && activePartIndex === currentSectionParts.length - 1
+    ? topActionLabel
+    : currentQuestionIndex < questions.length - 1 ? t('test_next') : topActionLabel;
   
 
   useEffect(() => {
@@ -794,11 +791,11 @@ function TestTakingContent() {
                       {isPartBCMode ? (
                         <div className="space-y-12">
                           {questions.filter(q => q.sectionId === currentSectionPart?.id).map((q, i) => (
-                             <QuestionRenderer key={q.id} question={q} answer={state.answers[q.id]} onAnswerChange={handleAnswerChange} displayNumber={partNumberOffset + i + 1} isActive={questions.indexOf(q) === currentQuestionIndex} disableScrubbing={state.currentSectionType === 'listening'} volume={globalVolume} />
+                             <QuestionRenderer key={q.id} question={q} answer={state.answers[q.id]} onAnswerChange={handleAnswerChange} displayNumber={partNumberOffset + i + 1} isActive={questions.indexOf(q) === currentQuestionIndex} disableScrubbing={state.currentSectionType === 'listening'} volume={globalVolume} hideQuestionText={state.currentSectionType === 'listening'} />
                           ))}
                         </div>
                       ) : currentQuestion && (
-                         <QuestionRenderer question={currentQuestion} answer={state.answers[currentQuestion.id]} onAnswerChange={handleAnswerChange} displayNumber={currentQuestionIndex + 1} isActive={true} onAudioEnd={handleAudioEnd} playOnce autoPlay disableScrubbing={state.currentSectionType === 'listening'} volume={globalVolume} />
+                         <QuestionRenderer question={currentQuestion} answer={state.answers[currentQuestion.id]} onAnswerChange={handleAnswerChange} displayNumber={currentQuestionIndex + 1} isActive={true} onAudioEnd={handleAudioEnd} playOnce autoPlay disableScrubbing={state.currentSectionType === 'listening'} volume={globalVolume} hideQuestionText={state.currentSectionType === 'listening'} />
                       )}
                     </div>
                   </div>
@@ -975,7 +972,7 @@ function TestTakingContent() {
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-md animate-pulse">
                   <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">
-                    Thinking Time: {thinkingTimeLeft}s
+                    {t('test_thinking_time')}: {thinkingTimeLeft}s
                   </span>
                 </div>
               )}
@@ -983,7 +980,7 @@ function TestTakingContent() {
                 onClick={handleNextQuestion}
                 className="flex items-center gap-2 px-6 py-2 bg-[#08507f] text-white text-[13px] font-bold uppercase tracking-wider rounded border-b-2 border-[#064066] hover:bg-[#064066] transition-all active:translate-y-0.5 active:border-b-0 group"
               >
-                {thinkingTimeLeft !== null ? 'Skip' : navigatorActionLabel}
+                {thinkingTimeLeft !== null ? t('test_skip') : navigatorActionLabel}
                 <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
               </button>
             </div>

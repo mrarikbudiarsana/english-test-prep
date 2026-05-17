@@ -51,6 +51,7 @@ interface QuestionRendererProps {
   disableAudio?: boolean;
   disableScrubbing?: boolean;
   volume?: number;
+  hideQuestionText?: boolean;
 }
 
 export default function QuestionRenderer({
@@ -66,6 +67,7 @@ export default function QuestionRenderer({
   disableAudio = false,
   disableScrubbing = false,
   volume = 1,
+  hideQuestionText = false,
 }: QuestionRendererProps) {
   const handleChange = (newAnswer: any) => {
     onAnswerChange(question.id, newAnswer);
@@ -212,7 +214,7 @@ export default function QuestionRenderer({
     );
   };
 
-  const questionHeaderText = question.questionText;
+  const questionHeaderText = hideQuestionText ? null : question.questionText;
 
   // Strip "Question X" prefix if it exists, then render rich text
   const processedHeaderText = (() => {

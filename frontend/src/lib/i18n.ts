@@ -400,6 +400,8 @@ const translations = {
   test_show_progress: { id: 'Tampilkan Progress', en: 'Show Progress' },
   test_answered: { id: 'terjawab', en: 'answered' },
   test_submit_error: { id: 'Pengiriman gagal. Silakan coba lagi.', en: 'Submission failed. Please try again.' },
+  test_thinking_time: { id: 'Waktu Berpikir', en: 'Thinking Time' },
+  test_skip: { id: 'Lewati', en: 'Skip' },
 
   // ─── Test Overview Page (/tests/[testId]) additional ───────────────────────
   test_overview_full_test: { id: 'Ujian Penuh', en: 'Full Test' },

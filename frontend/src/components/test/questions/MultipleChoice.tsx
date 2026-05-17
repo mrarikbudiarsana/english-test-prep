@@ -33,7 +33,7 @@ export default function MultipleChoice({
   const normalizeOptionText = (text: string, optionKey: string) => {
     const escapedKey = escapeRegExp(optionKey);
     const keyPattern = new RegExp(
-      `^\\s*(?:\\(${escapedKey}\\)|\\[${escapedKey}\\]|${escapedKey}(?=[).:\\-\\s]))[).:\\-]?\\s*`,
+      `^\\s*(?:\\(${escapedKey}\\)|\\[${escapedKey}\\]|${escapedKey}(?=[).:\\-]))[).:\\-]?\\s*`,
       'i'
     );
     const stripped = text.replace(keyPattern, '').replace(/\s+/g, ' ').trim();

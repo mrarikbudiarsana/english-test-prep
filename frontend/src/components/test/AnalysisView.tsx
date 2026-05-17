@@ -161,6 +161,8 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
                     questions.map((q, index) => {
                         const responseObj = answers[q.id];
                         const userAnswer = responseObj?.answerData ?? null;
+                        const activeSection = sections.find(s => s.id === activeSectionId);
+                        const isListening = activeSection?.sectionType === 'listening';
 
                         // Gating Logic
                         const showStatus = true; // All tiers see status
@@ -209,6 +211,7 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
                                         answer={userAnswer}
                                         onAnswerChange={() => { }}
                                         readOnly={true}
+                                        hideQuestionText={isListening}
                                     />
 
                                     {/* Gated Content Overlays */}
