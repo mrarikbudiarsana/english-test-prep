@@ -302,7 +302,7 @@ export async function scoreObjectiveSectionWithQuery(
     const valuePlaceholders: string[] = [];
     responseUpdates.forEach((u, i) => {
       const offset = i * 3;
-      valuePlaceholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
+      valuePlaceholders.push(`($${offset + 1}::uuid, $${offset + 2}::boolean, $${offset + 3}::numeric)`);
       values.push(u.id, u.isCorrect, u.points);
     });
 
@@ -311,7 +311,7 @@ export async function scoreObjectiveSectionWithQuery(
          is_correct = v.is_correct,
          score = v.score
        FROM (VALUES ${valuePlaceholders.join(', ')}) AS v(id, is_correct, score)
-       WHERE r.id = v.id::uuid`,
+       WHERE r.id = v.id`,
       values
     );
   }
