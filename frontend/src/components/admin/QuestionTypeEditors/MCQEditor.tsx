@@ -8,9 +8,10 @@ interface MCQEditorProps {
   data: MCQData;
   correctAnswer: any;
   onChange: (data: MCQData, correctAnswer: any) => void;
+  readOnlyOptions?: boolean;
 }
 
-export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorProps) {
+export default function MCQEditor({ data, correctAnswer, onChange, readOnlyOptions }: MCQEditorProps) {
   const options = data.options || [];
   const multiSelect = data.multiSelect || false;
   const expectedAnswers = data.expectedAnswers || 2;
@@ -109,6 +110,11 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
           <label className="block text-sm font-medium text-gray-700">Options</label>
           <span className="text-xs text-gray-500">Supports &lt;u&gt;text&lt;/u&gt; for underlining</span>
         </div>
+        {readOnlyOptions && (
+          <div className="p-2 bg-slate-100 rounded text-xs text-slate-600 border border-slate-200">
+            Options are automatically extracted from the &lt;u&gt;underlined&lt;/u&gt; parts of your question text.
+          </div>
+        )}
         {options.map((option, index) => (
           <div key={index} className="flex items-center gap-2">
             <div className="flex-shrink-0">
@@ -141,26 +147,19 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
               {String.fromCharCode(65 + index)}
             </span>
             <div className="flex-1">
-              {multiSelect ? (
-                <Input
-                  value={option.text}
-                  onChange={(e) => handleOptionTextChange(index, e.target.value)}
-                  placeholder={`Option ${displayKey(index, option.key)} text`}
-                />
-              ) : (
-                <Input
-                  value={option.text}
-                  onChange={(e) => handleOptionTextChange(index, e.target.value)}
-                  placeholder={`Option ${displayKey(index, option.key)} text`}
-                />
-              )}
+              <Input
+                value={option.text}
+                onChange={(e) => handleOptionTextChange(index, e.target.value)}
+                placeholder={`Option ${displayKey(index, option.key)} text`}
+                disabled={readOnlyOptions}
+              />
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => removeOption(index)}
               type="button"
-              disabled={options.length <= 2}
+              disabled={options.length <= 2 || readOnlyOptions}
               className="text-red-500 hover:text-red-700 hover:bg-red-50"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,7 +168,7 @@ export default function MCQEditor({ data, correctAnswer, onChange }: MCQEditorPr
             </Button>
           </div>
         ))}
-        <Button variant="outline" size="sm" onClick={addOption} type="button">
+        <Button variant="outline" size="sm" onClick={addOption} type="button" disabled={readOnlyOptions}>
           + Add Option
         </Button>
       </div>

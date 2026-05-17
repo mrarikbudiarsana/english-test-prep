@@ -72,6 +72,11 @@ export default function QuestionRenderer({
   };
 
   const renderQuestion = () => {
+    // For written expression questions, the interactive inline buttons REPLACE the standard multiple choice list.
+    if (isWrittenExpression) {
+      return null;
+    }
+
     switch (question.questionType) {
       case 'multiple_choice':
         return (
@@ -104,39 +109,101 @@ export default function QuestionRenderer({
     ? (question.questionData as MCQData).expectedAnswers || 2
     : 1;
 
-  // Render sentence text with <u>…</u> underlines for TOEFL written-expression questions.
-  // Each underlined phrase stays on the sentence baseline; the A/B/C/D label sits
-  // below the underline via a small absolute-positioned element so line-height is unaffected.
+  const hasUnderlines = !!question.questionText?.includes('<u>');
+  const isWrittenExpression = hasUnderlines && question.questionType === 'multiple_choice';
+
   const renderRichText = (text: string | null | undefined) => {
     if (!text) return null;
 
     let uCount = 0;
     const parts = text.split(/(<u>.*?<\/u>)/g);
 
+    if (!isWrittenExpression) {
+      return (
+        <span className="inline leading-loose">
+          {parts.map((part, i) => {
+            if (part.startsWith('<u>') && part.endsWith('</u>')) {
+              return <u key={i}>{part.slice(3, -4)}</u>;
+            }
+            return <span key={i}>{part}</span>;
+          })}
+        </span>
+      );
+    }
+
+    // It is a written expression question. Render interactive inline buttons.
+    const mcqData = question.questionData as MCQData;
+    const multiSelect = mcqData?.multiSelect;
+    const correctAnswer = readOnly ? question.correctAnswer : undefined;
+
+    const isSelected = (key: string) =>
+      multiSelect ? Array.isArray(answer) && answer.includes(key) : answer === key;
+
+    const getStatus = (key: string): 'correct' | 'incorrect' | 'missed' | null => {
+      if (!readOnly || correctAnswer === undefined) return null;
+      const isCorrect = multiSelect
+        ? Array.isArray(correctAnswer) && correctAnswer.includes(key)
+        : correctAnswer === key;
+      const wasSelected = isSelected(key);
+      if (isCorrect && wasSelected) return 'correct';
+      if (!isCorrect && wasSelected) return 'incorrect';
+      if (isCorrect && !wasSelected) return 'missed';
+      return null;
+    };
+
+    const handleSelect = (key: string) => {
+      if (readOnly) return;
+      if (multiSelect) {
+        const current = Array.isArray(answer) ? answer : [];
+        onAnswerChange(question.id, current.includes(key) ? current.filter(k => k !== key) : [...current, key]);
+      } else {
+        onAnswerChange(question.id, key);
+      }
+    };
+
     return (
-      // Extra bottom padding gives room for the letter labels that sit below the line
       <span className="inline leading-loose">
         {parts.map((part, i) => {
           if (part.startsWith('<u>') && part.endsWith('</u>')) {
-            const letter = String.fromCharCode(65 + (uCount % 26));
+            const optionKey = String.fromCharCode(65 + (uCount % 26));
             uCount++;
             const textInside = part.slice(3, -4);
+            const selected = isSelected(optionKey);
+            const status = getStatus(optionKey);
 
             return (
-              // relative container — no flex, stays inline so sentence flows normally
-              <span
+              <button
                 key={i}
-                className="relative inline mx-[3px] pb-[18px] group/u"
+                type="button"
+                onClick={() => handleSelect(optionKey)}
+                disabled={readOnly}
+                className={cn(
+                  "inline-flex items-center gap-1 px-1.5 py-0.5 mx-1 rounded border transition-colors duration-150 align-baseline",
+                  readOnly ? "cursor-default" : "cursor-pointer",
+                  status === 'correct'
+                    ? "bg-emerald-100 border-emerald-300 text-emerald-900"
+                    : status === 'incorrect'
+                      ? "bg-red-100 border-red-300 text-red-900 line-through decoration-red-400"
+                      : status === 'missed'
+                        ? "bg-amber-100 border-amber-300 text-amber-900 ring-2 ring-amber-400 ring-offset-1"
+                        : selected
+                          ? "bg-[#08507f] border-[#08507f] text-white shadow-sm"
+                          : readOnly
+                            ? "bg-slate-100 border-slate-200 text-slate-800"
+                            : "bg-slate-100 border-slate-200 text-slate-800 hover:bg-slate-200 hover:border-slate-300"
+                )}
               >
-                {/* The underlined word */}
-                <span className="border-b-2 border-slate-800 group-hover/u:border-[#08507f] transition-colors">
-                  {textInside}
+                <span className={cn(
+                  "text-[0.85em] font-medium leading-none",
+                  selected && !status ? "text-blue-100" : "text-slate-500",
+                  status === 'correct' && "text-emerald-700",
+                  status === 'incorrect' && "text-red-700",
+                  status === 'missed' && "text-amber-700"
+                )}>
+                  ({optionKey})
                 </span>
-                {/* Letter label anchored below the underline */}
-                <span className="absolute left-1/2 -translate-x-1/2 bottom-0 text-[10px] font-semibold text-slate-500 leading-none select-none tracking-wide">
-                  ({letter})
-                </span>
-              </span>
+                <span>{textInside}</span>
+              </button>
             );
           }
           return <span key={i}>{part}</span>;

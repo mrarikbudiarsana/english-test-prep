@@ -95,6 +95,30 @@ export default function QuestionEditor({
     setCorrectAnswer(answer);
   };
 
+  const handleQuestionTextChange = (text: string) => {
+    setQuestionText(text);
+
+    if (text.includes('<u>')) {
+      const parts = text.split(/(<u>.*?<\/u>)/g);
+      const extractedOptions: string[] = [];
+      parts.forEach((part) => {
+        if (part.startsWith('<u>') && part.endsWith('</u>')) {
+          extractedOptions.push(part.slice(3, -4));
+        }
+      });
+
+      if (extractedOptions.length > 0) {
+        setQuestionData((prev) => {
+          const newOptions = extractedOptions.map((ext, idx) => ({
+            key: String.fromCharCode(65 + idx),
+            text: ext,
+          }));
+          return { ...prev, options: newOptions };
+        });
+      }
+    }
+  };
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!questionText.trim()) newErrors.questionText = 'Question text is required';
@@ -167,7 +191,7 @@ export default function QuestionEditor({
         <Textarea
           label="Question Text"
           value={questionText}
-          onChange={(e) => setQuestionText(e.target.value)}
+          onChange={(e) => handleQuestionTextChange(e.target.value)}
           placeholder="Enter the question text..."
           rows={3}
           error={errors.questionText}
@@ -180,7 +204,12 @@ export default function QuestionEditor({
 
       <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
         <h4 className="text-sm font-semibold text-gray-700 mb-4">Multiple Choice Settings</h4>
-        <MCQEditor data={questionData as MCQData} correctAnswer={correctAnswer} onChange={handleQuestionDataChange} />
+        <MCQEditor
+          data={questionData as MCQData}
+          correctAnswer={correctAnswer}
+          onChange={handleQuestionDataChange}
+          readOnlyOptions={questionText.includes('<u>')}
+        />
       </div>
 
       <Textarea

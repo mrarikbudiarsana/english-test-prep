@@ -35,15 +35,16 @@ export async function login(
     const { firebaseUid } = req.body;
     let user = await authService.getUserByFirebaseUid(firebaseUid);
 
-    // Dynamic location backfilling on login
+    // Dynamic location backfilling on login (Non-blocking)
     if (!user.country || !user.city) {
-      const location = await detectLocation(req);
-      if (location.country || location.city) {
-        user = await userModel.update(user.id, {
-          country: user.country || location.country,
-          city: user.city || location.city,
-        });
-      }
+      detectLocation(req).then(async (location) => {
+        if (location.country || location.city) {
+          await userModel.update(user.id, {
+            country: user.country || location.country,
+            city: user.city || location.city,
+          });
+        }
+      }).catch(err => console.error('Background location detection failed:', err));
     }
 
     res.json({ data: user });
@@ -60,14 +61,16 @@ export async function getProfile(
   try {
     let profile = await authService.getUserById(req.user!.id);
 
+    // Dynamic location backfilling on page load (Non-blocking)
     if (!profile.country || !profile.city) {
-      const location = await detectLocation(req);
-      if (location.country || location.city) {
-        profile = await userModel.update(profile.id, {
-          country: profile.country || location.country,
-          city: profile.city || location.city,
-        });
-      }
+      detectLocation(req).then(async (location) => {
+        if (location.country || location.city) {
+          await userModel.update(profile.id, {
+            country: profile.country || location.country,
+            city: profile.city || location.city,
+          });
+        }
+      }).catch(err => console.error('Background location detection failed:', err));
     }
 
     res.json({ data: profile });
