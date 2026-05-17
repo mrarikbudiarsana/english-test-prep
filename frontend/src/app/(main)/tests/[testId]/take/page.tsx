@@ -231,7 +231,7 @@ function TestTakingContent() {
 
     const resolvedAttemptId = state.attemptId || attemptId;
     if (resolvedAttemptId && overrideTimeRemaining === undefined) {
-      await api.put(`/attempts/${resolvedAttemptId}/section-start`, { sectionType });
+      api.put(`/attempts/${resolvedAttemptId}/section-start`, { sectionType }).catch(console.error);
     }
 
     setViewingDirections(true);
@@ -264,7 +264,18 @@ function TestTakingContent() {
   useEffect(() => {
     async function init() {
       try {
-        const sectionsRes = await api.get(`/tests/${testId}/sections`);
+        const [sectionsRes, attemptRes, responsesRes] = await Promise.all([
+          api.get(`/tests/${testId}/sections`),
+          attemptId ? api.get(`/attempts/${attemptId}`).catch(err => {
+            console.error('Failed to load attempt:', err);
+            return null;
+          }) : Promise.resolve(null),
+          attemptId ? api.get(`/attempts/${attemptId}/responses`).catch(err => {
+            console.error('Failed to load saved responses:', err);
+            return null;
+          }) : Promise.resolve(null),
+        ]);
+
         const allSections: Section[] = sectionsRes.data;
         setSections(allSections);
 
@@ -277,13 +288,8 @@ function TestTakingContent() {
         );
 
         let attemptData: any = null;
-        if (attemptId) {
-          try {
-            const attemptRes = await api.get(`/attempts/${attemptId}`);
-            attemptData = attemptRes.data?.data || attemptRes.data;
-          } catch (err) {
-            console.error('Failed to load attempt:', err);
-          }
+        if (attemptRes) {
+          attemptData = attemptRes.data?.data || attemptRes.data;
         }
 
         let startType = sectionTypes[0];
@@ -296,18 +302,13 @@ function TestTakingContent() {
         }
 
         let savedAnswers: Record<string, any> = {};
-        if (attemptId) {
-          try {
-            const responsesRes = await api.get(`/attempts/${attemptId}/responses`);
-            const responsesData = responsesRes.data?.data || responsesRes.data || [];
-            responsesData.forEach((r: any) => {
-              if (r.questionId) {
-                savedAnswers[r.questionId] = r.answerData;
-              }
-            });
-          } catch (err) {
-            console.error('Failed to load saved responses:', err);
-          }
+        if (responsesRes) {
+          const responsesData = responsesRes.data?.data || responsesRes.data || [];
+          responsesData.forEach((r: any) => {
+            if (r.questionId) {
+              savedAnswers[r.questionId] = r.answerData;
+            }
+          });
         }
 
         let overrideTime: number | undefined = undefined;
