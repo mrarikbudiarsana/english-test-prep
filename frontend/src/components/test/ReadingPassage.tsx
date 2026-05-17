@@ -38,7 +38,7 @@ function ReadingPassage({
       return {
         mode: 'default_html' as const,
         html: '',
-        lines: [] as string[],
+        lines: [] as { text: string; paragraphStart: boolean }[],
       };
     }
 
@@ -47,7 +47,7 @@ function ReadingPassage({
       return {
         mode: 'default_html' as const,
         html: content.replace(/\n/g, '<br />'),
-        lines: [] as string[],
+        lines: [] as { text: string; paragraphStart: boolean }[],
       };
     }
 
@@ -58,12 +58,49 @@ function ReadingPassage({
       return {
         mode: 'toefl_legacy_html' as const,
         html,
-        lines: [] as string[],
+        lines: [] as { text: string; paragraphStart: boolean }[],
       };
     }
 
+    // Helper to split a line of text into chunks of max 80 chars at word boundaries
+    const splitLineAtWordBoundary = (line: string, maxLen: number = 80): string[] => {
+      if (line.length <= maxLen) return [line];
+      const words = line.split(' ');
+      const result: string[] = [];
+      let current = '';
+      for (const word of words) {
+        if ((current + ' ' + word).trim().length <= maxLen) {
+          current = current === '' ? word : current + ' ' + word;
+        } else {
+          if (current !== '') result.push(current);
+          current = word;
+        }
+      }
+      if (current !== '') result.push(current);
+      return result;
+    };
+
     // Plain text content with manual line breaks - strict line-locked format
-    const lines = content.replace(/\r\n/g, '\n').split('\n');
+    const rawLines = content.replace(/\r\n/g, '\n').split('\n');
+    const lines: { text: string; paragraphStart: boolean }[] = [];
+    
+    let isNewParagraph = true;
+    for (const rawLine of rawLines) {
+      if (rawLine.trim() === '') {
+        isNewParagraph = true;
+        continue;
+      }
+      
+      const chunks = splitLineAtWordBoundary(rawLine, 80);
+      chunks.forEach((chunk, index) => {
+        lines.push({
+          text: chunk,
+          paragraphStart: index === 0 && isNewParagraph,
+        });
+      });
+      isNewParagraph = false;
+    }
+
     return {
       mode: 'toefl_plain' as const,
       html: '',
@@ -74,26 +111,11 @@ function ReadingPassage({
   const renderedToeflLines = useMemo(() => {
     if (variant !== 'toefl_itp' || processedContent.mode !== 'toefl_plain') return [];
 
-    const result: { text: string; lineNumber: number; paragraphStart: boolean }[] = [];
-    let lineNumber = 0;
-    let paragraphStart = true;
-
-    for (const rawLine of processedContent.lines) {
-      if (rawLine.trim() === '') {
-        paragraphStart = true;
-        continue;
-      }
-
-      lineNumber += 1;
-      result.push({
-        text: rawLine,
-        lineNumber,
-        paragraphStart,
-      });
-      paragraphStart = false;
-    }
-
-    return result;
+    return processedContent.lines.map((lineObj, index) => ({
+      text: lineObj.text,
+      lineNumber: index + 1,
+      paragraphStart: lineObj.paragraphStart,
+    }));
   }, [variant, processedContent]);
 
   return (
