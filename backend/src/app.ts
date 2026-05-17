@@ -29,9 +29,12 @@ if (process.env.SENTRY_DSN) {
 }
 
 // Migrations are handled by the migrationsReady promise and the /api/v1 gate below.
-const migrationsReady = runMigrations(false).catch((err) => {
-  logger.error('Failed to run database migrations on startup', { error: err.message });
-});
+// Disabled on startup in production (Vercel) to prevent parallel cold starts from locking the database and causing 504 Gateway Timeouts.
+const migrationsReady = env.nodeEnv === 'development'
+  ? runMigrations(false).catch((err) => {
+      logger.error('Failed to run database migrations on startup', { error: err.message });
+    })
+  : Promise.resolve();
 
 const allowedOrigins = env.corsOrigin
   .split(',')
