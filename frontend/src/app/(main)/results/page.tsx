@@ -92,39 +92,29 @@ export default function ResultsPage() {
     }
   }, [activeCategory, activeTestType, allowedTestTypes, filterStatus, offset, sortBy]);
 
-  // Fetch summary stats once
+  // Fetch summary stats once using concurrent requests to /dashboard/stats
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const res = await api.get<PaginatedResponse<Attempt>>('/attempts', {
-          params: { limit: 100, examType: userExamType }
-        });
-        const all = res.data.data.filter(a => a.status === 'completed');
-        const full = all.filter(a => a.mode === 'full');
-        const section = all.filter(a => a.mode === 'section_practice');
+        const [fullRes, sectionRes] = await Promise.all([
+          api.get('/dashboard/stats', {
+            params: { examType: userExamType, mode: 'full' }
+          }),
+          api.get('/dashboard/stats', {
+            params: { examType: userExamType, mode: 'section_practice' }
+          })
+        ]);
 
-        const highest = (list: Attempt[]) => {
-          const scored = list
-            .map(getComparableScore)
-            .filter((score): score is number => score !== null);
-          if (!scored.length) return '-';
-          return Math.round(Math.max(...scored)).toString();
-        };
-        const average = (list: Attempt[]) => {
-          const scored = list
-            .map(getComparableScore)
-            .filter((score): score is number => score !== null);
-          if (!scored.length) return '-';
-          return Math.round(scored.reduce((s, score) => s + score, 0) / scored.length).toString();
-        };
+        const fullStats = fullRes.data;
+        const sectionStats = sectionRes.data;
 
         setStats({
-          fullCount: full.length,
-          sectionCount: section.length,
-          fullHigh: highest(full),
-          fullAvg: average(full),
-          sectionHigh: highest(section),
-          sectionAvg: average(section),
+          fullCount: fullStats.totalAttempts || 0,
+          sectionCount: sectionStats.totalAttempts || 0,
+          fullHigh: fullStats.bestBand ? Math.round(fullStats.bestBand).toString() : '-',
+          fullAvg: fullStats.averageBand ? Math.round(fullStats.averageBand).toString() : '-',
+          sectionHigh: sectionStats.bestBand ? Math.round(sectionStats.bestBand).toString() : '-',
+          sectionAvg: sectionStats.averageBand ? Math.round(sectionStats.averageBand).toString() : '-',
         });
       } catch (e) {
         console.error('Failed to fetch summary stats', e);

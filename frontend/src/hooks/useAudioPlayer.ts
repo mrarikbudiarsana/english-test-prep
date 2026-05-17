@@ -21,6 +21,7 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animFrameRef = useRef<number>(0);
   const playingRef = useRef(false);
+  const hasAutoPlayedRef = useRef(false);
   const listenersRef = useRef<{
     audio: HTMLAudioElement;
     loadedmetadata: () => void;
@@ -78,6 +79,7 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     setCurrentTime(0);
     setDuration(0);
     playingRef.current = false;
+    hasAutoPlayedRef.current = false;
 
     const handleLoadedMetadata = () => {
       if (isFinite(audio.duration) && audio.duration > 0) {
@@ -158,7 +160,8 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
 
   // Handle autoPlay
   useEffect(() => {
-    if (isLoaded && options?.autoPlay && !isPlaying && (!playOnce || !hasPlayed)) {
+    if (isLoaded && options?.autoPlay && !isPlaying && (!playOnce || !hasPlayed) && !hasAutoPlayedRef.current) {
+      hasAutoPlayedRef.current = true;
       play();
     }
   }, [isLoaded, options?.autoPlay, isPlaying, playOnce, hasPlayed, play]);

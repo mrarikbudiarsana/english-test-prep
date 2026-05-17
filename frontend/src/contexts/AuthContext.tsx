@@ -70,12 +70,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (email: string, password: string, displayName: string) => {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(credential.user, { displayName });
-    const response = await api.post('/auth/register', {
-      firebaseUid: credential.user.uid,
-      email: credential.user.email,
-      displayName,
-    });
-    setUser(response.data);
+    try {
+      const response = await api.post('/auth/register', {
+        firebaseUid: credential.user.uid,
+        email: credential.user.email,
+        displayName,
+      });
+      setUser(response.data);
+    } catch (err) {
+      await signOut(auth);
+      setUser(null);
+      throw err;
+    }
   };
 
   const loginWithGoogle = async () => {
@@ -84,23 +90,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (result?.user) {
         try {
-          await api.post('/auth/login', { firebaseUid: result.user.uid });
+          const response = await api.post('/auth/login', { firebaseUid: result.user.uid });
+          setUser(response.data);
           toast.success('Successfully signed in!');
         } catch (loginError) {
           // If login fails (likely user doesn't exist), try to register
           try {
-            await api.post('/auth/register', {
+            const response = await api.post('/auth/register', {
               firebaseUid: result.user.uid,
               email: result.user.email,
               displayName: result.user.displayName,
               photoUrl: result.user.photoURL,
             });
+            setUser(response.data);
             toast.success('Account created successfully!');
           } catch (registerError: any) {
             console.error('Google registration failed:', registerError);
             toast.error(registerError.response?.data?.error || 'Failed to create account with Google');
-            // If backend registration fails, we might want to sign out from firebase to keep states in sync?
-            // But for now, let's just show the error.
+            // Clean up Firebase state if PostgreSQL register fails to prevent desync
+            await signOut(auth);
+            setUser(null);
           }
         }
       }

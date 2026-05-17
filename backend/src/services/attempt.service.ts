@@ -2,6 +2,7 @@ import * as attemptModel from '../models/attempt.model';
 import * as testModel from '../models/test.model';
 import * as userModel from '../models/user.model';
 import * as subscriptionModel from '../models/subscription.model';
+import * as sectionModel from '../models/section.model';
 import { query, getClient } from '../config/database';
 import * as scoringService from './scoring.service';
 import { NotFoundError, ForbiddenError, ValidationError } from '../middleware/errorHandler';
@@ -28,8 +29,29 @@ export async function checkTestAccess(userId: string, testId: string): Promise<{
   }
 
   // Check for any active in-progress attempt
-  const existingAttempts = await attemptModel.findByUserId(userId, 0, 5, [test.testType], 'full');
-  const activeAttempt = existingAttempts.rows.find(a => a.status === 'in_progress');
+  const existingAttempts = await attemptModel.findByUserId(userId, 0, 10, [test.testType], 'full');
+  let activeAttempt = existingAttempts.rows.find(a => a.status === 'in_progress');
+
+  if (activeAttempt) {
+    // Check if the active attempt is expired (based on test total duration)
+    const attemptSections = await sectionModel.findByTestId(testId);
+    const totalMinutes = attemptSections.reduce((sum, s) => sum + s.durationMinutes, 0);
+    const elapsedSeconds = (Date.now() - new Date(activeAttempt.startedAt).getTime()) / 1000;
+    
+    // Add a 5 minutes buffer
+    const isExpired = elapsedSeconds > (totalMinutes * 60 + 300);
+    
+    if (isExpired) {
+      try {
+        await finalizeAttempt(activeAttempt.id);
+      } catch (err) {
+        console.error('Failed to finalize expired attempt in checkTestAccess:', err);
+        // Fallback: manually update status to completed to prevent infinite loops
+        await attemptModel.updateStatus(activeAttempt.id, 'completed');
+      }
+      activeAttempt = undefined;
+    }
+  }
 
   if (test.isFree) {
     return { canAccess: true, reason: 'free_test', activeAttemptId: activeAttempt?.id };
@@ -75,11 +97,33 @@ export async function startAttempt(
   }
 
   // Smart Resume: Check if there is already an in-progress attempt for this test/mode
-  const existingAttempts = await attemptModel.findByUserId(userId, 0, 1, [test.testType], mode);
-  const activeAttempt = existingAttempts.rows.find(a => a.status === 'in_progress' && (!practiceSectionType || a.practiceSectionType === practiceSectionType));
+  const existingAttempts = await attemptModel.findByUserId(userId, 0, 10, [test.testType], mode);
+  let activeAttempt = existingAttempts.rows.find(a => a.status === 'in_progress' && (!practiceSectionType || a.practiceSectionType === practiceSectionType));
 
   if (activeAttempt) {
-    return activeAttempt;
+    // Check if the active attempt is expired
+    const attemptSections = practiceSectionType 
+      ? await sectionModel.findByTestIdAndType(testId, practiceSectionType)
+      : await sectionModel.findByTestId(testId);
+    
+    const totalMinutes = attemptSections.reduce((sum, s) => sum + s.durationMinutes, 0);
+    const elapsedSeconds = (Date.now() - new Date(activeAttempt.startedAt).getTime()) / 1000;
+    
+    // Add a 5 minutes buffer
+    const isExpired = elapsedSeconds > (totalMinutes * 60 + 300);
+    
+    if (isExpired) {
+      try {
+        await finalizeAttempt(activeAttempt.id);
+      } catch (err) {
+        console.error('Failed to finalize expired attempt in startAttempt:', err);
+        // Fallback: manually update status to completed to prevent infinite loops
+        await attemptModel.updateStatus(activeAttempt.id, 'completed');
+      }
+      activeAttempt = undefined;
+    } else {
+      return activeAttempt;
+    }
   }
 
   return attemptModel.create({

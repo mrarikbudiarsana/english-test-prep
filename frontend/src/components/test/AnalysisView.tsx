@@ -66,7 +66,7 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
             setLoadingQuestions(true);
             try {
                 // Fetch questions
-                const qRes = await api.get(`/tests/${attempt.testId}/sections/${activeSectionId}/questions`);
+                const qRes = await api.get(`/attempts/${attempt.id}/sections/${activeSectionId}/questions`);
                 setQuestions(qRes.data);
 
                 // Fetch answers for this section? 
@@ -82,7 +82,7 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
             }
         }
         fetchQuestions();
-    }, [activeSectionId, attempt.testId]);
+    }, [activeSectionId, attempt.id]);
 
     // Fetch answers once
     useEffect(() => {
@@ -184,6 +184,7 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
                         const renderQuestion = {
                             ...q,
                             explanation: showExplanation ? q.explanation : undefined,
+                            explanationAi: showExplanation ? q.explanationAi : undefined,
                             correctAnswer: showCorrectAnswer ? q.correctAnswer : undefined
                         };
 
@@ -221,15 +222,15 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
                                         </div>
                                     )}
 
-                                    {showExplanation && (q.explanation || q.explanationAi) && (
+                                    {showExplanation && (renderQuestion.explanation || renderQuestion.explanationAi) && (
                                         <div className="mt-4 space-y-4">
-                                            {q.explanation && (
+                                            {renderQuestion.explanation && (
                                                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                                     <h4 className="font-bold text-slate-900 text-[10px] uppercase tracking-[0.15em] mb-2 opacity-50">Tutor Explanation</h4>
-                                                    <p className="text-slate-600 text-sm leading-relaxed">{q.explanation}</p>
+                                                    <p className="text-slate-600 text-sm leading-relaxed">{renderQuestion.explanation}</p>
                                                 </div>
                                             )}
-                                            {q.explanationAi && (
+                                            {renderQuestion.explanationAi && (
                                                 <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 relative overflow-hidden group/ai">
                                                     <div className="absolute top-0 right-0 p-3 opacity-[0.03] group-hover/ai:opacity-[0.07] transition-opacity">
                                                         <Sparkles className="w-16 h-16 text-blue-600" />
@@ -238,7 +239,7 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
                                                         <Sparkles className="w-3.5 h-3.5" /> AI Insight
                                                     </h4>
                                                     <div className="text-blue-800 text-sm leading-relaxed whitespace-pre-wrap">
-                                                        {q.explanationAi}
+                                                        {renderQuestion.explanationAi}
                                                     </div>
                                                 </div>
                                             )}

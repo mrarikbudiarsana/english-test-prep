@@ -329,13 +329,20 @@ export async function getStatsForUser(userId: string, examType?: string, mode?: 
   );
   const totalCompleted = parseInt(countResult.rows[0].count, 10);
 
-  const validAttempts = completedAttempts.filter((a: any) => a.overallScore !== null);
+  const getComparableScore = (a: any) => {
+    if (a.mode === 'section_practice') {
+      return a.listeningScore ?? a.readingScore ?? a.structureScore ?? null;
+    }
+    return a.overallScore;
+  };
+
+  const validAttempts = completedAttempts.filter((a: any) => getComparableScore(a) !== null);
   const avgScore = validAttempts.length > 0
-    ? validAttempts.reduce((sum: number, a: any) => sum + (a.overallScore ?? 0), 0) / validAttempts.length
+    ? validAttempts.reduce((sum: number, a: any) => sum + (getComparableScore(a) ?? 0), 0) / validAttempts.length
     : null;
 
   const bestScore = validAttempts.length > 0
-    ? Math.max(...validAttempts.map((a: any) => a.overallScore ?? 0))
+    ? Math.max(...validAttempts.map((a: any) => getComparableScore(a) ?? 0))
     : null;
 
   const sectionAverages = {

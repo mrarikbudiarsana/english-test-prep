@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as attemptService from '../services/attempt.service';
 import * as responseModel from '../models/response.model';
+import * as questionService from '../services/question.service';
 
 export async function startAttempt(
   req: Request,
@@ -54,6 +55,35 @@ export async function getResponses(
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.json({ data: responses });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAttemptQuestions(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const attemptId = req.params.attemptId as string;
+    const sectionId = req.params.sectionId as string;
+    const userId = req.user!.id;
+    const role = req.user!.role;
+
+    // Verify ownership and fetch attempt (admins bypass user checks)
+    const attempt = await attemptService.getAttempt(attemptId, role === 'admin' ? undefined : userId);
+
+    // If attempt is in-progress and user is not admin, do not leak answers
+    if (attempt.status !== 'completed' && role !== 'admin') {
+      const questions = await questionService.getQuestionsBySectionId(sectionId);
+      res.json({ data: questions });
+      return;
+    }
+
+    // Return full questions with answers for completed attempts
+    const questions = await questionService.getQuestionsBySectionIdWithAnswers(sectionId);
+    res.json({ data: questions });
   } catch (error) {
     next(error);
   }
