@@ -40,6 +40,7 @@ router.delete('/questions/:questionId', adminController.deleteQuestion);
 
 // AI Tools
 router.post('/questions/:questionId/generate-explanation', aiController.generateExplanation);
+router.post('/ai/format-written-expression', adminController.formatWrittenExpression);
 
 // Users
 router.get('/users', adminController.getUsers);

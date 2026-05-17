@@ -414,3 +414,23 @@ export async function generateAIReadingQuestions(
     next(error);
   }
 }
+
+export async function formatWrittenExpression(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      res.status(400).json({ error: 'Text is required' });
+      return;
+    }
+    // We import aiService directly here, or we could go through adminService. Going through aiService directly is fine.
+    const { formatWrittenExpression } = await import('../services/ai.service');
+    const formatted = await formatWrittenExpression(text);
+    res.json({ data: formatted });
+  } catch (error) {
+    next(error);
+  }
+}

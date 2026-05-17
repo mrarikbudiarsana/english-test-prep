@@ -136,6 +136,22 @@ body {
   line-height: 1.6;
 }
 
+.toefl-html-content {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.toefl-html-content p {
+  margin: 0;
+  text-indent: 2em;
+}
+
+.toefl-html-content br {
+  display: block;
+  content: "";
+  margin: 0;
+}
+
 .toefl-itp-passage-content ::selection {
   background-color: #bfdbfe;
 }

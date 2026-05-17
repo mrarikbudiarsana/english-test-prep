@@ -31,6 +31,7 @@ export default function AdminSectionQuestionsPage() {
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [generatingBulk, setGeneratingBulk] = useState(false);
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [syncingBulk, setSyncingBulk] = useState(false);
   const [showBulkImporter, setShowBulkImporter] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -142,6 +143,48 @@ export default function AdminSectionQuestionsPage() {
     setShowBulkImporter(false);
   };
 
+  const handleBulkSyncUnderlines = async () => {
+    const toFix = questions.filter(q => q.questionType === 'multiple_choice' && !q.questionText?.includes('<u>') && q.questionData?.options?.length === 4 && q.questionNumber >= 16);
+    if (toFix.length === 0) {
+      alert('No questions found that need auto-underlining.');
+      return;
+    }
+    if (!window.confirm(`Found ${toFix.length} questions without underlines. Attempt to auto-underline options A-D in the question text?`)) return;
+
+    setSyncingBulk(true);
+    let successCount = 0;
+    const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    for (const q of toFix) {
+      try {
+        let newText = q.questionText || '';
+        let anyReplaced = false;
+
+        q.questionData.options.forEach((opt: any) => {
+          if (opt.text && opt.text.trim()) {
+            const regex = new RegExp(`\\b${escapeRegExp(opt.text.trim())}\\b`, 'i');
+            if (regex.test(newText)) {
+              newText = newText.replace(regex, `<u>${opt.text.trim()}</u>`);
+              anyReplaced = true;
+            }
+          }
+        });
+
+        if (anyReplaced) {
+          const response = await api.put(`/admin/tests/${testId}/sections/${sectionId}/questions/${q.id}`, { ...q, questionText: newText });
+          const updated = response.data.data || response.data;
+          setQuestions((prev) => prev.map((item) => item.id === q.id ? updated : item));
+          successCount++;
+        }
+      } catch (err) {
+        console.error(`Failed to sync Q${q.questionNumber}:`, err);
+      }
+    }
+
+    setSyncingBulk(false);
+    alert(`Successfully synced ${successCount} questions!`);
+  };
+
   const handleAIGenerateQuestions = async () => {
     if (!section?.passageText) {
       alert('Please add a passage text first before generating questions.');
@@ -205,6 +248,18 @@ export default function AdminSectionQuestionsPage() {
             >
               {!generatingQuestions && <Sparkles className="w-4 h-4 mr-1" />}
               AI Generate (Beta)
+            </Button>
+          )}
+          {section.sectionType === 'structure' && (
+            <Button
+              variant="outline"
+              onClick={handleBulkSyncUnderlines}
+              loading={syncingBulk}
+              className="text-orange-600 border-orange-200 hover:bg-orange-50"
+              title="Automatically underline options A-D in Written Expression texts (Q16+)"
+            >
+              {!syncingBulk && <Sparkles className="w-4 h-4 mr-1" />}
+              Bulk Sync Written Exp. (Q16+)
             </Button>
           )}
           <Button variant="outline" onClick={() => setShowBulkImporter(true)}>Bulk Import</Button>

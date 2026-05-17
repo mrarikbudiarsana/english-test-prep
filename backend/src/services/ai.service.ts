@@ -118,3 +118,38 @@ Instructions:
 Explanation:
   `.trim();
 }
+
+export async function formatWrittenExpression(text: string) {
+  const model = genAI.getGenerativeModel({ 
+    model: 'gemini-1.5-flash',
+  });
+
+  const prompt = `
+    You are an expert TOEFL ITP test creator.
+    The user will provide a sentence for a "Structure and Written Expression" question.
+    Currently, the sentence might be plain text, or it might have some formatting (like one underlined word, or (A) (B) (C) (D) markers).
+    Your task is to properly format it into a standard TOEFL Written Expression question text by wrapping EXACTLY 4 options in <u> tags.
+    
+    Rules:
+    1. There must be exactly 4 <u> tags in the output.
+    2. Only wrap the word or short phrase that constitutes the option.
+    3. Remove any (A), (B), (C), (D) markers from the input.
+    4. If there is already an error or underlined word in the input, make sure to keep it as one of the 4 options.
+    5. The 4 options should be words/phrases that test grammar rules typical of TOEFL ITP (e.g. verbs, nouns, prepositions, articles).
+    6. Return ONLY the formatted sentence, with no other text, explanation, or markdown formatting (do not wrap in \`\`\` text).
+    
+    Input Text:
+    ${text}
+    
+    Formatted Output:
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text().trim();
+  } catch (error: any) {
+    logger.error('Error auto-formatting written expression', { error: error.message, text });
+    throw new Error('Failed to auto-format text');
+  }
+}

@@ -118,11 +118,29 @@ export default function BulkQuestionImporter({
   const [rawInput, setRawInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoUnderline, setAutoUnderline] = useState(false);
 
   // Parse input on-the-fly for preview
   const parsedQuestions = useMemo(() => {
-    return parseQuestions(rawInput);
-  }, [rawInput]);
+    const parsed = parseQuestions(rawInput);
+    if (autoUnderline) {
+      const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      parsed.forEach((q, idx) => {
+        const qNum = q.questionNumber || (startingQuestionNumber + idx);
+        if (q.questionText && q.options.length === 4 && !q.parseErrors?.length && qNum >= 16) {
+          let newText = q.questionText.replace(/<\/?u>/g, '');
+          q.options.forEach((opt) => {
+            if (opt.text.trim()) {
+              const regex = new RegExp(`\\b${escapeRegExp(opt.text.trim())}\\b`, 'i');
+              newText = newText.replace(regex, `<u>${opt.text.trim()}</u>`);
+            }
+          });
+          q.questionText = newText;
+        }
+      });
+    }
+    return parsed;
+  }, [rawInput, autoUnderline, startingQuestionNumber]);
 
   const validQuestions = parsedQuestions.filter((q) => !q.parseErrors?.length);
   const invalidQuestions = parsedQuestions.filter((q) => q.parseErrors?.length);
@@ -180,14 +198,25 @@ EXPLANATION: Optional explanation
       </div>
 
       {/* Input textarea */}
-      <Textarea
-        label={`Paste Questions (starting from Q${startingQuestionNumber})`}
-        value={rawInput}
-        onChange={(e) => setRawInput(e.target.value)}
-        rows={12}
-        placeholder="Paste your questions here using the format above..."
-        className="font-mono text-sm"
-      />
+      <div className="space-y-3">
+        <Textarea
+          label={`Paste Questions (starting from Q${startingQuestionNumber})`}
+          value={rawInput}
+          onChange={(e) => setRawInput(e.target.value)}
+          rows={12}
+          placeholder="Paste your questions here using the format above..."
+          className="font-mono text-sm"
+        />
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={autoUnderline}
+            onChange={(e) => setAutoUnderline(e.target.checked)}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          Auto-underline options in question text (Written Expression Q16+ only)
+        </label>
+      </div>
 
       {/* Preview section */}
       {parsedQuestions.length > 0 && (

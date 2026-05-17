@@ -129,7 +129,7 @@ function ReadingPassage({
                     >
                       <div className="toefl-line-marker" aria-hidden="true">
                         {showLineLabel && (
-                          <span>{`Line ${lineNumber}`}</span>
+                          <span>{lineNumber}</span>
                         )}
                       </div>
                       <pre className={`toefl-line-text${line.paragraphStart ? ' paragraph-start' : ''}`}>
@@ -138,6 +138,29 @@ function ReadingPassage({
                     </div>
                   );
                 })}
+              </div>
+            ) : variant === 'toefl_itp' && processedContent.mode === 'toefl_legacy_html' ? (
+              <div className="relative pl-10">
+                {/* Dynamic Line Numbers Ruler for HTML content */}
+                <div 
+                  className="absolute left-0 top-0 bottom-0 w-8 pointer-events-none flex flex-col items-end text-[0.75rem] text-slate-400 select-none overflow-hidden" 
+                  style={{ lineHeight: 1.6 }}
+                  aria-hidden="true"
+                >
+                  {Array.from({ length: 150 }).map((_, i) => {
+                    const lineNum = i + 1;
+                    return (
+                      <div key={i} className="h-[1.6em] w-full flex items-start justify-end">
+                        {lineNum % 5 === 0 ? <span>{lineNum}</span> : null}
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Passage HTML */}
+                <div 
+                  className="toefl-html-content"
+                  dangerouslySetInnerHTML={{ __html: processedContent.html }} 
+                />
               </div>
             ) : (
               <div dangerouslySetInnerHTML={{ __html: processedContent.html }} />

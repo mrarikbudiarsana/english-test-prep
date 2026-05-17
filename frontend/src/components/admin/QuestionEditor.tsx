@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, type FormEvent } from 'react';
+import { useState, useMemo, useRef, type FormEvent } from 'react';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import AudioUploader from './AudioUploader';
 import MCQEditor from './QuestionTypeEditors/MCQEditor';
 import type { TestType, SectionType, QuestionType, QuestionData, MCQData } from '@/types/test';
+import api from '@/lib/api';
 
 interface QuestionFormData {
   questionNumber: number;
@@ -68,7 +69,9 @@ export default function QuestionEditor({
   const [explanation, setExplanation] = useState(initialData?.explanation || '');
   const [explanationAi, setExplanationAi] = useState(initialData?.explanationAi || '');
   const [loading, setLoading] = useState(false);
+  const [formattingAi, setFormattingAi] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const showAudioUploader = testType === 'toefl_itp' && sectionType === 'listening' && partNumber === 1;
   const guidance = useMemo(() => {
@@ -116,6 +119,74 @@ export default function QuestionEditor({
           return { ...prev, options: newOptions };
         });
       }
+    }
+  };
+
+  const handleWrapUnderline = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end) return;
+
+    const selectedText = questionText.substring(start, end);
+    // If already underlined, un-underline it
+    if (
+      questionText.substring(start - 3, start) === '<u>' &&
+      questionText.substring(end, end + 4) === '</u>'
+    ) {
+      const newText = questionText.substring(0, start - 3) + selectedText + questionText.substring(end + 4);
+      handleQuestionTextChange(newText);
+      setTimeout(() => {
+        textarea.setSelectionRange(start - 3, end - 3);
+        textarea.focus();
+      }, 0);
+    } else {
+      const newText = questionText.substring(0, start) + '<u>' + selectedText + '</u>' + questionText.substring(end);
+      handleQuestionTextChange(newText);
+      setTimeout(() => {
+        textarea.setSelectionRange(start + 3, end + 3);
+        textarea.focus();
+      }, 0);
+    }
+  };
+
+  const handleSyncOptionsToText = () => {
+    // 1. Remove all existing <u> tags so we start fresh
+    let newText = questionText.replace(/<\/?u>/g, '');
+    
+    // 2. Safely escape regex strings
+    const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
+    // 3. Find each option and wrap its FIRST occurrence in <u> tags
+    questionData.options.forEach((opt) => {
+      const textToUnderline = opt.text.trim();
+      if (textToUnderline) {
+        // \b ensures we match whole words (e.g. 'are' won't match inside 'rare')
+        const regex = new RegExp(`\\b${escapeRegExp(textToUnderline)}\\b`, 'i');
+        newText = newText.replace(regex, `<u>${textToUnderline}</u>`);
+      }
+    });
+    
+    handleQuestionTextChange(newText);
+  };
+
+  const handleFormatWithAI = async () => {
+    if (!questionText.trim()) return;
+    setFormattingAi(true);
+    try {
+      const response = await api.post('/admin/ai/format-written-expression', { text: questionText });
+      const formatted = response.data?.data || response.data;
+      if (typeof formatted === 'string') {
+        handleQuestionTextChange(formatted);
+      } else if (response.data) {
+        handleQuestionTextChange(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to format with AI', err);
+    } finally {
+      setFormattingAi(false);
     }
   };
 
@@ -189,6 +260,7 @@ export default function QuestionEditor({
 
       <div className="space-y-1.5">
         <Textarea
+          ref={textareaRef}
           label="Question Text"
           value={questionText}
           onChange={(e) => handleQuestionTextChange(e.target.value)}
@@ -198,7 +270,17 @@ export default function QuestionEditor({
           required
         />
         {sectionType === 'structure' && (
-          <p className="text-xs text-gray-500">Tip: use &lt;u&gt;text&lt;/u&gt; to underline the A-D portions for Written Expression items.</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-1">
+            <p className="text-xs text-gray-500">Tip: use &lt;u&gt;text&lt;/u&gt; to underline the A-D portions for Written Expression items.</p>
+            <div className="flex gap-2">
+               <Button type="button" size="sm" variant="outline" onClick={handleWrapUnderline} className="h-7 text-xs px-2">
+                 <u>Underline</u> Selected
+               </Button>
+               <Button type="button" size="sm" variant="outline" onClick={handleFormatWithAI} loading={formattingAi} className="h-7 text-xs px-2">
+                 ✨ Auto-Format AI
+               </Button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -208,7 +290,8 @@ export default function QuestionEditor({
           data={questionData as MCQData}
           correctAnswer={correctAnswer}
           onChange={handleQuestionDataChange}
-          readOnlyOptions={questionText.includes('<u>')}
+          readOnlyOptions={sectionType === 'structure' ? false : questionText.includes('<u>')}
+          onSyncToText={sectionType === 'structure' ? handleSyncOptionsToText : undefined}
         />
       </div>
 

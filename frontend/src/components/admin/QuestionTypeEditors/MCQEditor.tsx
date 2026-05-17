@@ -9,9 +9,10 @@ interface MCQEditorProps {
   correctAnswer: any;
   onChange: (data: MCQData, correctAnswer: any) => void;
   readOnlyOptions?: boolean;
+  onSyncToText?: () => void;
 }
 
-export default function MCQEditor({ data, correctAnswer, onChange, readOnlyOptions }: MCQEditorProps) {
+export default function MCQEditor({ data, correctAnswer, onChange, readOnlyOptions, onSyncToText }: MCQEditorProps) {
   const options = data.options || [];
   const multiSelect = data.multiSelect || false;
   const expectedAnswers = data.expectedAnswers || 2;
@@ -112,7 +113,7 @@ export default function MCQEditor({ data, correctAnswer, onChange, readOnlyOptio
         </div>
         {readOnlyOptions && (
           <div className="p-2 bg-slate-100 rounded text-xs text-slate-600 border border-slate-200">
-            Options are automatically extracted from the &lt;u&gt;underlined&lt;/u&gt; parts of your question text.
+            Tip: Options are automatically extracted if you underline text in the question above.
           </div>
         )}
         {options.map((option, index) => (
@@ -151,7 +152,6 @@ export default function MCQEditor({ data, correctAnswer, onChange, readOnlyOptio
                 value={option.text}
                 onChange={(e) => handleOptionTextChange(index, e.target.value)}
                 placeholder={`Option ${displayKey(index, option.key)} text`}
-                disabled={readOnlyOptions}
               />
             </div>
             <Button
@@ -159,7 +159,7 @@ export default function MCQEditor({ data, correctAnswer, onChange, readOnlyOptio
               size="sm"
               onClick={() => removeOption(index)}
               type="button"
-              disabled={options.length <= 2 || readOnlyOptions}
+              disabled={options.length <= 2}
               className="text-red-500 hover:text-red-700 hover:bg-red-50"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,9 +168,16 @@ export default function MCQEditor({ data, correctAnswer, onChange, readOnlyOptio
             </Button>
           </div>
         ))}
-        <Button variant="outline" size="sm" onClick={addOption} type="button" disabled={readOnlyOptions}>
-          + Add Option
-        </Button>
+        <div className="flex gap-2 w-full">
+          <Button variant="outline" size="sm" onClick={addOption} type="button" className="flex-1">
+            + Add Option
+          </Button>
+          {onSyncToText && (
+            <Button variant="outline" size="sm" onClick={onSyncToText} type="button" className="flex-1 border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100">
+              🔗 Underline These Options in Text
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
