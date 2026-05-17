@@ -7,7 +7,10 @@ types.setTypeParser(1700, (val) => parseFloat(val));
 
 export const pool = new Pool({
   connectionString: env.databaseUrl,
-  ssl: env.nodeEnv === 'production',
+  ssl: env.nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
+  max: 10,                 // max connections in pool
+  idleTimeoutMillis: 10000, // release idle connections after 10s (Neon idles fast)
+  connectionTimeoutMillis: 10000, // fail fast if can't connect within 10s
 });
 
 pool.on('error', (err) => {

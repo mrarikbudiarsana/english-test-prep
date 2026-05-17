@@ -1,6 +1,7 @@
 import * as questionModel from '../models/question.model';
 import * as sectionModel from '../models/section.model';
 import { NotFoundError } from '../middleware/errorHandler';
+import { cache, CACHE_KEYS, clearSectionCache } from '../utils/cache';
 
 function sanitizeMcqOptionText(input: unknown, optionKey?: string): string {
   let text = typeof input === 'string' ? input : '';
@@ -67,6 +68,10 @@ function sanitizeQuestionData(questionType: string, questionData: any) {
  * Strips out correctAnswer and explanation fields from results.
  */
 export async function getQuestionsBySectionId(sectionId: string) {
+  const cacheKey = CACHE_KEYS.SECTION_QUESTIONS(sectionId);
+  const cached = cache.get(cacheKey);
+  if (cached) return cached;
+
   // Verify the section exists
   const section = await sectionModel.findById(sectionId);
   if (!section) {
@@ -94,7 +99,7 @@ export async function getQuestionsBySectionId(sectionId: string) {
   }
 
   // Strip out correct_answer and explanation for student-facing view
-  return questions.map((q: any) => ({
+  const result = questions.map((q: any) => ({
     id: q.id,
     sectionId: q.sectionId,
     questionNumber: q.questionNumber,
@@ -108,6 +113,9 @@ export async function getQuestionsBySectionId(sectionId: string) {
     createdAt: q.createdAt,
     updatedAt: q.updatedAt,
   }));
+
+  cache.set(cacheKey, result);
+  return result;
 }
 
 /**
@@ -176,7 +184,7 @@ export async function createQuestion(
       : (await questionModel.getMaxQuestionNumber(sectionId)) + 1;
   const sanitizedQuestionData = sanitizeQuestionData(data.questionType, data.questionData);
 
-  return questionModel.create({
+  const result = await questionModel.create({
     sectionId,
     questionNumber,
     questionType: data.questionType,
@@ -190,6 +198,9 @@ export async function createQuestion(
     groupInstructions: data.groupInstructions,
     itemPayload: data.itemPayload,
   });
+
+  clearSectionCache(sectionId);
+  return result;
 }
 
 /**
@@ -224,7 +235,9 @@ export async function updateQuestion(
       : data.questionData,
   };
 
-  return questionModel.update(id, sanitizedData);
+  const result = await questionModel.update(id, sanitizedData);
+  clearSectionCache(existing.sectionId);
+  return result;
 }
 
 /**
@@ -241,5 +254,6 @@ export async function deleteQuestion(id: string) {
     throw new NotFoundError('Question not found');
   }
 
+  clearSectionCache(existing.sectionId);
   return { success: true };
 }

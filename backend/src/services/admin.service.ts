@@ -9,6 +9,7 @@ import * as sectionModel from '../models/section.model';
 import * as questionModel from '../models/question.model';
 import * as subscriptionService from './subscription.service';
 import { getClient, query } from '../config/database';
+import { clearSectionCache } from '../utils/cache';
 
 /**
  * Admin: Get user by ID.
@@ -334,6 +335,7 @@ export async function bulkCreateQuestions(
     }
 
     await client.query('COMMIT');
+    clearSectionCache(sectionId);
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
