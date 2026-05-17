@@ -33,6 +33,8 @@ export default function AdminSectionQuestionsPage() {
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
   const [syncingBulk, setSyncingBulk] = useState(false);
   const [showBulkImporter, setShowBulkImporter] = useState(false);
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
+  const [deletingBulk, setDeletingBulk] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -133,6 +135,44 @@ export default function AdminSectionQuestionsPage() {
     setGeneratingId(null);
     setGeneratingBulk(false);
     alert(`Successfully generated ${successCount} explanations.`);
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedQuestionIds(questions.map((q) => q.id));
+    } else {
+      setSelectedQuestionIds([]);
+    }
+  };
+
+  const handleSelectQuestion = (questionId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedQuestionIds((prev) => [...prev, questionId]);
+    } else {
+      setSelectedQuestionIds((prev) => prev.filter((id) => id !== questionId));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedQuestionIds.length} selected questions? This cannot be undone.`)) return;
+    setDeletingBulk(true);
+    let successCount = 0;
+    
+    for (const id of selectedQuestionIds) {
+      try {
+        await api.delete(`/admin/tests/${testId}/sections/${sectionId}/questions/${id}`);
+        successCount++;
+      } catch (err) {
+        console.error(`Failed to delete Q${id}:`, err);
+      }
+    }
+    
+    setQuestions((prev) => prev.filter((q) => !selectedQuestionIds.includes(q.id)));
+    setSelectedQuestionIds([]);
+    setDeletingBulk(false);
+    if (successCount > 0 && successCount < selectedQuestionIds.length) {
+      alert(`Deleted ${successCount} out of ${selectedQuestionIds.length} questions.`);
+    }
   };
 
   const handleBulkImport = async (bulkQuestions: Array<{ questionText: string; options: { key: string; text: string }[]; correctAnswer: string; explanation?: string; questionNumber?: number; }>) => {
@@ -298,10 +338,37 @@ export default function AdminSectionQuestionsPage() {
         <Card><div className="text-center py-12"><p className="text-gray-500 mb-4">No questions in this section yet.</p><Button onClick={() => { setEditingQuestion(null); setShowQuestionEditor(true); }}>Add First Question</Button></div></Card>
       ) : (
         <div className="space-y-3">
+          <div className="flex items-center justify-between px-1 mb-2">
+            <div className="flex items-center gap-2">
+              <input 
+                type="checkbox" 
+                id="selectAll"
+                checked={questions.length > 0 && selectedQuestionIds.length === questions.length}
+                onChange={handleSelectAll}
+                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+              />
+              <label htmlFor="selectAll" className="text-sm font-medium text-gray-700 cursor-pointer">
+                Select All ({selectedQuestionIds.length}/{questions.length})
+              </label>
+            </div>
+            {selectedQuestionIds.length > 0 && (
+              <Button variant="danger" size="sm" onClick={handleBulkDelete} loading={deletingBulk}>
+                Delete Selected
+              </Button>
+            )}
+          </div>
           {questions.map((question) => (
-            <Card key={question.id}>
+            <Card key={question.id} className={selectedQuestionIds.includes(question.id) ? 'ring-2 ring-blue-500 bg-blue-50/50' : ''}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="pt-1.5 flex-shrink-0">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedQuestionIds.includes(question.id)}
+                      onChange={(e) => handleSelectQuestion(question.id, e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+                    />
+                  </div>
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-700">{question.questionNumber}</div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
