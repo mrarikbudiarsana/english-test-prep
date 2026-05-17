@@ -25,7 +25,9 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     audio: HTMLAudioElement;
     loadedmetadata: () => void;
     durationchange: () => void;
-    timeupdate: () => void;
+    canplay: () => void;
+    ended: () => void;
+    error: (e: Event) => void;
   } | null>(null);
   const onEndRef = useRef(onEnd);
 
@@ -48,10 +50,12 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
 
   const loadAudio = useCallback((url: string) => {
     if (listenersRef.current) {
-      const { audio, loadedmetadata, durationchange, timeupdate } = listenersRef.current;
+      const { audio, loadedmetadata, durationchange, canplay, ended, error } = listenersRef.current;
       audio.removeEventListener('loadedmetadata', loadedmetadata);
       audio.removeEventListener('durationchange', durationchange);
-      audio.removeEventListener('timeupdate', timeupdate);
+      audio.removeEventListener('canplay', canplay);
+      audio.removeEventListener('ended', ended);
+      audio.removeEventListener('error', error);
       listenersRef.current = null;
     }
 
@@ -86,26 +90,14 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
       }
     };
 
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('durationchange', handleDurationChange);
-    // Remove timeupdate listener as we use RAF for high-precision updates when playing,
-    // and seek/pause handle their own state updates.
-    
-    listenersRef.current = {
-      audio,
-      loadedmetadata: handleLoadedMetadata,
-      durationchange: handleDurationChange,
-      timeupdate: () => {}, // No-op placeholder
-    };
-
-    audio.addEventListener('canplay', () => {
+    const handleCanPlay = () => {
       setIsLoaded(true);
       if (isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
       }
-    });
+    };
 
-    audio.addEventListener('ended', () => {
+    const handleEnded = () => {
       setIsPlaying(false);
       setHasPlayed(true);
       playingRef.current = false;
@@ -113,13 +105,28 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
       // Ensure we reach exactly the end
       setCurrentTime(audio.duration);
       onEndRef.current?.();
-    });
+    };
 
-    audio.addEventListener('error', (e) => {
+    const handleError = (e: Event) => {
       console.error('Audio loading error:', e);
       setIsPlaying(false);
       playingRef.current = false;
-    });
+    };
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('durationchange', handleDurationChange);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+    
+    listenersRef.current = {
+      audio,
+      loadedmetadata: handleLoadedMetadata,
+      durationchange: handleDurationChange,
+      canplay: handleCanPlay,
+      ended: handleEnded,
+      error: handleError,
+    };
 
     // Kick off the request immediately so metadata/canplay can resolve.
     audio.load();
@@ -172,10 +179,12 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   useEffect(() => {
     return () => {
       if (listenersRef.current) {
-        const { audio, loadedmetadata, durationchange, timeupdate } = listenersRef.current;
+        const { audio, loadedmetadata, durationchange, canplay, ended, error } = listenersRef.current;
         audio.removeEventListener('loadedmetadata', loadedmetadata);
         audio.removeEventListener('durationchange', durationchange);
-        audio.removeEventListener('timeupdate', timeupdate);
+        audio.removeEventListener('canplay', canplay);
+        audio.removeEventListener('ended', ended);
+        audio.removeEventListener('error', error);
         listenersRef.current = null;
       }
       audioRef.current?.pause();
