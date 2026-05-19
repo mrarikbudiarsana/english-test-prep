@@ -142,11 +142,11 @@ export async function decrementFreeTests(id: string) {
 
 export async function findAll(offset: number = 0, limit: number = 20, search?: string) {
   let whereClause = '';
-  const values: any[] = [offset, limit];
+  const filterValues: any[] = [];
 
   if (search) {
-    whereClause = 'WHERE display_name ILIKE $3 OR email ILIKE $3';
-    values.push(`%${search}%`);
+    whereClause = 'WHERE display_name ILIKE $1 OR email ILIKE $1';
+    filterValues.push(`%${search}%`);
   }
 
   const result = await query(
@@ -154,13 +154,13 @@ export async function findAll(offset: number = 0, limit: number = 20, search?: s
      FROM users
      ${whereClause}
      ORDER BY created_at DESC
-     OFFSET $1 LIMIT $2`,
-    values,
+     OFFSET $${filterValues.length + 1} LIMIT $${filterValues.length + 2}`,
+    [...filterValues, offset, limit],
   );
 
   const countResult = await query(
     `SELECT COUNT(*) FROM users ${whereClause}`,
-    search ? [`%${search}%`] : []
+    filterValues
   );
 
   return {

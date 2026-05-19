@@ -180,7 +180,7 @@ export default function AdminUsersPage() {
                             </div>
                           )}
                           <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                            {user.displayName || 'No name'}
+                            {user.displayName || user.email || 'No name'}
                           </span>
                         </Link>
                       </td>

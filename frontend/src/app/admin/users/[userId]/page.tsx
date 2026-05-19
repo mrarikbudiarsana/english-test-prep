@@ -149,7 +149,7 @@ export default function AdminUserDetailPage() {
                         </svg>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">{user.displayName || 'No Name'}</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">{user.displayName || user.email || 'No Name'}</h1>
                         <div className="text-sm text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span>{user.email}</span>
                             <span className="text-gray-300">•</span>

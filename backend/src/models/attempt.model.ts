@@ -379,11 +379,11 @@ function calculateSectionAverage(attempts: any[], field: string): number | null 
 
 export async function findAllCompleted(offset: number = 0, limit: number = 50, search?: string) {
   let searchClause = '';
-  const params: any[] = [offset, limit];
+  const filterValues: any[] = [];
 
   if (search) {
-    searchClause = `AND (u.email ILIKE $3 OR u.display_name ILIKE $3 OR t.title ILIKE $3)`;
-    params.push(`%${search}%`);
+    searchClause = `AND (u.email ILIKE $1 OR u.display_name ILIKE $1 OR t.title ILIKE $1)`;
+    filterValues.push(`%${search}%`);
   }
 
   const result = await query(
@@ -411,8 +411,8 @@ export async function findAllCompleted(offset: number = 0, limit: number = 50, s
      JOIN users u ON a.user_id = u.id
      WHERE a.status = 'completed' AND NOT a.is_preview ${searchClause}
      ORDER BY a.completed_at DESC NULLS LAST
-     OFFSET $1 LIMIT $2`,
-    params,
+     OFFSET $${filterValues.length + 1} LIMIT $${filterValues.length + 2}`,
+    [...filterValues, offset, limit],
   );
 
   const countResult = await query(
@@ -420,8 +420,8 @@ export async function findAllCompleted(offset: number = 0, limit: number = 50, s
      JOIN users u ON a.user_id = u.id
      JOIN tests t ON a.test_id = t.id
      WHERE a.status = 'completed' AND NOT a.is_preview ${searchClause}
-`,
-    search ? [params[2]] : [],
+ `,
+    filterValues,
   );
 
   return {

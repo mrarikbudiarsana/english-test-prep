@@ -124,7 +124,7 @@ export default function AdminResultsPage() {
 
       const headers = ['Student Name', 'Student Email', 'Test Title', 'Test Type', 'Mode', 'Score', 'Listening', 'Structure', 'Reading', 'Completed At'];
       const rows = data.map(row => [
-        `"${row.userName || 'No name'}"`,
+        `"${row.userName || row.userEmail || 'No name'}"`,
         `"${row.userEmail}"`,
         `"${row.testTitle}"`,
         `"${testTypeLabel(row.testType)}"`,
@@ -284,7 +284,7 @@ export default function AdminResultsPage() {
                           )}
                           <div>
                             <p className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors leading-tight">
-                              {row.userName || 'No name'}
+                              {row.userName || row.userEmail || 'No name'}
                             </p>
                             <p className="text-xs text-gray-500 leading-tight">{row.userEmail}</p>
                           </div>
