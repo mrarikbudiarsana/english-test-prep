@@ -10,34 +10,63 @@ export function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [checking, setChecking] = useState(true);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const checkMaintenance = async () => {
-      // Don't check on maintenance page itself
+    let isMounted = true;
+    
+    const fetchStatus = async () => {
+      // Don't fetch if we're already on the maintenance page
       if (pathname.startsWith('/maintenance')) {
-        setChecking(false);
         return;
       }
-
+      
       try {
         const response = await api.get('/system/status');
-        const isMaintenance = response.data.maintenanceMode;
-
-        if (isMaintenance && user?.role !== 'admin') {
-          router.push('/maintenance');
-        } else {
-          setChecking(false);
+        if (isMounted) {
+          setIsMaintenanceMode(response.data.maintenanceMode);
         }
       } catch (error) {
         console.error('Failed to check maintenance status:', error);
-        setChecking(false);
+        if (isMounted) {
+          setIsMaintenanceMode(false);
+        }
       }
     };
 
-    if (!authLoading) {
-      checkMaintenance();
+    fetchStatus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname.startsWith('/maintenance')) {
+      setChecking(false);
+      return;
     }
-  }, [pathname, user, authLoading, router]);
+
+    if (isMaintenanceMode === null) {
+      return; // Still fetching
+    }
+
+    if (!isMaintenanceMode) {
+      setChecking(false);
+      return;
+    }
+
+    // It is maintenance mode, wait for auth to check if user is admin
+    if (authLoading) {
+      return;
+    }
+
+    if (user?.role !== 'admin') {
+      router.push('/maintenance');
+    } else {
+      setChecking(false);
+    }
+  }, [pathname, isMaintenanceMode, authLoading, user, router]);
 
   if (checking && !pathname.startsWith('/maintenance')) {
     // Show nothing or a small loader while checking
