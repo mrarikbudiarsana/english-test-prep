@@ -128,6 +128,24 @@ app.get('/api/v1/system/status', async (_req, res) => {
   }
 });
 
+// Run Migrations (Manual trigger for production Vercel)
+app.post('/api/v1/system/migrate', async (req, res) => {
+  try {
+    const secret = req.headers['x-migration-secret'] || req.query.secret || req.body.secret;
+    const expectedSecret = process.env.MIGRATION_SECRET || 'dev_secret_override_123';
+    
+    if (env.nodeEnv === 'production' && (!process.env.MIGRATION_SECRET || secret !== expectedSecret)) {
+      return res.status(401).json({ error: 'Unauthorized: MIGRATION_SECRET is not set or invalid.' });
+    }
+    
+    await runMigrations(false);
+    res.json({ success: true, message: 'Migrations completed successfully' });
+  } catch (error: any) {
+    logger.error('Manual migration error', { error: error.message });
+    res.status(500).json({ error: error.message || 'Migration failed' });
+  }
+});
+
 // Error handler
 app.use(errorHandler);
 
