@@ -580,3 +580,35 @@ export async function generateAIReadingQuestions(sectionId: string) {
 
   return bulkCreateQuestions(sectionId, questionsToCreate);
 }
+
+/**
+ * Admin: Get all pricing waitlist signups with plan details and user details.
+ */
+export async function getWaitlist() {
+  const result = await query(
+    `SELECT 
+       pw.id, 
+       pw.email, 
+       pw.plan_id AS "planId", 
+       pp.name AS "planName", 
+       pw.created_at AS "createdAt",
+       u.display_name AS "displayName",
+       u.id AS "userId"
+     FROM pricing_waitlist pw
+     LEFT JOIN pricing_plans pp ON pw.plan_id = pp.id
+     LEFT JOIN users u ON pw.user_id = u.id
+     ORDER BY pw.created_at DESC`
+  );
+  return result.rows;
+}
+
+/**
+ * Admin: Remove/delete a waitlist entry.
+ */
+export async function deleteWaitlist(id: number) {
+  await query(
+    'DELETE FROM pricing_waitlist WHERE id = $1',
+    [id]
+  );
+  return { success: true };
+}

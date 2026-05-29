@@ -434,3 +434,36 @@ export async function formatWrittenExpression(
     next(error);
   }
 }
+
+// ---------- Waitlist ----------
+
+export async function getWaitlist(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await adminService.getWaitlist();
+    res.json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteWaitlist(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const id = parseInt(req.params.id as string, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: 'Invalid waitlist ID' });
+      return;
+    }
+    await adminService.deleteWaitlist(id);
+    res.json({ message: 'Waitlist entry deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}

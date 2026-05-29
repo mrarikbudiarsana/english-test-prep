@@ -60,4 +60,8 @@ router.get('/results/export', adminController.exportResults);
 router.get('/settings', adminController.getSettings);
 router.post('/settings', adminController.updateSettings);
 
+// Waitlist Management
+router.get('/waitlist', adminController.getWaitlist);
+router.delete('/waitlist/:id', adminController.deleteWaitlist);
+
 export default router;
