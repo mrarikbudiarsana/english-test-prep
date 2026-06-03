@@ -822,7 +822,11 @@ function TestTakingContent() {
                   <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 shrink-0">
                     <h2 className="text-base font-bold text-slate-800">Passage {activePartIndex + 1}</h2>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm text-slate-500">{answeredCount} / {questions.length} {t('test_answered')}</span>
+                      <div className="flex lg:hidden bg-slate-100 p-0.5 rounded-md">
+                        <button onClick={() => setToeflReadingMobileView('passage')} className={cn('px-3 py-1 text-xs font-bold rounded-sm transition-colors', toeflReadingMobileView === 'passage' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500')}>Passage</button>
+                        <button onClick={() => setToeflReadingMobileView('question')} className={cn('px-3 py-1 text-xs font-bold rounded-sm transition-colors', toeflReadingMobileView === 'question' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500')}>Questions</button>
+                      </div>
+                      <span className="hidden sm:inline-block text-sm text-slate-500">{answeredCount} / {questions.length} {t('test_answered')}</span>
                       <button
                         onClick={() => setIsToeflReadingProgressOpen(prev => !prev)}
                         className={cn(
@@ -843,7 +847,7 @@ function TestTakingContent() {
                   {/* Two-column area fills remaining height */}
                   <div className="flex flex-1 overflow-hidden">
                     {/* Left — passage */}
-                    <div className="flex flex-col w-1/2 border-r border-slate-200 overflow-hidden">
+                    <div className={cn("flex-col lg:w-1/2 border-r border-slate-200 overflow-hidden", toeflReadingMobileView === 'passage' ? 'flex w-full' : 'hidden lg:flex')}>
                       {/* Questions range label */}
                       {(() => {
                         const partQs = questions.filter(q => q.sectionId === currentSectionPart?.id);
@@ -869,7 +873,7 @@ function TestTakingContent() {
                     </div>
 
                     {/* Right — current question and side-pane navigator */}
-                    <div className="flex-1 flex items-stretch overflow-hidden">
+                    <div className={cn("flex-1 items-stretch overflow-hidden", toeflReadingMobileView === 'question' ? 'flex' : 'hidden lg:flex')}>
                       <div className="flex-1 flex flex-col overflow-hidden">
                         <div className="flex-1 overflow-y-auto px-6 py-4">
                           {currentQuestion && (
@@ -920,7 +924,7 @@ function TestTakingContent() {
 
         {/* Right: Progress Sidebar — non-reading sections only */}
         {state.currentSectionType !== 'reading' && (
-          <aside className="w-[280px] shrink-0 bg-[#f9fafb] p-6 overflow-y-auto flex flex-col border-l border-slate-100">
+          <aside className="w-[280px] shrink-0 bg-[#f9fafb] p-6 overflow-y-auto hidden lg:flex flex-col border-l border-slate-100">
             <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-6 text-center">{t('test_question_progress')}</h3>
             <QuestionNavigator
               totalQuestions={questions.length}

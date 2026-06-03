@@ -167,7 +167,7 @@ export default function CongratulationsModal({
                             </button>
                         </div>
                         <a
-                            href="https://yec.co.id"
+                            href="https://shop.yec.co.id/?ref=536"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="mt-3 text-[10px] font-black text-orange-600 hover:underline tracking-widest uppercase"

@@ -21,22 +21,22 @@ export default function YecPromoCard() {
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-lg overflow-hidden flex flex-col lg:flex-row items-stretch transition-all duration-300 hover:shadow-xl">
         
         {/* Left/Main Side: Banner copy & features */}
-        <div className="flex-1 p-8 sm:p-10 flex flex-col justify-between">
+        <div className="flex-1 p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-50 border border-orange-100 rounded-full text-xs font-bold text-orange-600 mb-6 uppercase tracking-wider">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
               Official TOEFL iTP Partner Promotion
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight mb-4">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 leading-tight mb-3 sm:mb-4">
               {t('yec_promo_title')}
             </h2>
 
-            <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-8 max-w-2xl">
+            <p className="text-slate-600 text-xs sm:text-sm md:text-base leading-relaxed mb-6 sm:mb-8 max-w-2xl">
               {t('yec_promo_subtitle')}
             </p>
 
-            <div className="grid sm:grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
               {[1, 2, 3].map((num) => (
                 <div key={num} className="flex items-start gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100/70">
                   <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
@@ -69,7 +69,7 @@ export default function YecPromoCard() {
         </div>
 
         {/* Divider lines with ticket-notch circles for physical voucher look */}
-        <div className="relative flex lg:flex-col justify-center items-center px-6 lg:px-0 bg-slate-50 lg:bg-white">
+        <div className="relative flex lg:flex-col justify-center items-center w-full lg:w-auto bg-slate-50 lg:bg-white">
           <div className="hidden lg:block absolute -top-4 w-8 h-8 rounded-full bg-[#f8fafc] border-b border-slate-200/80" />
           <div className="hidden lg:block h-full border-l-2 border-dashed border-slate-200" />
           <div className="hidden lg:block absolute -bottom-4 w-8 h-8 rounded-full bg-[#f8fafc] border-t border-slate-200/80" />
@@ -80,7 +80,7 @@ export default function YecPromoCard() {
         </div>
 
         {/* Right Side: The Ticket Stub Voucher */}
-        <div className="w-full lg:w-[350px] bg-slate-50/70 p-8 sm:p-10 flex flex-col justify-between items-center text-center">
+        <div className="w-full lg:w-[350px] bg-slate-50/70 p-6 sm:p-8 lg:p-10 flex flex-col justify-between items-center text-center">
           <div className="w-full">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
               Voucher Diskon
@@ -142,7 +142,7 @@ export default function YecPromoCard() {
           </div>
 
           <a
-            href="https://yec.co.id"
+            href="https://shop.yec.co.id/?ref=536"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold text-white bg-orange-500 hover:bg-orange-600 transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
