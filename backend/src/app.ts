@@ -44,6 +44,14 @@ const allowedOrigins = env.corsOrigin
 // Trust Vercel/proxy X-Forwarded-For headers for rate limiting
 app.set('trust proxy', 1);
 
+// Disable caching for API responses to prevent CORS issues with 304 Not Modified
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // Security middleware
 app.use(helmet({
   crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
