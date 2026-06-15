@@ -14,7 +14,7 @@ async function optionalAuth(req: any, res: any, next: any) {
       const decodedToken = await firebaseAuth.verifyIdToken(token);
       
       const { rows } = await query(
-        'SELECT id, firebase_uid, email, display_name, role, free_tests_remaining FROM users WHERE firebase_uid = $1',
+        'SELECT id, firebase_uid, email, display_name, role FROM users WHERE firebase_uid = $1',
         [decodedToken.uid]
       );
       
@@ -25,7 +25,7 @@ async function optionalAuth(req: any, res: any, next: any) {
           email: rows[0].email,
           displayName: rows[0].display_name,
           role: rows[0].role,
-          freeTestsRemaining: rows[0].free_tests_remaining,
+
         };
       }
     }

@@ -7,7 +7,7 @@ export interface User {
   displayName: string | null;
   photoUrl: string | null;
   role: 'user' | 'admin';
-  freeTestsRemaining: number;
+
   preferredExamType: ExamType | null;
   country?: string | null;
   city?: string | null;

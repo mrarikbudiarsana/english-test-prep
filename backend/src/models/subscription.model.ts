@@ -11,6 +11,7 @@ const SELECT_COLUMNS = `
   starts_at    AS "startsAt",
   expires_at   AS "expiresAt",
   auto_renew   AS "autoRenew",
+  pricing_plan_id AS "pricingPlanId",
   created_at   AS "createdAt",
   updated_at   AS "updatedAt"
 `;
@@ -72,14 +73,15 @@ export async function create(data: {
   userId: string;
   planType: string;
   examType?: string;
+  pricingPlanId?: number;
   startsAt: string | Date;
   expiresAt: string | Date;
 }) {
   const result = await query(
-    `INSERT INTO subscriptions (user_id, plan_type, exam_type, status, starts_at, expires_at)
-     VALUES ($1, $2, $3, 'pending', $4, $5)
+    `INSERT INTO subscriptions (user_id, plan_type, exam_type, status, starts_at, expires_at, pricing_plan_id)
+     VALUES ($1, $2, $3, 'pending', $4, $5, $6)
      RETURNING ${SELECT_COLUMNS}`,
-    [data.userId, data.planType, data.examType ?? 'toefl_itp', data.startsAt, data.expiresAt],
+    [data.userId, data.planType, data.examType ?? 'toefl_itp', data.startsAt, data.expiresAt, data.pricingPlanId || null],
   );
   return result.rows[0];
 }

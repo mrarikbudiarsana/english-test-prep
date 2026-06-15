@@ -329,8 +329,8 @@ export async function assignPackage(
 ): Promise<void> {
   try {
     const userId = req.params.userId as string;
-    const { planType, examType } = req.body;
-    const subscription = await adminService.assignPackage(userId, planType, examType);
+    const { billingCycle, pricingPlanId, examType } = req.body;
+    const subscription = await adminService.assignPackage(userId, billingCycle, pricingPlanId, examType);
     res.json({ data: subscription });
   } catch (error) {
     next(error);

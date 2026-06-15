@@ -453,8 +453,8 @@ export async function getDashboardStats() {
 /**
  * Admin: Manually assign a package to a user.
  */
-export async function assignPackage(userId: string, planType: string, examType?: string) {
-  return subscriptionService.assignManualSubscription(userId, planType, examType);
+export async function assignPackage(userId: string, billingCycle: string, pricingPlanId: number, examType?: string) {
+  return subscriptionService.assignManualSubscription(userId, billingCycle, pricingPlanId, examType);
 }
 
 /**

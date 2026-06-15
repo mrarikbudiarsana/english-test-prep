@@ -152,9 +152,7 @@ export default function AdminUsersPage() {
                     <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Role
                     </th>
-                    <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Free Tests
-                    </th>
+
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created At
                     </th>
@@ -210,11 +208,7 @@ export default function AdminUsersPage() {
                           <option value="admin">Admin</option>
                         </select>
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <Badge variant={user.freeTestsRemaining > 0 ? 'info' : 'default'}>
-                          {user.freeTestsRemaining}
-                        </Badge>
-                      </td>
+
                       <td className="px-6 py-4">
                         <span className="text-sm text-gray-500">
                           {formatDate(user.createdAt)}

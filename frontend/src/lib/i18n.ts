@@ -406,7 +406,7 @@ const translations = {
   // ─── Test Overview Page (/tests/[testId]) additional ───────────────────────
   test_overview_full_test: { id: 'Ujian Penuh', en: 'Full Test' },
   test_overview_premium_test: { id: 'Tes Premium', en: 'Premium Test' },
-  test_overview_premium_body: { id: 'Berlangganan untuk mengakses tes ini atau gunakan tes gratis Anda.', en: 'Subscribe to access this test or use your free tests.' },
+  test_overview_premium_body: { id: 'Berlangganan untuk mengakses tes ini.', en: 'Subscribe to access this test.' },
   test_overview_view_plans: { id: 'Lihat Paket', en: 'View Plans' },
   test_overview_free: { id: 'Gratis', en: 'Free' },
   test_overview_starting: { id: 'Sedang Memulai…', en: 'Starting…' },

@@ -1,5 +1,6 @@
 import * as subscriptionModel from '../models/subscription.model';
 import * as paymentModel from '../models/payment.model';
+import * as pricingModel from '../models/pricing.model';
 import { NotFoundError, ValidationError } from '../middleware/errorHandler';
 import { PLAN_CONFIGS } from '../types/payment.types';
 
@@ -84,20 +85,26 @@ export async function activateSubscription(orderId: string) {
 /**
  * Manually assign a subscription to a user (Admin only).
  */
-export async function assignManualSubscription(userId: string, planType: string, examType: string = 'toefl_itp') {
-  const planEntry = (PLAN_CONFIGS as any)[planType];
-
-  if (!planEntry) {
-    throw new ValidationError(`Invalid plan type: ${planType}`);
+export async function assignManualSubscription(userId: string, billingCycle: string, pricingPlanId: number, examType: string = 'toefl_itp') {
+  const plan = await pricingModel.findById(pricingPlanId);
+  if (!plan) {
+    throw new ValidationError(`Invalid pricing plan ID: ${pricingPlanId}`);
   }
 
+  if (billingCycle !== 'monthly' && billingCycle !== 'yearly') {
+    throw new ValidationError(`Invalid billing cycle: ${billingCycle}`);
+  }
+
+  const durationDays = billingCycle === 'monthly' ? 30 : 365;
+
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + planEntry.durationDays * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
   // Create and activate the subscription record immediately
   const subscription = await subscriptionModel.create({
     userId,
-    planType: planEntry.type,
+    planType: billingCycle,
+    pricingPlanId,
     examType,
     startsAt: now,
     expiresAt,

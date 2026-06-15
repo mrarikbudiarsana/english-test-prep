@@ -45,23 +45,23 @@ export async function authMiddleware(
     }
 
     // 3. Fallback: Query the database
-    const { rows } = await query(
-      'SELECT id, firebase_uid, email, display_name, role, free_tests_remaining FROM users WHERE firebase_uid = $1',
-      [uid]
+    const result = await query(
+      'SELECT id, firebase_uid, email, display_name, role FROM users WHERE firebase_uid = $1',
+      [decodedToken.uid],
     );
 
-    if (rows.length === 0) {
-      res.status(401).json({ error: 'User not found' });
+    if (result.rows.length === 0) {
+      res.status(401).json({ error: 'User not found in database' });
       return;
     }
 
+    const rows = result.rows;
     const user: AuthenticatedUser = {
       id: rows[0].id,
       firebaseUid: rows[0].firebase_uid,
       email: rows[0].email,
       displayName: rows[0].display_name,
       role: rows[0].role,
-      freeTestsRemaining: rows[0].free_tests_remaining,
     };
 
     const expiresAt = Date.now() + USER_CACHE_TTL_MS;

@@ -7,7 +7,6 @@ const fieldMap: Record<string, string> = {
   photoUrl: 'photo_url',
   role: 'role',
   isActive: 'is_active',
-  freeTestsRemaining: 'free_tests_remaining',
   preferredExamType: 'preferred_exam_type',
   country: 'country',
   city: 'city',
@@ -21,7 +20,6 @@ const SELECT_COLUMNS = `
   photo_url            AS "photoUrl",
   role,
   is_active            AS "isActive",
-  free_tests_remaining AS "freeTestsRemaining",
   preferred_exam_type  AS "preferredExamType",
   country,
   city,
@@ -92,7 +90,6 @@ export async function update(
     photoUrl: string;
     role: string;
     isActive: boolean;
-    freeTestsRemaining: number;
     preferredExamType: string;
     country: string | null;
     city: string | null;
@@ -128,17 +125,6 @@ export async function update(
   return result.rows[0] || null;
 }
 
-export async function decrementFreeTests(id: string) {
-  const result = await query(
-    `UPDATE users
-     SET free_tests_remaining = free_tests_remaining - 1,
-         updated_at = NOW()
-     WHERE id = $1 AND free_tests_remaining > 0
-     RETURNING ${SELECT_COLUMNS}`,
-    [id],
-  );
-  return result.rows[0] || null;
-}
 
 export async function findAll(offset: number = 0, limit: number = 20, search?: string) {
   let whereClause = '';

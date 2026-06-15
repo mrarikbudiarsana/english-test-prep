@@ -4,7 +4,7 @@ export interface AuthenticatedUser {
   email: string;
   displayName: string | null;
   role: 'user' | 'admin';
-  freeTestsRemaining: number;
+
 }
 
 declare global {

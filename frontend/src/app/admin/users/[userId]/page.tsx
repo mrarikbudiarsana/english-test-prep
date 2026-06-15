@@ -26,7 +26,8 @@ export default function AdminUserDetailPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [assignPlan, setAssignPlan] = useState<string>('monthly');
+    const [assignPlan, setAssignPlan] = useState<string>('');
+    const [pricingPlans, setPricingPlans] = useState<any[]>([]);
 
     useEffect(() => {
         fetchData();
@@ -36,12 +37,17 @@ export default function AdminUserDetailPage() {
         try {
             setLoading(true);
             setError(null);
-            const [userRes, attemptsRes] = await Promise.all([
+            const [userRes, attemptsRes, plansRes] = await Promise.all([
                 api.get(`/admin/users/${userId}`),
                 api.get(`/admin/users/${userId}/attempts`),
+                api.get('/pricing/admin'),
             ]);
             setUser(userRes.data.data || userRes.data);
             setAttempts(attemptsRes.data.data || attemptsRes.data);
+            setPricingPlans(plansRes.data || []);
+            if (plansRes.data && plansRes.data.length > 0) {
+                setAssignPlan(`${plansRes.data[0].id}_monthly`);
+            }
         } catch (err: any) {
             setError(err.response?.data?.error || 'Failed to load user data');
         } finally {
@@ -56,8 +62,11 @@ export default function AdminUserDetailPage() {
 
         try {
             setSubmitting(true);
+            const [pricingPlanId, billingCycle] = assignPlan.split('_');
+            
             await api.post(`/admin/users/${userId}/assign-package`, {
-                planType: assignPlan,
+                billingCycle,
+                pricingPlanId: parseInt(pricingPlanId, 10),
                 examType: 'toefl_itp'
             });
             await fetchData();
@@ -272,11 +281,10 @@ export default function AdminUserDetailPage() {
                             label="Select Plan"
                             value={assignPlan}
                             onChange={(e) => setAssignPlan(e.target.value)}
-                            options={[
-                                { label: 'Monthly Plan', value: 'monthly' },
-                                { label: 'Quarterly Plan', value: 'quarterly' },
-                                { label: 'Yearly Plan', value: 'yearly' },
-                            ]}
+                            options={pricingPlans.flatMap(plan => [
+                                { label: `${plan.name} - Monthly (${plan.priceMonthly.toLocaleString()})`, value: `${plan.id}_monthly` },
+                                { label: `${plan.name} - Yearly (${plan.priceYearly.toLocaleString()})`, value: `${plan.id}_yearly` }
+                            ])}
                         />
                         <Button
                             onClick={handleAssignPackage}
