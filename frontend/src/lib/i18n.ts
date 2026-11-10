@@ -402,6 +402,7 @@ const translations = {
   test_submit_error: { id: 'Pengiriman gagal. Silakan coba lagi.', en: 'Submission failed. Please try again.' },
   test_thinking_time: { id: 'Waktu Berpikir', en: 'Thinking Time' },
   test_skip: { id: 'Lewati', en: 'Skip' },
+  test_audio_paced: { id: 'Mengikuti Audio', en: 'Audio Paced' },
 
   // ─── Test Overview Page (/tests/[testId]) additional ───────────────────────
   test_overview_full_test: { id: 'Ujian Penuh', en: 'Full Test' },

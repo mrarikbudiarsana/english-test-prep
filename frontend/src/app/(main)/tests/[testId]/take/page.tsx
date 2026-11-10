@@ -186,7 +186,7 @@ function TestTakingContent() {
   }, []);
 
   const handleTimeUp = async () => {
-    if (state.currentSectionType) {
+    if (state.currentSectionType && state.currentSectionType !== 'listening') {
       await submitSection(state.currentSectionType);
       advanceToNextSection();
     }
@@ -227,7 +227,12 @@ function TestTakingContent() {
         timeRemaining: finalTimeRemaining,
       },
     });
-    timer.start(finalTimeRemaining);
+
+    if (sectionType === 'listening') {
+      timer.stop();
+    } else {
+      timer.start(finalTimeRemaining);
+    }
 
     const resolvedAttemptId = state.attemptId || attemptId;
     if (resolvedAttemptId && overrideTimeRemaining === undefined) {
@@ -572,7 +577,6 @@ function TestTakingContent() {
         } catch {
           setError(t('test_submit_error'));
           setShowSubmitModal(false);
-          timer.start(timer.timeRemaining);
         }
         return;
       }
@@ -735,10 +739,25 @@ function TestTakingContent() {
               <VolumeControl volume={globalVolume} onChange={setGlobalVolume} />
             )}
 
-            {/* Timer */}
-            <div className={`text-2xl font-mono font-bold tabular-nums transition-colors ${timer.timeRemaining < 300 ? 'text-red-500 animate-pulse' : 'text-slate-700'}`}>
-              <TestTimer timeRemaining={timer.timeRemaining} isRunning={timer.isRunning} />
-            </div>
+            {/* Timer or Audio-Paced Indicator */}
+            {state.currentSectionType === 'listening' ? (
+              <div
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50/80 border border-blue-200/70 text-[#08507f] shadow-sm select-none"
+                title="Paced by the audio recording"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#08507f]"></span>
+                </span>
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  {t('test_audio_paced')}
+                </span>
+              </div>
+            ) : (
+              <div className={`text-2xl font-mono font-bold tabular-nums transition-colors ${timer.timeRemaining < 300 ? 'text-red-500 animate-pulse' : 'text-slate-700'}`}>
+                <TestTimer timeRemaining={timer.timeRemaining} isRunning={timer.isRunning} />
+              </div>
+            )}
 
             {/* Finish Test Button */}
             <button
