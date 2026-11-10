@@ -51,9 +51,9 @@ export default function AudioPlayer({
   }, []);
 
   const handlePlayPause = useCallback(() => {
-    if (disabled) return;
+    if (disabled || (disableScrubbing && isPlaying)) return;
     isPlaying ? pause() : play();
-  }, [disabled, isPlaying, play, pause]);
+  }, [disabled, disableScrubbing, isPlaying, play, pause]);
 
   const isFinished = !canPlay && !disabled;
 
@@ -95,6 +95,11 @@ export default function AudioPlayer({
               Plays Once
             </span>
           )}
+          {disableScrubbing && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 text-white text-[10px] font-semibold tracking-wide border border-white/20">
+              Auto Play
+            </span>
+          )}
           {isFinished && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 text-[10px] font-bold tracking-wide border border-emerald-300/30">
               <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -113,28 +118,39 @@ export default function AudioPlayer({
 
       {/* ── Controls ────────────────────────────────────────── */}
       <div className="flex items-center gap-4 px-4 py-3">
-        {/* Play / Pause button */}
+        {/* Play / Status button */}
         <button
           onClick={handlePlayPause}
-          disabled={disabled || !isLoaded || !canPlay}
+          disabled={disabled || !isLoaded || !canPlay || (disableScrubbing && isPlaying)}
           className={cn(
             'flex h-9 w-9 shrink-0 items-center justify-center rounded-md border transition-all duration-150',
-            disabled || !isLoaded || !canPlay
-              ? 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-300'
+            disabled || !isLoaded || !canPlay || (disableScrubbing && isPlaying)
+              ? 'cursor-default border-slate-200 bg-slate-50 text-slate-400'
               : 'border-[#08507f] bg-[#08507f] text-white hover:bg-[#063d61] hover:border-[#063d61] active:scale-95',
           )}
           title={
-            disabled      ? 'Audio is disabled'
-            : !canPlay    ? 'Already played'
-            : isPlaying   ? 'Pause'
-            :               'Play'
+            disabled
+              ? 'Audio is disabled'
+              : disableScrubbing && isPlaying
+                ? 'Audio playback cannot be paused during the mock test'
+                : !canPlay
+                  ? 'Already played'
+                  : isPlaying
+                    ? 'Pause'
+                    : 'Play'
           }
         >
           {isPlaying ? (
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-              <rect x="6"  y="4" width="4" height="16" rx="1.5" />
-              <rect x="14" y="4" width="4" height="16" rx="1.5" />
-            </svg>
+            disableScrubbing ? (
+              <svg className="h-4 w-4 text-[#08507f] animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.757 3.63 8.25 4.51 8.25H6.75z" />
+              </svg>
+            ) : (
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="6"  y="4" width="4" height="16" rx="1.5" />
+                <rect x="14" y="4" width="4" height="16" rx="1.5" />
+              </svg>
+            )
           ) : (
             <svg className="h-4 w-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M7 4v16l13-8z" />

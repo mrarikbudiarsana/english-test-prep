@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { type MCQData } from '@/types/test';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -12,7 +13,14 @@ interface MCQEditorProps {
   onSyncToText?: () => void;
 }
 
-export default function MCQEditor({ data, correctAnswer, onChange, readOnlyOptions, onSyncToText }: MCQEditorProps) {
+export default function MCQEditor({ data, correctAnswer: rawCorrectAnswer, onChange, readOnlyOptions, onSyncToText }: MCQEditorProps) {
+  const correctAnswer = useMemo(() => {
+    if (rawCorrectAnswer && typeof rawCorrectAnswer === 'object' && !Array.isArray(rawCorrectAnswer)) {
+      return rawCorrectAnswer.answer ?? rawCorrectAnswer.key ?? rawCorrectAnswer.value ?? '';
+    }
+    return rawCorrectAnswer ?? '';
+  }, [rawCorrectAnswer]);
+
   const options = data.options || [];
   const multiSelect = data.multiSelect || false;
   const expectedAnswers = data.expectedAnswers || 2;
@@ -186,13 +194,13 @@ export default function MCQEditor({ data, correctAnswer, onChange, readOnlyOptio
             if (!Array.isArray(correctAnswer) || correctAnswer.length === 0) return 'None selected';
             const texts = correctAnswer.map((key: string) => {
               const opt = options.find((o, i) => displayKey(i, o.key) === key);
-              return opt?.text || key;
+              return opt?.text || String(key);
             });
             return texts.join(', ');
           } else {
             if (!correctAnswer) return 'None selected';
             const opt = options.find((o, i) => displayKey(i, o.key) === correctAnswer);
-            return opt?.text || correctAnswer;
+            return opt?.text || String(correctAnswer);
           }
         })()}
       </div>

@@ -50,6 +50,13 @@ function getDefaultQuestionData(): MCQData {
   };
 }
 
+function normalizeInitialAnswer(ans: any): any {
+  if (ans && typeof ans === 'object' && !Array.isArray(ans)) {
+    return ans.answer ?? ans.key ?? ans.value ?? '';
+  }
+  return ans ?? '';
+}
+
 export default function QuestionEditor({
   testType,
   sectionType,
@@ -64,7 +71,7 @@ export default function QuestionEditor({
   const [questionText, setQuestionText] = useState(initialData?.questionText || '');
   const [audioUrl, setAudioUrl] = useState<string | null>(initialData?.audioUrl || null);
   const [questionData, setQuestionData] = useState<QuestionData>(initialData?.questionData || getDefaultQuestionData());
-  const [correctAnswer, setCorrectAnswer] = useState<any>(initialData?.correctAnswer || '');
+  const [correctAnswer, setCorrectAnswer] = useState<any>(() => normalizeInitialAnswer(initialData?.correctAnswer));
   const [points, setPoints] = useState(initialData?.points || 1);
   const [explanation, setExplanation] = useState(initialData?.explanation || '');
   const [explanationAi, setExplanationAi] = useState(initialData?.explanationAi || '');

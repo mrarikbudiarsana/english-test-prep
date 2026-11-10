@@ -522,7 +522,7 @@ function TestTakingContent() {
       const sectionThinkingTime = currentSectionPart?.audioThinkingTime ?? 0;
       if (sectionThinkingTime > 0) {
         setThinkingTimeLeft(sectionThinkingTime);
-      } else {
+      } else if (!isPartBCMode) {
         handleNextQuestion();
       }
     }

@@ -136,10 +136,16 @@ export default function QuestionRenderer({
     // It is a written expression question. Render interactive inline buttons.
     const mcqData = question.questionData as MCQData;
     const multiSelect = mcqData?.multiSelect;
-    const correctAnswer = readOnly ? question.correctAnswer : undefined;
+    const rawCorrectAnswer = readOnly ? question.correctAnswer : undefined;
+    const correctAnswer = (rawCorrectAnswer && typeof rawCorrectAnswer === 'object' && !Array.isArray(rawCorrectAnswer))
+      ? ((rawCorrectAnswer as any).answer ?? (rawCorrectAnswer as any).key ?? '')
+      : rawCorrectAnswer;
+    const resolvedAnswer = (answer && typeof answer === 'object' && !Array.isArray(answer))
+      ? ((answer as any).answer ?? (answer as any).key ?? '')
+      : answer;
 
     const isSelected = (key: string) =>
-      multiSelect ? Array.isArray(answer) && answer.includes(key) : answer === key;
+      multiSelect ? Array.isArray(resolvedAnswer) && resolvedAnswer.includes(key) : resolvedAnswer === key;
 
     const getStatus = (key: string): 'correct' | 'incorrect' | 'missed' | null => {
       if (!readOnly || correctAnswer === undefined) return null;

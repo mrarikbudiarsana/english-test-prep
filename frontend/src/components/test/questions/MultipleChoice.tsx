@@ -69,14 +69,21 @@ export default function MultipleChoice({
     [readOnly, answer, onChange]
   );
 
+  const resolvedAnswer = (answer && typeof answer === 'object' && !Array.isArray(answer))
+    ? ((answer as any).answer ?? (answer as any).key ?? '')
+    : answer;
+  const resolvedCorrectAnswer = (correctAnswer && typeof correctAnswer === 'object' && !Array.isArray(correctAnswer))
+    ? ((correctAnswer as any).answer ?? (correctAnswer as any).key ?? '')
+    : correctAnswer;
+
   const isSelected = (key: string) =>
-    multiSelect ? Array.isArray(answer) && answer.includes(key) : answer === key;
+    multiSelect ? Array.isArray(resolvedAnswer) && resolvedAnswer.includes(key) : resolvedAnswer === key;
 
   const getStatus = (key: string): 'correct' | 'incorrect' | 'missed' | null => {
-    if (!readOnly || correctAnswer === undefined) return null;
+    if (!readOnly || resolvedCorrectAnswer === undefined) return null;
     const isCorrect = multiSelect
-      ? Array.isArray(correctAnswer) && correctAnswer.includes(key)
-      : correctAnswer === key;
+      ? Array.isArray(resolvedCorrectAnswer) && resolvedCorrectAnswer.includes(key)
+      : resolvedCorrectAnswer === key;
     const wasSelected = isSelected(key);
     if (isCorrect && wasSelected) return 'correct';
     if (!isCorrect && wasSelected) return 'incorrect';

@@ -1,5 +1,6 @@
 import * as testModel from '../models/test.model';
 import * as sectionModel from '../models/section.model';
+import { query } from '../config/database';
 import { NotFoundError } from '../middleware/errorHandler';
 import { cache, CACHE_KEYS, clearTestCaches } from '../utils/cache';
 
@@ -103,6 +104,10 @@ export async function deleteTest(id: string) {
   if (!existing) {
     throw new NotFoundError('Test not found');
   }
+
+  // Delete associated student responses and attempts first to satisfy foreign key constraints
+  await query('DELETE FROM responses WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = $1)', [id]);
+  await query('DELETE FROM attempts WHERE test_id = $1', [id]);
 
   const deleted = await testModel.remove(id);
   if (!deleted) {
