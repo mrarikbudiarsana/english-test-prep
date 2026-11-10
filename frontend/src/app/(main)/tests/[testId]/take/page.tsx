@@ -306,7 +306,7 @@ function TestTakingContent() {
           startType = attemptData.currentSection;
         }
 
-        let savedAnswers: Record<string, any> = {};
+        const savedAnswers: Record<string, any> = {};
         if (responsesRes) {
           const responsesData = responsesRes.data?.data || responsesRes.data || [];
           responsesData.forEach((r: any) => {
@@ -650,6 +650,14 @@ function TestTakingContent() {
     return questions.filter(q => q.sectionId === currentSectionParts[activePartIndex].id);
   }, [questions, currentSectionParts, activePartIndex]);
 
+  const readingQuestionRange = useMemo(() => {
+    if (state.currentSectionType !== 'reading' || activePartQuestions.length === 0) return null;
+    const first = questions.indexOf(activePartQuestions[0]) + 1;
+    const last = questions.indexOf(activePartQuestions[activePartQuestions.length - 1]) + 1;
+    if (first <= 0 || last <= 0) return null;
+    return first === last ? `Question ${first}` : `Questions ${first}\u2013${last}`;
+  }, [state.currentSectionType, activePartQuestions, questions]);
+
   const partNumberOffset = useMemo(() => {
     let offset = 0;
     for (let i = 0; i < activePartIndex; i++) {
@@ -838,9 +846,21 @@ function TestTakingContent() {
                 /* Active reading — passage bar + two columns, full height */
                 <>
                   {/* Passage bar — full width, no padding mismatch */}
-                  <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 shrink-0">
-                    <h2 className="text-base font-bold text-slate-800">Passage {activePartIndex + 1}</h2>
-                    <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-200 shrink-0 gap-4">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <h2 className="text-base font-bold text-slate-800 whitespace-nowrap">
+                        Passage {activePartIndex + 1}
+                      </h2>
+                      {readingQuestionRange && (
+                        <>
+                          <span className="text-slate-300 font-normal select-none" aria-hidden="true">&mdash;</span>
+                          <span className="text-sm font-semibold text-slate-600 whitespace-nowrap">
+                            {readingQuestionRange}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
                       <div className="flex lg:hidden bg-slate-100 p-0.5 rounded-md">
                         <button onClick={() => setToeflReadingMobileView('passage')} className={cn('px-3 py-1 text-xs font-bold rounded-sm transition-colors', toeflReadingMobileView === 'passage' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500')}>Passage</button>
                         <button onClick={() => setToeflReadingMobileView('question')} className={cn('px-3 py-1 text-xs font-bold rounded-sm transition-colors', toeflReadingMobileView === 'question' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500')}>Questions</button>
@@ -867,20 +887,6 @@ function TestTakingContent() {
                   <div className="flex flex-1 overflow-hidden">
                     {/* Left — passage */}
                     <div className={cn("flex-col lg:w-1/2 border-r border-slate-200 overflow-hidden", toeflReadingMobileView === 'passage' ? 'flex w-full' : 'hidden lg:flex')}>
-                      {/* Questions range label */}
-                      {(() => {
-                        const partQs = questions.filter(q => q.sectionId === currentSectionPart?.id);
-                        if (partQs.length === 0) return null;
-                        const first = questions.indexOf(partQs[0]) + 1;
-                        const last  = questions.indexOf(partQs[partQs.length - 1]) + 1;
-                        return (
-                          <div className="px-6 py-3 border-b border-slate-100 shrink-0">
-                            <span className="text-sm font-bold text-slate-700">
-                              Questions {first}{first !== last ? `\u2013${last}` : ''}
-                            </span>
-                          </div>
-                        );
-                      })()}
                       <div className="flex-1 overflow-auto">
                         <ReadingPassage
                           title={currentSectionPart?.passageTitle || ''}
