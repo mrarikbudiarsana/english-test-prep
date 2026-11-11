@@ -11,6 +11,10 @@ ALTER TABLE attempts
   ADD COLUMN IF NOT EXISTS listening_path VARCHAR(10) NULL;
 
 ALTER TABLE attempts
+  DROP CONSTRAINT IF EXISTS attempts_reading_path_check,
+  DROP CONSTRAINT IF EXISTS attempts_listening_path_check;
+
+ALTER TABLE attempts
   ADD CONSTRAINT attempts_reading_path_check
     CHECK (reading_path IS NULL OR reading_path IN ('upper', 'lower')),
   ADD CONSTRAINT attempts_listening_path_check

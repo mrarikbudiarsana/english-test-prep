@@ -9,6 +9,8 @@ ALTER TABLE tests
 
 -- Add check constraint for delivery_model
 ALTER TABLE tests
+  DROP CONSTRAINT IF EXISTS tests_delivery_model_check;
+ALTER TABLE tests
   ADD CONSTRAINT tests_delivery_model_check
   CHECK (delivery_model IN ('legacy', 'toefl_ibt_2026'));
 
