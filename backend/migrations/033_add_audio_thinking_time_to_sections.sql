@@ -1,1 +1,1 @@
-ALTER TABLE sections ADD COLUMN audio_thinking_time INTEGER DEFAULT 0;
+ALTER TABLE sections ADD COLUMN IF NOT EXISTS audio_thinking_time INTEGER DEFAULT 0;
