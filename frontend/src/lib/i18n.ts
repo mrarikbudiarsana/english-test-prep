@@ -170,6 +170,42 @@ const translations = {
   tests_premium_section: { id: 'Tes Premium', en: 'Premium Tests' },
   tests_min_label: { id: 'menit', en: 'min' },
 
+  // ─── Mock Test Packages (Lynk.id Integration) ──────────────────────────────
+  mock_pricing_heading: { id: 'Paket Mock Test TOEFL ITP', en: 'TOEFL ITP Mock Test Packages' },
+  mock_pricing_subheading: {
+    id: 'Aktivasi otomatis instan setelah pembayaran melalui QRIS, Transfer Bank, atau E-Wallet via Lynk.id.',
+    en: 'Instant automated test activation upon payment via QRIS, Bank Transfer, or E-Wallet on Lynk.id.',
+  },
+  mock_pack_1_title: { id: '1 Test Credit', en: '1 Test Credit' },
+  mock_pack_1_desc: { id: 'Ideal untuk evaluasi kemampuan awal dan prediksi band score Anda.', en: 'Ideal for baseline assessment and determining your current band score.' },
+  mock_pack_3_title: { id: '3 Test Credits', en: '3 Test Credits' },
+  mock_pack_3_badge: { id: 'Paket Hemat - Populer', en: 'Value Pack - Popular' },
+  mock_pack_3_desc: { id: 'Pilihan paling populer untuk latihan terarah dan progres skor nyata.', en: 'Our most popular choice for targeted practice and measurable score gains.' },
+  mock_pack_5_title: { id: '5 Test Credits', en: '5 Test Credits' },
+  mock_pack_5_badge: { id: 'Paket Intensif', en: 'Intensive Pack' },
+  mock_pack_5_desc: { id: 'Persiapan komprehensif sebelum menghadapi ujian resmi TOEFL ITP.', en: 'Comprehensive test readiness pack before taking your official TOEFL ITP.' },
+  mock_pack_vip_title: { id: 'VIP Option', en: 'VIP Option' },
+  mock_pack_vip_badge: { id: 'Bimbingan 1-on-1', en: '1-on-1 Mentorship' },
+  mock_pack_vip_desc: { id: '1 Tes + 60 menit sesi review privat & bedah strategi langsung bersama Arik.', en: '1 Test + 60-min review session with Arik.' },
+  mock_guarantee_title: { id: 'Garansi 100% Uang Mock Test Kembali', en: '100% Mock Test Fee Back Guarantee' },
+  mock_guarantee_desc: {
+    id: 'Jika Anda mendaftar ke kelas coaching penuh dalam 7 hari, biaya mock test akan dipotong langsung dari biaya kursus Anda.',
+    en: 'If you enroll in any full coaching course within 7 days, your mock test fee is credited toward your tuition.',
+  },
+  buy_on_lynkid: { id: 'Beli di Lynk.id', en: 'Buy on Lynk.id' },
+  book_via_whatsapp: { id: 'Pesan via WhatsApp', en: 'Book via WhatsApp' },
+  gate_modal_title: { id: 'Mulai Tes TOEFL ITP', en: 'Start TOEFL ITP Test' },
+  gate_enter_email: { id: 'Masukkan email checkout Lynk.id Anda:', en: 'Enter your Lynk.id checkout email:' },
+  gate_credits_remaining: { id: 'Kredit Tersedia:', en: 'Credits Available:' },
+  gate_deduct_notice: { id: 'Memulai tes ini akan menggunakan 1 kredit tes.', en: 'Starting this test will deduct 1 test credit.' },
+  gate_start_button: { id: 'Mulai Tes Sekarang (Pakai 1 Kredit)', en: 'Start Test Now (Uses 1 Credit)' },
+  gate_no_credits_title: { id: 'Kredit Tes Habis (0 Kredit)', en: '0 Test Credits Remaining' },
+  gate_no_credits_desc: {
+    id: 'Anda memiliki 0 kredit untuk email ini. Beli paket di Lynk.id untuk aktivasi instan:',
+    en: 'You have 0 test credits on this email. Purchase a package on Lynk.id for instant activation:',
+  },
+  gate_recheck_btn: { id: 'Sudah Bayar? Cek Ulang Kredit', en: 'Already Paid? Recheck Credits' },
+
   // ─── Pricing ─────────────────────────────────────────────────────────────────
   pricing_title: { id: 'Harga Sederhana dan Transparan', en: 'Simple, Transparent Pricing' },
   pricing_subtitle: {

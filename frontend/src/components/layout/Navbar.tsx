@@ -48,6 +48,16 @@ export default function Navbar() {
                 {/* Language switcher */}
                 <LanguageSwitcher className="ml-1" />
 
+                {/* Credit Pill */}
+                <Link
+                  href="/pricing#pricing-packages"
+                  className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/60 text-amber-900 text-xs font-bold transition-all ml-1 shadow-xs"
+                  title="Your available mock test credits"
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span>{user.testCredits ?? 0} {user.testCredits === 1 ? 'Credit' : 'Credits'}</span>
+                </Link>
+
                 {/* User dropdown */}
                 <div className="relative ml-2">
                   <button
@@ -71,6 +81,10 @@ export default function Navbar() {
                       <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-20">
                         <div className="px-4 py-2 border-b border-slate-100 mb-1">
                           <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                          <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100">
+                            <span className="text-xs font-bold text-slate-700">Credits: {user.testCredits ?? 0}</span>
+                            <Link href="/pricing#pricing-packages" className="text-[11px] font-bold text-[#08507f] hover:underline" onClick={() => setUserMenuOpen(false)}>+ Top up</Link>
+                          </div>
                         </div>
                         {user.role === 'admin' && (
                           <Link href="/admin" className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 font-medium" onClick={() => setUserMenuOpen(false)}>
@@ -130,6 +144,10 @@ export default function Navbar() {
         <div className="md:hidden border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-3 space-y-1">
           {user ? (
             <>
+              <div className="flex items-center justify-between px-4 py-2 bg-amber-50 rounded-xl border border-amber-200/50 mb-2">
+                <span className="text-xs font-bold text-amber-900">Mock Test Credits:</span>
+                <span className="text-xs font-black text-[#08507f]">{user.testCredits ?? 0}</span>
+              </div>
               <Link href="/dashboard" className="block px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-[#e8f4fd] hover:text-[#08507f] rounded-xl" onClick={() => setMobileMenuOpen(false)}>{t('nav_dashboard')}</Link>
               <Link href="/tests" className="block px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-[#e8f4fd] hover:text-[#08507f] rounded-xl" onClick={() => setMobileMenuOpen(false)}>{t('nav_practice_tests')}</Link>
               <Link href="/pricing" className="block px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-[#e8f4fd] hover:text-[#08507f] rounded-xl" onClick={() => setMobileMenuOpen(false)}>{t('nav_pricing')}</Link>

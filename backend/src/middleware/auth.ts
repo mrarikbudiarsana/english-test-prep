@@ -46,7 +46,7 @@ export async function authMiddleware(
 
     // 3. Fallback: Query the database
     const result = await query(
-      'SELECT id, firebase_uid, email, display_name, role FROM users WHERE firebase_uid = $1',
+      'SELECT id, firebase_uid, email, display_name, role, test_credits FROM users WHERE firebase_uid = $1',
       [decodedToken.uid],
     );
 
@@ -62,6 +62,7 @@ export async function authMiddleware(
       email: rows[0].email,
       displayName: rows[0].display_name,
       role: rows[0].role,
+      testCredits: rows[0].test_credits ?? 0,
     };
 
     const expiresAt = Date.now() + USER_CACHE_TTL_MS;

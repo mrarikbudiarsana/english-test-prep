@@ -17,6 +17,7 @@ import {
   HiOutlineTemplate,
 } from 'react-icons/hi';
 import { getExamConfig } from '@/config/examConfig';
+import MockTestPricingSection from '@/components/pricing/MockTestPricingSection';
 
 
 export default function TestCatalogPage() {
@@ -27,7 +28,19 @@ export default function TestCatalogPage() {
   const [error, setError]           = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab]     = useState<'full' | 'sections'>('full');
+  const [credits, setCredits]         = useState<number | null>(user?.testCredits ?? null);
   const examConfig = getExamConfig('toefl_itp');
+
+  useEffect(() => {
+    if (user?.email) {
+      api.get(`/credits/balance?email=${encodeURIComponent(user.email)}`)
+        .then((res) => {
+          const bal = res.data?.data?.credits ?? res.data?.credits ?? 0;
+          setCredits(bal);
+        })
+        .catch(() => {});
+    }
+  }, [user?.email]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -105,18 +118,20 @@ export default function TestCatalogPage() {
                   <HiAcademicCap className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200">{t('tests_free_access')}</p>
-                  <p className="text-sm font-bold text-white">
-                    {t('tests_remaining')}
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200">Test Credits</p>
+                  <p className="text-sm font-extrabold text-white">
+                    {credits !== null
+                      ? `${credits} ${credits === 1 ? 'Credit' : 'Credits'} Available`
+                      : t('tests_remaining')}
                   </p>
                 </div>
               </div>
-              <Link
-                href="/pricing"
+              <a
+                href="#pricing-packages"
                 className="inline-flex items-center px-4 py-2 rounded-xl bg-white text-sm font-bold text-[#08507f] hover:bg-blue-50 transition-all shadow-lg active:scale-95"
               >
-                {t('tests_upgrade')}
-              </Link>
+                Buy Credits
+              </a>
             </div>
           )}
         </div>
@@ -289,6 +304,9 @@ export default function TestCatalogPage() {
           </div>
         </div>
       )}
+
+      {/* ── Mock Test Packages Section ────────────────────── */}
+      <MockTestPricingSection id="pricing-packages" className="pt-8 border-t border-slate-200" />
     </div>
   );
 }

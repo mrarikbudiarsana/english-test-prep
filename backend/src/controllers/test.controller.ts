@@ -72,7 +72,8 @@ export async function checkTestAccess(
   try {
     const testId = req.params.testId as string;
     const userId = req.user!.id;
-    const result = await attemptService.checkTestAccess(userId, testId);
+    const email = (req.query.email as string) || req.user?.email;
+    const result = await attemptService.checkTestAccess(userId, testId, email);
     res.json({ data: result });
   } catch (error) {
     next(error);

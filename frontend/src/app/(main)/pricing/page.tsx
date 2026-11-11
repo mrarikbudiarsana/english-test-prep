@@ -9,6 +9,7 @@ import { examConfigs } from '@/config/examConfig';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Modal } from '@/components/ui/Modal';
+import MockTestPricingSection from '@/components/pricing/MockTestPricingSection';
 
 interface PricingPlan {
   id: number;
@@ -141,32 +142,40 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="pb-24 max-w-7xl mx-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-4xl font-extrabold text-[#020617] mb-6 sm:text-5xl tracking-tight">
-            {t('pricing_title')}
-          </h1>
-          <p className="text-lg text-slate-500 mb-10 leading-relaxed">
-            {t('pricing_subtitle')}
-          </p>
+    <div className="pb-24 max-w-7xl mx-auto space-y-16">
+      {/* ── Mock Test Packages (Lynk.id Instant Activation) ── */}
+      <MockTestPricingSection />
 
-          <div className="flex items-center justify-center space-x-4">
-            <span className={`text-sm font-bold uppercase tracking-wider ${billingCycle === 'monthly' ? 'text-[#08507f]' : 'text-slate-400'}`}>{t('pricing_monthly')}</span>
-            <button
-              onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-              className="relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none shadow-sm"
-              style={{ backgroundColor: billingCycle === 'yearly' ? theme.primary : '#cbd5e1' }}
-              role="switch"
-              aria-checked={billingCycle === 'yearly'}
-            >
-              <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${billingCycle === 'yearly' ? 'translate-x-5' : 'translate-x-0'}`} />
-            </button>
-            <span className={`text-sm font-bold uppercase tracking-wider ${billingCycle === 'yearly' ? 'text-[#08507f]' : 'text-slate-400'}`}>
-              {t('pricing_yearly')} <span className="text-emerald-600 ml-1">{t('pricing_save')}</span>
-            </span>
+      {/* ── Membership Subscription Waitlist ────────────────── */}
+      <div className="pt-8 border-t border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest mb-3">
+              Membership Plans
+            </div>
+            <h2 className="text-3xl font-extrabold text-[#020617] mb-4 sm:text-4xl tracking-tight">
+              {t('pricing_title')}
+            </h2>
+            <p className="text-base text-slate-500 mb-8 leading-relaxed">
+              {t('pricing_subtitle')}
+            </p>
+
+            <div className="flex items-center justify-center space-x-4">
+              <span className={`text-sm font-bold uppercase tracking-wider ${billingCycle === 'monthly' ? 'text-[#08507f]' : 'text-slate-400'}`}>{t('pricing_monthly')}</span>
+              <button
+                onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+                className="relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none shadow-sm"
+                style={{ backgroundColor: billingCycle === 'yearly' ? theme.primary : '#cbd5e1' }}
+                role="switch"
+                aria-checked={billingCycle === 'yearly'}
+              >
+                <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${billingCycle === 'yearly' ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+              <span className={`text-sm font-bold uppercase tracking-wider ${billingCycle === 'yearly' ? 'text-[#08507f]' : 'text-slate-400'}`}>
+                {t('pricing_yearly')} <span className="text-emerald-600 ml-1">{t('pricing_save')}</span>
+              </span>
+            </div>
           </div>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
           {plans.map((plan) => {
@@ -241,6 +250,7 @@ export default function PricingPage() {
             );
           })}
         </div>
+      </div>
       </div>
 
       {/* ── Early Access Waitlist Modal ────────────────────────────────────── */}

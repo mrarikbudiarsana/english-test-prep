@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
+// Load .env.local first to allow local overrides, then fallback to .env
+dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 export const env = {
@@ -15,6 +17,7 @@ export const env = {
     isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
   },
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  lynkMerchantKey: process.env.LYNK_MERCHANT_KEY || '',
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
     apiKey: process.env.CLOUDINARY_API_KEY || '',

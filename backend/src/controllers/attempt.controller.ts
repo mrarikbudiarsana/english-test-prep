@@ -9,7 +9,7 @@ export async function startAttempt(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { testId, mode, practiceSectionType, isPreview } = req.body;
+    const { testId, mode, practiceSectionType, isPreview, email } = req.body;
     
     // Only admins can start a preview attempt
     if (isPreview && req.user!.role !== 'admin') {
@@ -17,7 +17,15 @@ export async function startAttempt(
       return;
     }
 
-    const attempt = await attemptService.startAttempt(req.user!.id, testId, mode, practiceSectionType, isPreview);
+    const studentEmail = email || req.user?.email;
+    const attempt = await attemptService.startAttempt(
+      req.user!.id,
+      testId,
+      mode,
+      practiceSectionType,
+      isPreview,
+      studentEmail
+    );
     res.status(201).json({ data: attempt });
   } catch (error) {
     next(error);

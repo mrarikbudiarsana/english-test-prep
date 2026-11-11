@@ -19,6 +19,9 @@ import {
   HiAcademicCap,
 } from 'react-icons/hi';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'react-hot-toast';
+import TestCreditGateModal from '@/components/test/TestCreditGateModal';
 import Link from 'next/link';
 
 type AccessCheckResult = {
@@ -87,6 +90,7 @@ const sectionColors = {
 export default function TestOverviewPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const { t } = useLanguage();
   const testId = params.testId as string;
 
@@ -97,6 +101,12 @@ export default function TestOverviewPage() {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
   const [autoStarted, setAutoStarted] = useState(false);
+
+  // Credit Gate Modal State
+  const [isGateOpen, setIsGateOpen] = useState(false);
+  const [pendingStart, setPendingStart] = useState<{ mode: 'full' | 'section_practice'; sectionType?: string }>({
+    mode: 'full',
+  });
 
   const [mode, setMode] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -130,32 +140,62 @@ export default function TestOverviewPage() {
     fetchTest();
   }, [testId]);
 
-  const handleStartTest = useCallback(async (mode: 'full' | 'section_practice', sectionType?: string) => {
+  const executeStartAttempt = useCallback(async (
+    startMode: 'full' | 'section_practice',
+    sectionType?: string,
+    email?: string
+  ) => {
     setStarting(true);
     
     try {
       const response = await api.post('/attempts', {
         testId,
-        mode,
+        mode: startMode,
         practiceSectionType: sectionType,
+        email: email || user?.email,
       });
-      const attemptId =
-        (response.data as any)?.data?.id ||
-        (response.data as any)?.id ||
-        (response.data as any)?.data?.attemptId ||
-        (response.data as any)?.attemptId;
+      const resData = (response.data as any)?.data || (response.data as any);
+      const attemptId = resData?.id || resData?.attemptId;
 
       if (!attemptId || attemptId === 'undefined') {
         console.error('Failed to get attempt ID from response:', response.data);
         throw new Error('Invalid server response');
       }
 
-      router.push(`/tests/${testId}/take?attemptId=${encodeURIComponent(attemptId)}&mode=${mode}${sectionType ? `&section=${sectionType}` : ''}`);
+      if (resData?.creditsRemaining !== undefined) {
+        toast.success(`Test started! 1 test credit deducted (${resData.creditsRemaining} remaining).`);
+      } else {
+        toast.success('Test started! Good luck.');
+      }
+
+      router.push(`/tests/${testId}/take?attemptId=${encodeURIComponent(attemptId)}&mode=${startMode}${sectionType ? `&section=${sectionType}` : ''}`);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to start test');
+      const errMsg = err?.response?.data?.error || err?.message || 'Failed to start test';
+      setError(errMsg);
       setStarting(false);
+      throw err;
     }
-  }, [testId, router]);
+  }, [testId, user?.email, router]);
+
+  const handleStartClick = useCallback((startMode: 'full' | 'section_practice', sectionType?: string) => {
+    // If there is an active attempt in progress, resume directly
+    if (access?.activeAttemptId) {
+      executeStartAttempt(startMode, sectionType);
+      return;
+    }
+
+    // If it's a free test, start immediately
+    if (test?.isFree) {
+      executeStartAttempt(startMode, sectionType);
+      return;
+    }
+
+    // Otherwise, open the email credit gate modal
+    setPendingStart({ mode: startMode, sectionType });
+    setIsGateOpen(true);
+  }, [access?.activeAttemptId, test?.isFree, executeStartAttempt]);
+
+  const handleStartTest = handleStartClick;
 
   useEffect(() => {
     if (!loading && test && access?.canAccess && !autoStarted) {
@@ -307,25 +347,34 @@ export default function TestOverviewPage() {
               </button>
             </>
           ) : (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100">
-                  <HiLockClosed className="w-4 h-4 text-amber-600" />
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div className="flex items-start gap-3.5 mb-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                  <HiLockClosed className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800 mb-0.5">{t('test_overview_premium_test')}</h3>
-                  <p className="text-xs text-slate-500">
-                    {t('test_overview_premium_body')}
+                  <h3 className="text-sm font-bold text-slate-800 mb-1">Mock Test Credit Required</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Starting this test requires 1 test credit. If you already purchased on Lynk.id, enter your checkout email to start.
                   </p>
                 </div>
               </div>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-sm font-bold hover:bg-[#d97706] transition-colors"
-              >
-                <HiSparkles className="w-3.5 h-3.5" />
-                {t('test_overview_view_plans')}
-              </Link>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => handleStartTest('full')}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#08507f] text-white text-xs font-bold hover:bg-[#063d61] transition-all shadow-md active:scale-95"
+                >
+                  <HiPlay className="w-4 h-4" />
+                  Enter Email to Start Test
+                </button>
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+                >
+                  <HiSparkles className="w-3.5 h-3.5 text-amber-500" />
+                  Buy Credits on Lynk.id
+                </Link>
+              </div>
             </div>
           )}
         </div>
@@ -417,13 +466,14 @@ export default function TestOverviewPage() {
                         {isAvailable ? t('test_overview_practice_btn') : t('test_overview_not_available')}
                       </button>
                     ) : (
-                      <Link
-                        href="/pricing"
-                        className="mt-3 flex w-full items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
+                      <button
+                        onClick={() => handleStartTest('section_practice', type)}
+                        disabled={starting || !isAvailable}
+                        className="mt-3 flex w-full items-center justify-center gap-1.5 py-2 rounded-lg bg-[#e8f4fd] text-[#08507f] hover:bg-[#08507f] hover:text-white border border-[#08507f]/20 text-xs font-bold transition-colors shadow-sm"
                       >
-                        <HiLockClosed className="w-3.5 h-3.5" />
-                        {t('test_overview_upgrade_practice')}
-                      </Link>
+                        <HiPlay className="w-3.5 h-3.5" />
+                        {t('test_overview_practice_btn')} (1 Credit)
+                      </button>
                     )}
                   </div>
                 );
@@ -461,6 +511,20 @@ export default function TestOverviewPage() {
           </li>
         </ul>
       </div>
+
+      {/* ── Test Credit Gate Modal ────────────────────────────── */}
+      <TestCreditGateModal
+        isOpen={isGateOpen}
+        onClose={() => setIsGateOpen(false)}
+        defaultEmail={user?.email || ''}
+        testTitle={test.title}
+        mode={pendingStart.mode}
+        sectionType={pendingStart.sectionType}
+        isFree={test.isFree}
+        onConfirmStart={async (email) => {
+          await executeStartAttempt(pendingStart.mode, pendingStart.sectionType, email);
+        }}
+      />
     </div>
   );
 }

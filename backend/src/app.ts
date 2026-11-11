@@ -9,6 +9,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { generalLimiter } from './middleware/rateLimiter';
 import { maintenanceMiddleware } from './middleware/maintenance';
 import routes from './routes';
+import webhookRoutes from './routes/webhook.routes';
 import { runMigrations } from './migrate';
 import { query } from './config/database';
 
@@ -95,6 +96,9 @@ app.use('/api/v1', async (_req, _res, next) => {
 
 // Maintenance check
 app.use(maintenanceMiddleware);
+
+// Webhook routes (Direct mount for /api/webhooks/lynk)
+app.use('/api/webhooks', webhookRoutes);
 
 // API routes
 app.use('/api/v1', routes);

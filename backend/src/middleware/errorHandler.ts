@@ -51,7 +51,11 @@ export function errorHandler(
 
   // Structural check: if the error has a statusCode (custom app error)
   if (err.statusCode && typeof err.statusCode === 'number') {
-    res.status(err.statusCode).json({ error: err.message || 'An error occurred' });
+    res.status(err.statusCode).json({
+      error: err.message || 'An error occurred',
+      code: err.code || undefined,
+      credits: err.credits !== undefined ? err.credits : undefined,
+    });
     return;
   }
 

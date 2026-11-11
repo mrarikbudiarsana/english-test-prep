@@ -13,7 +13,7 @@ export async function registerUser(
   country?: string | null,
   city?: string | null,
 ) {
-  // Check if user already exists
+  // Check if user already exists by firebaseUid
   const existing = await userModel.findByFirebaseUid(firebaseUid);
   if (existing) {
     if (!existing.country || !existing.city) {
@@ -24,6 +24,20 @@ export async function registerUser(
       return updated;
     }
     return existing;
+  }
+
+  // Check if user already exists by email (e.g. created via Lynk.id webhook with test credits)
+  const existingByEmail = await userModel.findByEmail(email);
+  if (existingByEmail) {
+    const updated = await userModel.update(existingByEmail.id, {
+      displayName: existingByEmail.displayName || displayName,
+      photoUrl: existingByEmail.photoUrl || photoUrl,
+      country: existingByEmail.country || country || null,
+      city: existingByEmail.city || city || null,
+    });
+    // Link the Firebase UID
+    const linked = await userModel.linkFirebaseUid(existingByEmail.id, firebaseUid);
+    return linked || updated;
   }
 
   const user = await userModel.create({

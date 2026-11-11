@@ -8,6 +8,7 @@ const fieldMap: Record<string, string> = {
   role: 'role',
   isActive: 'is_active',
   preferredExamType: 'preferred_exam_type',
+  testCredits: 'test_credits',
   country: 'country',
   city: 'city',
 };
@@ -20,6 +21,7 @@ const SELECT_COLUMNS = `
   photo_url            AS "photoUrl",
   role,
   is_active            AS "isActive",
+  test_credits         AS "testCredits",
   preferred_exam_type  AS "preferredExamType",
   country,
   city,
@@ -53,34 +55,84 @@ export async function findByEmail(email: string) {
   const result = await query(
     `SELECT ${SELECT_COLUMNS}
      FROM users
-     WHERE email = $1`,
-    [email],
+     WHERE LOWER(email) = LOWER($1)`,
+    [email.trim()],
   );
   return result.rows[0] || null;
 }
 
 export async function create(data: {
-  firebaseUid: string;
+  firebaseUid?: string | null;
   email: string;
   displayName?: string;
   photoUrl?: string;
   country?: string | null;
   city?: string | null;
+  testCredits?: number;
 }) {
   const result = await query(
-    `INSERT INTO users (firebase_uid, email, display_name, photo_url, country, city, preferred_exam_type)
-     VALUES ($1, $2, $3, $4, $5, $6, 'toefl_itp')
+    `INSERT INTO users (firebase_uid, email, display_name, photo_url, country, city, preferred_exam_type, test_credits)
+     VALUES ($1, $2, $3, $4, $5, $6, 'toefl_itp', $7)
      RETURNING ${SELECT_COLUMNS}`,
     [
-      data.firebaseUid,
-      data.email,
+      data.firebaseUid ?? null,
+      data.email.trim().toLowerCase(),
       data.displayName ?? null,
       data.photoUrl ?? null,
       data.country ?? null,
       data.city ?? null,
+      data.testCredits ?? 0,
     ],
   );
   return result.rows[0];
+}
+
+export async function linkFirebaseUid(id: string, firebaseUid: string) {
+  const result = await query(
+    `UPDATE users
+     SET firebase_uid = $1,
+         updated_at = NOW()
+     WHERE id = $2
+     RETURNING ${SELECT_COLUMNS}`,
+    [firebaseUid, id],
+  );
+  return result.rows[0] || null;
+}
+
+export async function addTestCredits(id: string, amount: number): Promise<number> {
+  const result = await query(
+    `UPDATE users
+     SET test_credits = test_credits + $1,
+         updated_at = NOW()
+     WHERE id = $2
+     RETURNING test_credits AS "testCredits"`,
+    [amount, id],
+  );
+  return result.rows[0]?.testCredits ?? 0;
+}
+
+export async function deductTestCredit(id: string): Promise<number | null> {
+  const result = await query(
+    `UPDATE users
+     SET test_credits = test_credits - 1,
+         updated_at = NOW()
+     WHERE id = $1 AND test_credits > 0
+     RETURNING test_credits AS "testCredits"`,
+    [id],
+  );
+  return result.rows.length > 0 ? result.rows[0].testCredits : null;
+}
+
+export async function deductTestCreditByEmail(email: string): Promise<{ id: string; testCredits: number } | null> {
+  const result = await query(
+    `UPDATE users
+     SET test_credits = test_credits - 1,
+         updated_at = NOW()
+     WHERE LOWER(email) = LOWER($1) AND test_credits > 0
+     RETURNING id, test_credits AS "testCredits"`,
+    [email.trim()],
+  );
+  return result.rows.length > 0 ? result.rows[0] : null;
 }
 
 export async function update(

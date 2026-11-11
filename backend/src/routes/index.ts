@@ -9,6 +9,8 @@ import uploadRoutes from './upload.routes';
 import dashboardRoutes from './dashboard.routes';
 import pricingRoutes from './pricing.routes';
 import waitlistRoutes from './waitlist.routes';
+import creditRoutes from './credit.routes';
+import webhookRoutes from './webhook.routes';
 
 const router = Router();
 
@@ -22,5 +24,7 @@ router.use('/upload', uploadRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/pricing', pricingRoutes);
 router.use('/waitlist', waitlistRoutes);
+router.use('/credits', creditRoutes);
+router.use('/webhooks', webhookRoutes);
 
 export default router;

@@ -3,11 +3,11 @@ import * as testModel from '../models/test.model';
 import * as userModel from '../models/user.model';
 import * as subscriptionModel from '../models/subscription.model';
 import * as sectionModel from '../models/section.model';
+import * as lynkService from './lynk.service';
 import { query, getClient } from '../config/database';
 import * as scoringService from './scoring.service';
 import { NotFoundError, ForbiddenError, ValidationError } from '../middleware/errorHandler';
 import { AttemptMode, SectionType } from '../types/test.types';
-
 
 /** Map a DB test_type to its exam type for subscription checks. */
 function testTypeToExamType(_testType: string): string {
@@ -16,12 +16,18 @@ function testTypeToExamType(_testType: string): string {
 
 /**
  * Check whether a user has access to take a test.
+ * Checks active attempts, free test status, test credits, and subscriptions.
  */
-export async function checkTestAccess(userId: string, testId: string): Promise<{
+export async function checkTestAccess(
+  userId: string,
+  testId: string,
+  email?: string
+): Promise<{
   canAccess: boolean;
   reason: string;
   activeAttemptId?: string;
   requiredExamType?: string;
+  creditsRemaining?: number;
 }> {
   const test = await testModel.findById(testId);
   if (!test) {
@@ -46,32 +52,42 @@ export async function checkTestAccess(userId: string, testId: string): Promise<{
         await finalizeAttempt(activeAttempt.id);
       } catch (err) {
         console.error('Failed to finalize expired attempt in checkTestAccess:', err);
-        // Fallback: manually update status to completed to prevent infinite loops
         await attemptModel.updateStatus(activeAttempt.id, 'completed');
       }
       activeAttempt = undefined;
+    } else {
+      return { canAccess: true, reason: 'active_attempt', activeAttemptId: activeAttempt.id };
     }
   }
 
   if (test.isFree) {
-    return { canAccess: true, reason: 'free_test', activeAttemptId: activeAttempt?.id };
+    return { canAccess: true, reason: 'free_test' };
+  }
+
+  // Check test credits
+  const user = email ? await userModel.findByEmail(email) : await userModel.findById(userId);
+  const credits = user?.testCredits ?? 0;
+  if (credits > 0) {
+    return { canAccess: true, reason: 'has_credits', creditsRemaining: credits };
   }
 
   const examType = testTypeToExamType(test.testType);
   const activeSub = await subscriptionModel.findActiveByUserIdAndExam(userId, examType);
   if (activeSub) {
-    return { canAccess: true, reason: 'has_subscription', activeAttemptId: activeAttempt?.id };
+    return { canAccess: true, reason: 'has_subscription' };
   }
 
   return {
     canAccess: false,
-    reason: 'no_access',
+    reason: 'no_credits',
+    creditsRemaining: 0,
     requiredExamType: examType,
   };
 }
 
 /**
  * Start a new test attempt.
+ * Verifies and deducts 1 mock test credit if not free and no active subscription.
  */
 export async function startAttempt(
   userId: string,
@@ -79,6 +95,7 @@ export async function startAttempt(
   mode: AttemptMode = 'full',
   practiceSectionType?: SectionType,
   isPreview: boolean = false,
+  studentEmail?: string,
 ) {
   const test = await testModel.findById(testId);
   if (!test || (!test.isPublished && !isPreview)) {
@@ -87,13 +104,6 @@ export async function startAttempt(
 
   if (mode === 'section_practice' && !practiceSectionType) {
     throw new ValidationError('Practice section type is required for section practice mode');
-  }
-
-  if (!isPreview) {
-    const accessResult = await checkTestAccess(userId, testId);
-    if (!accessResult.canAccess) {
-      throw new ForbiddenError('You do not have access to this test.');
-    }
   }
 
   // Smart Resume: Check if there is already an in-progress attempt for this test/mode
@@ -122,17 +132,57 @@ export async function startAttempt(
       }
       activeAttempt = undefined;
     } else {
+      // Resume existing active attempt without deducting another credit
       return activeAttempt;
     }
   }
 
-  return attemptModel.create({
+  let creditsRemaining: number | undefined;
+
+  // If not admin preview and test is not free, verify subscription or deduct 1 credit
+  if (!isPreview && !test.isFree) {
+    const examType = testTypeToExamType(test.testType);
+    const activeSub = await subscriptionModel.findActiveByUserIdAndExam(userId, examType);
+
+    if (!activeSub) {
+      // Gate the test-taking flow: check test credits and deduct 1 credit
+      const emailToCheck = studentEmail ? studentEmail.trim().toLowerCase() : undefined;
+      const creditUser = emailToCheck ? await userModel.findByEmail(emailToCheck) : await userModel.findById(userId);
+
+      if (!creditUser || (creditUser.testCredits ?? 0) <= 0) {
+        const error = new ForbiddenError(
+          'You have 0 test credits remaining. Purchase test credits on Lynk.id to start this test.'
+        );
+        (error as any).code = 'NO_CREDITS';
+        (error as any).credits = 0;
+        throw error;
+      }
+
+      const deduction = await lynkService.deductCreditForTest(creditUser.id, emailToCheck);
+      if (!deduction.success) {
+        const error = new ForbiddenError(
+          'You have 0 test credits remaining. Purchase test credits on Lynk.id to start this test.'
+        );
+        (error as any).code = 'NO_CREDITS';
+        (error as any).credits = 0;
+        throw error;
+      }
+      creditsRemaining = deduction.remainingCredits;
+    }
+  }
+
+  const newAttempt = await attemptModel.create({
     userId,
     testId,
     mode,
     practiceSectionType: practiceSectionType || undefined,
     isPreview,
   });
+
+  return {
+    ...newAttempt,
+    creditsRemaining,
+  };
 }
 
 /**
