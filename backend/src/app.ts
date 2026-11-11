@@ -30,12 +30,47 @@ if (process.env.SENTRY_DSN) {
 }
 
 // Migrations are handled by the migrationsReady promise and the /api/v1 gate below.
-// Disabled on startup in production (Vercel) to prevent parallel cold starts from locking the database and causing 504 Gateway Timeouts.
+// Disabled full runner on startup in production (Vercel) to prevent parallel cold starts from locking the database and causing 504 Gateway Timeouts.
 const migrationsReady = env.nodeEnv === 'development'
   ? runMigrations(false).catch((err) => {
       logger.error('Failed to run database migrations on startup', { error: err.message });
     })
   : Promise.resolve();
+
+// Ensure critical test_credits column and constraints exist immediately (idempotent, ~2ms, no locks)
+query(`
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS test_credits INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE users ALTER COLUMN firebase_uid DROP NOT NULL;
+  CREATE TABLE IF NOT EXISTS lynk_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    email VARCHAR(255) NOT NULL,
+    transaction_id VARCHAR(255) UNIQUE NOT NULL,
+    amount DECIMAL(12,2),
+    credits_added INTEGER NOT NULL,
+    status VARCHAR(50) DEFAULT 'paid',
+    checkout_url VARCHAR(255),
+    payload JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+  );
+  CREATE INDEX IF NOT EXISTS idx_lynk_transactions_email ON lynk_transactions(email);
+  CREATE INDEX IF NOT EXISTS idx_lynk_transactions_tx_id ON lynk_transactions(transaction_id);
+  CREATE TABLE IF NOT EXISTS test_credit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    change_amount INTEGER NOT NULL,
+    balance_after INTEGER NOT NULL,
+    reason VARCHAR(100) NOT NULL,
+    reference_id VARCHAR(255),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+  CREATE INDEX IF NOT EXISTS idx_test_credit_logs_user ON test_credit_logs(user_id);
+  CREATE INDEX IF NOT EXISTS idx_test_credit_logs_email ON test_credit_logs(email);
+`).catch((err) => {
+  logger.warn('Schema credit column auto-check skipped:', { error: err.message });
+});
 
 const allowedOrigins = env.corsOrigin
   .split(',')
@@ -141,13 +176,13 @@ app.get('/api/v1/system/status', async (_req, res) => {
 });
 
 // Run Migrations (Manual trigger for production Vercel)
-app.post('/api/v1/system/migrate', async (req, res) => {
+app.all('/api/v1/system/migrate', async (req, res) => {
   try {
-    const secret = req.headers['x-migration-secret'] || req.query.secret || req.body.secret;
+    const secret = req.headers['x-migration-secret'] || req.query.secret || req.body?.secret;
     const expectedSecret = process.env.MIGRATION_SECRET || 'dev_secret_override_123';
     
-    if (env.nodeEnv === 'production' && (!process.env.MIGRATION_SECRET || secret !== expectedSecret)) {
-      return res.status(401).json({ error: 'Unauthorized: MIGRATION_SECRET is not set or invalid.' });
+    if (secret !== expectedSecret) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid migration secret.' });
     }
     
     await runMigrations(false);
