@@ -52,6 +52,7 @@ interface QuestionRendererProps {
   disableScrubbing?: boolean;
   volume?: number;
   hideQuestionText?: boolean;
+  hideExplanation?: boolean;
 }
 
 export default function QuestionRenderer({
@@ -68,6 +69,7 @@ export default function QuestionRenderer({
   disableScrubbing = false,
   volume = 1,
   hideQuestionText = false,
+  hideExplanation = false,
 }: QuestionRendererProps) {
   const handleChange = (newAnswer: any) => {
     onAnswerChange(question.id, newAnswer);
@@ -308,7 +310,7 @@ export default function QuestionRenderer({
           {renderQuestion()}
         </TextHighlighter>
         {/* Explanation (review mode) */}
-        {readOnly && question.explanation && (
+        {!hideExplanation && readOnly && question.explanation && (
           <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3">
             <p className="text-xs font-bold text-emerald-700 mb-1 uppercase tracking-wider">Explanation</p>
             <p className="text-sm text-emerald-800 leading-relaxed italic">{question.explanation}</p>

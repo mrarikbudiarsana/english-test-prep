@@ -31,7 +31,8 @@ export async function getAttempt(
 ): Promise<void> {
   try {
     const attemptId = req.params.attemptId as string;
-    const attempt = await attemptService.getAttempt(attemptId, req.user!.id);
+    const userId = req.user!.role === 'admin' ? undefined : req.user!.id;
+    const attempt = await attemptService.getAttempt(attemptId, userId);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
@@ -48,8 +49,9 @@ export async function getResponses(
 ): Promise<void> {
   try {
     const attemptId = req.params.attemptId as string;
-    // Verify attempt access and ownership first
-    await attemptService.getAttempt(attemptId, req.user!.id);
+    // Verify attempt access and ownership first (admins can view any user's attempt)
+    const userId = req.user!.role === 'admin' ? undefined : req.user!.id;
+    await attemptService.getAttempt(attemptId, userId);
     const responses = await responseModel.findByAttemptId(attemptId);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
@@ -242,7 +244,8 @@ export async function deleteAttempt(
 ): Promise<void> {
   try {
     const attemptId = req.params.attemptId as string;
-    await attemptService.deleteAttempt(attemptId, req.user!.id);
+    const userId = req.user!.role === 'admin' ? undefined : req.user!.id;
+    await attemptService.deleteAttempt(attemptId, userId);
     res.status(204).send();
   } catch (error) {
     next(error);

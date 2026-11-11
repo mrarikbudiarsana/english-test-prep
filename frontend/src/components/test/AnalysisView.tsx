@@ -726,6 +726,7 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
                                         readOnly={true}
                                         hideQuestionText={isListening}
                                         displayNumber={q.displayNumber}
+                                        hideExplanation={true}
                                     />
 
                                     {/* Free Tier Gated Lock */}
@@ -754,7 +755,7 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
                                                     </p>
                                                 </div>
                                             )}
-                                            {renderQuestion.explanationAi && (
+                                            {renderQuestion.explanationAi && renderQuestion.explanationAi.trim() !== renderQuestion.explanation?.trim() && (
                                                 <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 relative overflow-hidden group/ai">
                                                     <div className="absolute top-0 right-0 p-3 opacity-[0.03] group-hover/ai:opacity-[0.07] transition-opacity">
                                                         <Sparkles className="w-16 h-16 text-blue-600" />

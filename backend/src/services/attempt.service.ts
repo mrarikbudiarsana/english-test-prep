@@ -288,7 +288,7 @@ export async function finalizeAttempt(attemptId: string) {
 /**
  * Delete an in-progress or completed attempt.
  */
-export async function deleteAttempt(id: string, userId: string) {
+export async function deleteAttempt(id: string, userId?: string) {
   const attempt = await getAttempt(id, userId);
   return attemptModel.remove(id);
 }
