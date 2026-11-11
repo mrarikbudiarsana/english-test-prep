@@ -112,6 +112,16 @@ export async function processLynkWebhook(rawPayload: any) {
     payload.user_email;
 
   if (!rawEmail || typeof rawEmail !== 'string') {
+    if (
+      payload.type === 'ping' ||
+      payload.event === 'test' ||
+      payload.action === 'test' ||
+      payload.test ||
+      Object.keys(payload).length <= 2
+    ) {
+      logger.info('Lynk.id test ping received successfully', { payload });
+      return { success: true, message: 'Webhook test received successfully' };
+    }
     throw new Error('Customer email is required in Lynk.id webhook payload');
   }
 
