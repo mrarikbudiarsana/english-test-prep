@@ -12,12 +12,21 @@ export async function handleLynkWebhook(req: Request, res: Response) {
       const headerKey = (
         req.headers['x-merchant-key'] ||
         req.headers['x-lynk-merchant-key'] ||
-        req.headers['x-api-key']
+        req.headers['merchant-key'] ||
+        req.headers['merchant_key'] ||
+        req.headers['x-api-key'] ||
+        req.headers['api-key']
       ) as string | undefined;
 
-      const signature = req.headers['x-lynk-signature'] as string | undefined;
-      const bodyKey = req.body?.merchant_key || req.body?.merchantKey;
-      const queryKey = (req.query?.merchant_key || req.query?.key) as string | undefined;
+      const signature = (
+        req.headers['x-lynk-signature'] ||
+        req.headers['x-signature'] ||
+        req.headers['signature'] ||
+        req.headers['x-hub-signature-256']
+      ) as string | undefined;
+
+      const bodyKey = req.body?.merchant_key || req.body?.merchantKey || req.body?.key;
+      const queryKey = (req.query?.merchant_key || req.query?.key || req.query?.merchantKey) as string | undefined;
 
       const authHeader = req.headers.authorization;
       const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
@@ -34,24 +43,44 @@ export async function handleLynkWebhook(req: Request, res: Response) {
         isVerified = true;
       }
 
-      // 2. HMAC-SHA256 signature verification if signature header is provided
+      // 2. Hash & HMAC signature verification
       if (!isVerified && signature) {
         try {
           const rawPayload = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-          const expectedSignature = crypto
-            .createHmac('sha256', merchantKey)
-            .update(rawPayload)
-            .digest('hex');
+          const hmacExpected = crypto.createHmac('sha256', merchantKey).update(rawPayload).digest('hex');
+          const shaExpected1 = crypto.createHash('sha256').update(rawPayload + merchantKey).digest('hex');
+          const shaExpected2 = crypto.createHash('sha256').update(merchantKey + rawPayload).digest('hex');
 
-          const sigBuf = Buffer.from(signature);
-          const expBuf = Buffer.from(expectedSignature);
-
-          if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
+          const cleanSig = signature.trim().toLowerCase();
+          if (
+            cleanSig === hmacExpected.toLowerCase() ||
+            cleanSig === shaExpected1.toLowerCase() ||
+            cleanSig === shaExpected2.toLowerCase()
+          ) {
             isVerified = true;
           }
         } catch (sigErr) {
-          logger.warn('Failed while checking HMAC signature', { error: sigErr });
+          logger.warn('Failed while checking signature', { error: sigErr });
         }
+      }
+
+      // 3. Handle Lynk.id dashboard "Test URL" pings
+      const isTestPing =
+        req.body?.event === 'test' ||
+        req.body?.action === 'test' ||
+        req.body?.type === 'test' ||
+        req.body?.type === 'ping' ||
+        req.body?.test === true ||
+        req.body?.is_test === true ||
+        req.headers['x-lynk-event'] === 'test' ||
+        req.headers['x-event'] === 'test' ||
+        !req.body ||
+        Object.keys(req.body).length === 0 ||
+        (!req.body.customer_email && !req.body.email && !req.body.customer?.email && !req.body.data);
+
+      if (!isVerified && isTestPing) {
+        logger.info('Accepted Lynk.id test ping without signature');
+        return res.status(200).json({ success: true, message: 'Lynk.id test webhook received successfully' });
       }
 
       if (!isVerified) {

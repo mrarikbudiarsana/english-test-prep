@@ -21,7 +21,9 @@ export async function POST(req: NextRequest) {
       if (lowerKey === 'content-type' || lowerKey === 'host') return;
       if (
         lowerKey.startsWith('x-') ||
-        lowerKey === 'authorization'
+        lowerKey === 'authorization' ||
+        lowerKey.includes('signature') ||
+        lowerKey.includes('key')
       ) {
         headers[lowerKey] = value;
       }
