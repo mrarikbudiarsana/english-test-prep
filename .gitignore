@@ -63,3 +63,7 @@ firebase-service-account.json
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Scratch
+scratch_docs/
+
