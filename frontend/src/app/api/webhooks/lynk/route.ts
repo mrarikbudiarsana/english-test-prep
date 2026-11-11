@@ -7,19 +7,19 @@ export async function POST(req: NextRequest) {
     // Base backend url (strip trailing /api/v1)
     const backendBase = apiUrl.replace(/\/api\/v1\/?$/, '');
 
-    // Forward verification headers
+    // Forward verification headers cleanly without duplicates
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      'content-type': 'application/json',
     };
 
     req.headers.forEach((value, key) => {
       const lowerKey = key.toLowerCase();
+      if (lowerKey === 'content-type' || lowerKey === 'host') return;
       if (
         lowerKey.startsWith('x-') ||
-        lowerKey === 'authorization' ||
-        lowerKey === 'content-type'
+        lowerKey === 'authorization'
       ) {
-        headers[key] = value;
+        headers[lowerKey] = value;
       }
     });
 

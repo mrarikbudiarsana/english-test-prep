@@ -66,7 +66,8 @@ export async function handleLynkWebhook(req: Request, res: Response) {
       logger.warn('LYNK_MERCHANT_KEY is not configured in .env.local. Webhook accepted without key verification.');
     }
 
-    const result = await lynkService.processLynkWebhook(req.body);
+    const body = req.body || {};
+    const result = await lynkService.processLynkWebhook(body);
     return res.status(200).json(result);
   } catch (error: any) {
     logger.error('Error handling Lynk.id webhook:', { error: error.message, stack: error.stack });

@@ -76,8 +76,10 @@ export function determineCredits(payload: any): LynkCreditResolution {
  * 4. Adds test credits to user balance
  * 5. Logs audit trail & sends confirmation email
  */
-export async function processLynkWebhook(payload: any) {
-  logger.info('Processing Lynk.id webhook payload', { payloadSummary: JSON.stringify(payload).substring(0, 300) });
+export async function processLynkWebhook(rawPayload: any) {
+  const payload = rawPayload || {};
+  const payloadSummary = (JSON.stringify(payload) || '').substring(0, 300);
+  logger.info('Processing Lynk.id webhook payload', { payloadSummary });
 
   // 1. Status validation (only process paid/success transactions)
   const rawStatus = (
