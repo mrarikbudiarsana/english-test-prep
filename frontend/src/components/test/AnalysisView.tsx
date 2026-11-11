@@ -329,29 +329,13 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
             )}>
                 <div>
                     <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                        {tier === 'free' && 'Free Analysis'}
-                        {tier === 'starter' && 'Starter Analysis'}
-                        {tier === 'pro' && (
-                            <>
-                                <Sparkles className="w-4 h-4 text-purple-600" />
-                                Pro Analysis
-                            </>
-                        )}
+                        <Sparkles className="w-4 h-4 text-[#08507f]" />
+                        Test Review & Explanations
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-                        {tier === 'free' && 'Upgrade to see correct answers and explanations.'}
-                        {tier === 'starter' && 'Upgrade to Pro to see detailed AI explanations and insights.'}
-                        {tier === 'pro' && 'You have full access to all answers, explanations, and insights.'}
+                        Complete breakdown of your answers, official answer keys, and detailed question explanations.
                     </p>
                 </div>
-                {tier !== 'pro' && (
-                    <Link
-                        href="/pricing"
-                        className="px-4 py-2 bg-[#08507f] text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-[#064066] transition-colors shrink-0 text-center shadow-xs"
-                    >
-                        Upgrade Plan
-                    </Link>
-                )}
             </div>
 
             {/* ── Level 1: Primary Section Tabs (Clean Exam Hierarchy) ── */}
@@ -615,10 +599,10 @@ export default function AnalysisView({ attempt, userSubscription }: AnalysisView
                         const userAnswer = responseObj?.answerData ?? null;
                         const isListening = activeSectionType === 'listening';
 
-                        // Gating Logic
+                        // Full access to answers and explanations for completed tests
                         const showStatus = true;
-                        const showCorrectAnswer = tier !== 'free';
-                        const showExplanation = tier === 'pro';
+                        const showCorrectAnswer = true;
+                        const showExplanation = true;
 
                         const isCorrect = responseObj?.isCorrect;
                         const hasAnswer = userAnswer !== null && userAnswer !== undefined && userAnswer !== '';

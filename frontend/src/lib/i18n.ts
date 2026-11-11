@@ -206,6 +206,22 @@ const translations = {
   },
   gate_recheck_btn: { id: 'Sudah Bayar? Cek Ulang Kredit', en: 'Already Paid? Recheck Credits' },
 
+  // ─── Real Mock Test Features ─────────────────────────────────────────────────
+  feat_1_credit: { id: '1 Kredit Mock Test TOEFL ITP Penuh', en: '1 Full TOEFL ITP Mock Test Credit' },
+  feat_3_credits: { id: '3 Kredit Mock Test TOEFL ITP Penuh', en: '3 Full TOEFL ITP Mock Test Credits' },
+  feat_5_credits: { id: '5 Kredit Mock Test TOEFL ITP Penuh', en: '5 Full TOEFL ITP Mock Test Credits' },
+  feat_scoring: { id: 'Skor Otomatis Terstandar TOEFL ITP (Skala 310–677)', en: 'Instant Automated Scoring (310–677 scale)' },
+  feat_breakdown: { id: 'Breakdown Skor per Bagian (Listening, Structure, Reading)', en: 'Section Breakdown (Listening, Structure, Reading)' },
+  feat_answer_keys: { id: 'Kunci Jawaban & Pembahasan Soal Lengkap', en: 'Complete Answer Keys & Question Explanations' },
+  feat_audio_timer: { id: 'Audio Listening Berkualitas & Timer Resmi Ujian', en: 'High-Quality Audio & Official Exam Timers' },
+  feat_validity: { id: 'Kredit Berlaku Kapan Saja (Tanpa Batas Waktu)', en: 'Credits Never Expire (Use Anytime)' },
+  feat_progress: { id: 'Pantau Progres Skor di Dashboard Pribadi', en: 'Score Progression Tracking in Personal Dashboard' },
+  feat_instant_activation: { id: 'Aktivasi Otomatis via QRIS / Transfer / E-Wallet', en: 'Instant Activation via QRIS / Transfer / E-Wallet' },
+  feat_vip_review: { id: '60 Menit Sesi Review Privat 1-on-1 bersama Arik (Meet / Zoom)', en: '60-Min Private 1-on-1 Review Session with Arik (Meet / Zoom)' },
+  feat_vip_analysis: { id: 'Bedah Jawaban Salah & Analisis Kelemahan Personal', en: 'Personalized Error & Weakness Analysis' },
+  feat_vip_strategy: { id: 'Konsultasi Strategi & Target Skor TOEFL ITP', en: 'Target Score Strategy Consultation' },
+  feat_vip_qa: { id: 'Tanya Jawab Langsung via WhatsApp (+62 821-4422-3581)', en: 'Direct Q&A with Arik via WhatsApp (+62 821-4422-3581)' },
+
   // ─── Pricing ─────────────────────────────────────────────────────────────────
   pricing_title: { id: 'Harga Sederhana dan Transparan', en: 'Simple, Transparent Pricing' },
   pricing_subtitle: {
