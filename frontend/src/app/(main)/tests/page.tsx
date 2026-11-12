@@ -17,7 +17,6 @@ import {
   HiOutlineTemplate,
 } from 'react-icons/hi';
 import { getExamConfig } from '@/config/examConfig';
-import MockTestPricingSection from '@/components/pricing/MockTestPricingSection';
 
 
 export default function TestCatalogPage() {
@@ -126,12 +125,12 @@ export default function TestCatalogPage() {
                   </p>
                 </div>
               </div>
-              <a
-                href="#pricing-packages"
+              <Link
+                href="/pricing"
                 className="inline-flex items-center px-4 py-2 rounded-xl bg-white text-sm font-bold text-[#08507f] hover:bg-blue-50 transition-all shadow-lg active:scale-95"
               >
                 Buy Credits
-              </a>
+              </Link>
             </div>
           )}
         </div>
@@ -304,9 +303,6 @@ export default function TestCatalogPage() {
           </div>
         </div>
       )}
-
-      {/* ── Mock Test Packages Section ────────────────────── */}
-      <MockTestPricingSection id="pricing-packages" className="pt-8 border-t border-slate-200" />
     </div>
   );
 }
