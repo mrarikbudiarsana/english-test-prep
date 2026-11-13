@@ -155,7 +155,7 @@ export default function AdminTestsPage() {
                     Published
                   </th>
                   <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Free
+                    Access
                   </th>
                   <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -192,7 +192,9 @@ export default function AdminTestsPage() {
                       {test.isFree ? (
                         <Badge variant="info">Free</Badge>
                       ) : (
-                        <span className="text-xs text-gray-400">Paid</span>
+                        <span className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                          1 Credit
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4">

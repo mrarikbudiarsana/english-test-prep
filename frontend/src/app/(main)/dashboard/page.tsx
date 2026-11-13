@@ -9,7 +9,6 @@ import { DashboardStats } from '@/types/api';
 import { formatDate, formatScore } from '@/lib/utils';
 import { DashboardCharts } from './DashboardCharts';
 import { getTier } from '@/lib/tier';
-import type { Subscription } from '@/types/user';
 
 const NAVY = '#08507f';
 const NAVY_DARK = '#063d61';
@@ -62,24 +61,36 @@ export default function DashboardPage() {
   const { t } = useLanguage();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [credits, setCredits] = useState<number>(user?.testCredits ?? 0);
 
-  const tier = getTier(user, subscription);
+  const tier = getTier(user, null);
+
+  useEffect(() => {
+    if (user?.testCredits !== undefined) {
+      setCredits(user.testCredits);
+    }
+  }, [user?.testCredits]);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [statsRes, subRes] = await Promise.allSettled([
+        const requests: Promise<any>[] = [
           api.get('/dashboard/stats?examType=toefl_itp'),
-          api.get('/subscriptions/current'),
-        ]);
+        ];
+        if (user?.email) {
+          requests.push(api.get(`/credits/balance?email=${encodeURIComponent(user.email)}`));
+        }
+        const [statsRes, creditRes] = await Promise.allSettled(requests);
         if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
-        if (subRes.status === 'fulfilled') setSubscription(subRes.value.data?.data);
+        if (creditRes && creditRes.status === 'fulfilled') {
+          const val = creditRes.value.data?.data?.credits;
+          if (typeof val === 'number') setCredits(val);
+        }
       } catch {}
       finally { setLoading(false); }
     }
     fetchData();
-  }, []);
+  }, [user?.email]);
 
   const totalTests = stats?.totalAttempts || 0;
   const avgScore = stats?.averageBand;
@@ -121,18 +132,17 @@ export default function DashboardPage() {
             <Link href="/tests" className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-[#08507f] bg-white hover:bg-blue-50 transition-all shadow-xl text-sm active:scale-95">
               {t('dash_start_practice')} <IconArrow />
             </Link>
-            {subscription ? (
-              <div className="inline-flex items-center gap-3 px-5 py-4 rounded-2xl bg-white/10 border border-white/20 text-sm shadow-inner backdrop-blur-sm">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400/20 text-amber-400 border border-amber-400/20">
-                  <IconBadge />
-                </div>
-                <span className="font-bold uppercase tracking-widest text-[11px]">{subscription.planType} Plan</span>
+            <Link href="/pricing" className="inline-flex items-center gap-3 px-5 py-4 rounded-2xl bg-white/10 border border-white/20 text-sm font-bold hover:bg-white/20 transition-all text-white shadow-inner backdrop-blur-sm active:scale-95">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400/20 text-amber-300 border border-amber-400/20">
+                <IconBadge />
               </div>
-            ) : (
-              <Link href="/pricing" className="inline-flex items-center gap-2 px-5 py-4 rounded-2xl bg-white/10 border border-white/20 text-sm font-bold hover:bg-white/20 transition-all text-white active:scale-95">
-                {t('dash_upgrade_plan')}
-              </Link>
-            )}
+              <div className="text-left">
+                <span className="block text-[10px] uppercase tracking-widest text-blue-200 leading-none mb-1">Test Credits</span>
+                <span className="font-extrabold text-xs tracking-wide">
+                  {credits > 0 ? `${credits} ${credits === 1 ? 'Credit' : 'Credits'} Available` : t('dash_upgrade_plan')}
+                </span>
+              </div>
+            </Link>
           </div>
         </div>
       </div>

@@ -89,7 +89,7 @@ export default function TestForm({ initialData, onSubmit, loading }: TestFormPro
         />
         <div>
           <span className="text-sm font-medium text-gray-700">Free Test</span>
-          <p className="text-xs text-gray-500">Allow users to take this TOEFL ITP test without a subscription</p>
+          <p className="text-xs text-gray-500">Allow users to take this TOEFL ITP test for free without using a test credit</p>
         </div>
       </label>
 

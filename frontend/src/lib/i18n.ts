@@ -120,7 +120,7 @@ const translations = {
     en: 'Your TOEFL ITP practice home. Keep practicing! Every step brings you closer to your dream score.',
   },
   dash_start_practice: { id: 'Mulai Latihan', en: 'Start Practice' },
-  dash_upgrade_plan: { id: 'Upgrade Paket', en: 'Upgrade Plan' },
+  dash_upgrade_plan: { id: 'Beli Kredit Tes', en: 'Buy Test Credits' },
   dash_tests_completed: { id: 'Tes Diselesaikan', en: 'Tests Completed' },
   dash_tests_sub: { id: 'tes TOEFL ITP penuh', en: 'full TOEFL ITP tests' },
   dash_avg_score: { id: 'Skor Rata-rata', en: 'Average Score' },

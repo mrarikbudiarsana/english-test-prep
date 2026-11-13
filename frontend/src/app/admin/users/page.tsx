@@ -150,6 +150,9 @@ export default function AdminUsersPage() {
                       Location
                     </th>
                     <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Credits
+                    </th>
+                    <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Role
                     </th>
 
@@ -193,6 +196,16 @@ export default function AdminUsersPage() {
                         ) : (
                           <span className="text-xs text-slate-400 italic">Unknown</span>
                         )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                          (user.testCredits ?? 0) > 0
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-slate-50 text-slate-400 border-slate-200'
+                        }`}>
+                          <span className="text-[11px]">🪙</span>
+                          {user.testCredits ?? 0}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <select

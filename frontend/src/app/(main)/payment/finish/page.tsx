@@ -36,7 +36,7 @@ function PaymentFinishContent() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
             <p className="text-gray-600 mb-6">
-              Your subscription has been activated. You now have full access to all tests.
+              Your test credits have been activated and added to your account. You are ready to start your mock test!
             </p>
           </>
         )}
@@ -50,7 +50,7 @@ function PaymentFinishContent() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Pending</h1>
             <p className="text-gray-600 mb-6">
-              Your payment is being processed. Your subscription will be activated once the payment is confirmed.
+              Your payment is being processed. Your test credits will be added automatically once the payment is confirmed.
             </p>
           </>
         )}

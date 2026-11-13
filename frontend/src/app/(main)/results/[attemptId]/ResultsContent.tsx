@@ -7,12 +7,10 @@ import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { Attempt } from '@/types/test';
 import { formatDate, formatScore, examNameFromTestType } from '@/lib/utils';
-import { getTier } from '@/lib/tier';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getTestTypesForExam } from '@/config/examConfig';
 import { HiArrowLeft } from 'react-icons/hi';
-import { Lock } from 'lucide-react';
 import CongratulationsModal from '@/components/test/CongratulationsModal';
 import {
     RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
@@ -20,7 +18,6 @@ import {
     ResponsiveContainer, Tooltip,
 } from 'recharts';
 import AnalysisView from '@/components/test/AnalysisView';
-import { Subscription } from '@/types/user';
 
 interface ResultsContentProps {
     attemptId: string;
@@ -88,17 +85,9 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     const [showShareModal, setShowShareModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'overview' | 'analysis'>('overview');
-    const [subscription, setSubscription] = useState<Subscription | null>(null);
     const routeAttemptId = Array.isArray(params?.attemptId) ? params.attemptId[0] : params?.attemptId;
     const resolvedAttemptId = (attemptId && attemptId !== 'undefined' ? attemptId : routeAttemptId)?.trim();
     const allowedTestTypes = user?.preferredExamType ? getTestTypesForExam(user.preferredExamType) : [];
-
-    // Fetch subscription
-    useEffect(() => {
-        api.get('/subscriptions/current')
-            .then(res => setSubscription(res.data?.data))
-            .catch(() => setSubscription(null));
-    }, []);
 
     // Auto-open congratulations modal if test was just completed
     useEffect(() => {
@@ -111,8 +100,6 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
             }
         }
     }, [attempt, isCompleted]);
-
-    const tier = getTier(user, subscription);
 
     const fetchResults = useCallback(async () => {
         try {
@@ -338,29 +325,21 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                         </div>
                     </div>
 
-                    {/* Overall Section Analysis (Gated) */}
+                    {/* Overall Section Analysis */}
                     {!isPartialTest && sections.length > 0 && (
                         <div className="bg-white rounded-xl border border-[#cbd5e1] p-6 mb-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Analysis</h3>
-                            {tier !== 'free' ? (
-                                <CriterionAnalytics
-                                    criteria={sections
-                                        .filter(s => s.score !== null)
-                                        .map(s => ({
-                                            label: s.label,
-                                            short: s.type.substring(0, 3).toUpperCase(),
-                                            band: s.score || 0
-                                        }))}
-                                    color="#08507f"
-                                    maxScore={68}
-                                />
-                            ) : (
-                                <div className="bg-gray-50 rounded-xl p-8 text-center border border-gray-100">
-                                    <Lock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                    <h4 className="font-semibold text-gray-700">Performance Charts Locked</h4>
-                                    <p className="text-sm text-gray-500 mt-1">Upgrade to Starter to see your relative strengths and weaknesses.</p>
-                                </div>
-                            )}
+                            <CriterionAnalytics
+                                criteria={sections
+                                    .filter(s => s.score !== null)
+                                    .map(s => ({
+                                        label: s.label,
+                                        short: s.type.substring(0, 3).toUpperCase(),
+                                        band: s.score || 0
+                                    }))}
+                                color="#08507f"
+                                maxScore={68}
+                            />
                         </div>
                     )}
 
@@ -381,7 +360,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                     </div>
                 </>
             ) : (
-                <AnalysisView attempt={attempt} userSubscription={subscription} />
+                <AnalysisView attempt={attempt} />
             )
             }
 

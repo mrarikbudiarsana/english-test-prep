@@ -10,6 +10,7 @@ import * as questionModel from '../models/question.model';
 import * as subscriptionService from './subscription.service';
 import { getClient, query } from '../config/database';
 import { clearSectionCache } from '../utils/cache';
+import { invalidateUserCache } from '../middleware/auth';
 
 /**
  * Admin: Get user by ID.
@@ -611,4 +612,168 @@ export async function deleteWaitlist(id: number) {
     [id]
   );
   return { success: true };
+}
+
+/**
+ * Admin: Adjust user test credits (add, deduct, or grant) with audit logging.
+ */
+export async function adjustUserCredits(
+  userId: string,
+  amount: number,
+  reason: string = 'admin_manual_grant',
+  adminEmail?: string
+) {
+  const user = await userModel.findById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const currentCredits = user.testCredits ?? 0;
+  const newBalance = Math.max(0, currentCredits + amount);
+  const actualChange = newBalance - currentCredits;
+
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    await client.query(
+      `UPDATE users
+       SET test_credits = $1,
+           updated_at = NOW()
+       WHERE id = $2`,
+      [newBalance, userId]
+    );
+
+    const safeReason = (reason || 'admin_manual_grant').trim().slice(0, 100);
+    await client.query(
+      `INSERT INTO test_credit_logs (
+         user_id,
+         email,
+         change_amount,
+         balance_after,
+         reason,
+         reference_id
+       )
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [userId, user.email, actualChange, newBalance, safeReason, adminEmail ? `admin:${adminEmail}` : 'admin_adjustment']
+    );
+
+    await client.query('COMMIT');
+
+    if (user.firebaseUid) {
+      invalidateUserCache(user.firebaseUid);
+    }
+
+    return {
+      userId,
+      previousCredits: currentCredits,
+      newCredits: newBalance,
+      changeAmount: actualChange,
+      email: user.email,
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Admin: Get audit logs of test credits for a user.
+ */
+export async function getUserCreditLogs(userId: string) {
+  const user = await userModel.findById(userId);
+  if (!user) return [];
+
+  const result = await query(
+    `SELECT id, user_id AS "userId", email, change_amount AS "changeAmount",
+            balance_after AS "balanceAfter", reason, reference_id AS "referenceId",
+            created_at AS "createdAt"
+     FROM test_credit_logs
+     WHERE user_id = $1 OR LOWER(email) = LOWER($2)
+     ORDER BY created_at DESC
+     LIMIT 100`,
+    [userId, user.email]
+  );
+  return result.rows;
+}
+
+/**
+ * Admin: Get all Lynk credit purchase transactions with pagination and search.
+ */
+export async function getCreditTransactions(offset: number = 0, limit: number = 50, search?: string) {
+  let whereClause = '';
+  const params: any[] = [];
+
+  if (search && search.trim()) {
+    params.push(`%${search.trim()}%`);
+    whereClause = 'WHERE t.email ILIKE $1 OR t.transaction_id ILIKE $1';
+  }
+
+  const listParams = [...params, limit, offset];
+  const queryStr = `
+    SELECT 
+      t.id,
+      t.user_id AS "userId",
+      t.email,
+      t.transaction_id AS "transactionId",
+      t.amount,
+      t.credits_added AS "creditsAdded",
+      t.status,
+      t.checkout_url AS "checkoutUrl",
+      t.created_at AS "createdAt",
+      u.display_name AS "userName"
+    FROM lynk_transactions t
+    LEFT JOIN users u ON u.id = t.user_id
+    ${whereClause}
+    ORDER BY t.created_at DESC
+    LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+  `;
+
+  const countQueryStr = `
+    SELECT COUNT(*) FROM lynk_transactions t ${whereClause}
+  `;
+
+  const [result, countResult] = await Promise.all([
+    query(queryStr, listParams),
+    query(countQueryStr, params),
+  ]);
+
+  return {
+    rows: result.rows,
+    total: parseInt(countResult.rows[0]?.count || '0', 10),
+  };
+}
+
+/**
+ * Admin: Get summary statistics for credits and Lynk purchases.
+ */
+export async function getCreditStats() {
+  const totalPurchasedQuery = await query(
+    `SELECT COALESCE(SUM(credits_added), 0)::int AS "totalCreditsPurchased",
+            COALESCE(SUM(amount), 0)::numeric AS "totalRevenue",
+            COUNT(*)::int AS "totalTransactions"
+     FROM lynk_transactions
+     WHERE status = 'paid'`
+  );
+
+  const totalUsedQuery = await query(
+    `SELECT COALESCE(ABS(SUM(change_amount)), 0)::int AS "totalCreditsUsed"
+     FROM test_credit_logs
+     WHERE change_amount < 0`
+  );
+
+  const activeCreditsQuery = await query(
+    `SELECT COALESCE(SUM(test_credits), 0)::int AS "totalActiveCredits"
+     FROM users`
+  );
+
+  return {
+    totalCreditsPurchased: totalPurchasedQuery.rows[0]?.totalCreditsPurchased ?? 0,
+    totalRevenue: parseFloat(totalPurchasedQuery.rows[0]?.totalRevenue || '0'),
+    totalTransactions: totalPurchasedQuery.rows[0]?.totalTransactions ?? 0,
+    totalCreditsUsed: totalUsedQuery.rows[0]?.totalCreditsUsed ?? 0,
+    totalActiveCredits: activeCreditsQuery.rows[0]?.totalActiveCredits ?? 0,
+  };
 }

@@ -47,7 +47,13 @@ router.get('/users', adminController.getUsers);
 router.get('/users/:userId', adminController.getUserById);
 router.put('/users/:userId/role', adminController.updateUserRole);
 router.post('/users/:userId/assign-package', adminController.assignPackage);
+router.post('/users/:userId/credits', adminController.adjustUserCredits);
+router.get('/users/:userId/credit-logs', adminController.getUserCreditLogs);
 router.get('/users/:userId/attempts', adminController.getUserAttempts);
+
+// Credits & Transactions
+router.get('/credit-transactions', adminController.getCreditTransactions);
+router.get('/credit-stats', adminController.getCreditStats);
 
 // Dashboard stats
 router.get('/dashboard/stats', adminController.getDashboardStats);

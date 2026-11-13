@@ -408,8 +408,8 @@ export default function AdminDashboardPage() {
                 <HiCurrencyDollar className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <p className="font-bold text-slate-800 text-sm">Subscription Plans</p>
-                <p className="text-xs text-slate-400">Configure institutional access levels</p>
+                <p className="font-bold text-slate-800 text-sm">Credits & Transactions</p>
+                <p className="text-xs text-slate-400">Monitor Lynk.id purchases and credit packages</p>
               </div>
             </Link>
           </div>

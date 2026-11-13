@@ -26,9 +26,10 @@ import Link from 'next/link';
 
 type AccessCheckResult = {
   canAccess: boolean;
-  reason: 'free_test' | 'has_subscription' | 'no_access' | 'test_not_found';
+  reason: 'free_test' | 'has_credits' | 'no_credits' | 'has_subscription' | 'no_access' | 'test_not_found';
   activeAttemptId?: string;
   requiredExamType?: string;
+  creditsRemaining?: number;
 };
 
 const TOEFL_ITP_FORMAT = {

@@ -18,7 +18,7 @@ const adminNavItems = [
   { href: '/admin/tests', label: 'Manage Tests', icon: HiClipboardList },
   { href: '/admin/users', label: 'Users', icon: HiUsers },
   { href: '/admin/results', label: 'Results', icon: HiChartBar },
-  { href: '/admin/pricing', label: 'Pricing', icon: HiCurrencyDollar },
+  { href: '/admin/pricing', label: 'Credits & Pricing', icon: HiCurrencyDollar },
 ];
 
 export default function AdminSidebar() {

@@ -467,3 +467,77 @@ export async function deleteWaitlist(
     next(error);
   }
 }
+
+// ---------- Credits & Transactions ----------
+
+export async function adjustUserCredits(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.params.userId as string;
+    const { amount, reason } = req.body;
+    const parsedAmount = parseInt(amount, 10);
+
+    if (isNaN(parsedAmount) || parsedAmount === 0) {
+      res.status(400).json({ error: 'Valid non-zero amount is required' });
+      return;
+    }
+
+    const adminEmail = req.user?.email;
+    const result = await adminService.adjustUserCredits(
+      userId,
+      parsedAmount,
+      reason || 'admin_manual_grant',
+      adminEmail
+    );
+    res.json({ data: result, message: 'User credits updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getUserCreditLogs(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.params.userId as string;
+    const logs = await adminService.getUserCreditLogs(userId);
+    res.json({ data: logs });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getCreditTransactions(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const search = req.query.search as string;
+
+    const result = await adminService.getCreditTransactions(offset, limit, search);
+    res.json({ data: result.rows, total: result.total, offset, limit, search });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getCreditStats(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const stats = await adminService.getCreditStats();
+    res.json({ data: stats });
+  } catch (error) {
+    next(error);
+  }
+}
