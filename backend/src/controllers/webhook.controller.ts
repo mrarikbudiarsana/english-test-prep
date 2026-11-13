@@ -44,17 +44,7 @@ export async function handleLynkWebhook(req: Request, res: Response) {
     }
 
     // 2. Always accept Lynk.id dashboard tests, pings, or sample payloads with 200 OK
-    const rawEmail = (
-      req.body?.customer_email ||
-      req.body?.email ||
-      req.body?.customer?.email ||
-      req.body?.buyer_email ||
-      req.body?.buyer?.email ||
-      req.body?.data?.customer_email ||
-      req.body?.data?.customer?.email ||
-      req.body?.data?.email ||
-      ''
-    ).toString().toLowerCase();
+    const rawEmail = lynkService.extractCustomerEmail(req.body).toLowerCase();
 
     const isTestPayload =
       req.body?.event === 'test' ||

@@ -1,4 +1,4 @@
-import { determineCredits } from '../services/lynk.service';
+import { determineCredits, extractCustomerEmail } from '../services/lynk.service';
 import crypto from 'crypto';
 
 describe('Lynk.id Service & Webhook', () => {
@@ -68,6 +68,52 @@ describe('Lynk.id Service & Webhook', () => {
       const result = determineCredits(payload);
       expect(result.credits).toBe(1);
       expect(result.packageName).toContain('VIP Option');
+    });
+
+    it('detects 3 Test Credits from "3 Full Mock Tests" title even when grandTotal is 0 (100% discount)', () => {
+      const payload = {
+        event: 'payment.received',
+        data: {
+          message_id: 'msg_123',
+          message_data: {
+            ref_id: 'af9c760b34e41cab2dd0b0f039a3fc94',
+            customer: {
+              name: 'Risma Rahmawati',
+              email: 'rismarahmawati9876@gmail.com',
+            },
+            items: [{ title: '3 Full Mock Tests', qty: 1, price: 99000 }],
+            totals: { grandTotal: 0 },
+          },
+        },
+      };
+      const result = determineCredits(payload);
+      expect(result.credits).toBe(3);
+      expect(result.packageName).toContain('3 Test Credits');
+    });
+  });
+
+  describe('extractCustomerEmail', () => {
+    it('extracts email from nested data.message_data.customer.email', () => {
+      const payload = {
+        event: 'payment.received',
+        data: {
+          message_data: {
+            customer: {
+              name: 'Risma Rahmawati',
+              email: '  rismarahmawati9876@gmail.com ',
+            },
+          },
+        },
+      };
+      expect(extractCustomerEmail(payload)).toBe('rismarahmawati9876@gmail.com');
+    });
+
+    it('extracts email from flat customer_email field', () => {
+      expect(extractCustomerEmail({ customer_email: 'student@example.com' })).toBe('student@example.com');
+    });
+
+    it('returns empty string when email is missing', () => {
+      expect(extractCustomerEmail({ event: 'ping' })).toBe('');
     });
   });
 

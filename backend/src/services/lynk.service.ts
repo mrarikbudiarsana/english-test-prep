@@ -12,11 +12,40 @@ export interface LynkCreditResolution {
 }
 
 /**
+ * Extract customer email from Lynk.id webhook payload across supported schemas
+ * (including nested data.message_data.customer.email).
+ */
+export function extractCustomerEmail(payload: any): string {
+  const candidate =
+    payload?.data?.message_data?.customer?.email ||
+    payload?.message_data?.customer?.email ||
+    payload?.customer_email ||
+    payload?.email ||
+    payload?.customer?.email ||
+    payload?.buyer_email ||
+    payload?.buyer?.email ||
+    payload?.data?.customer_email ||
+    payload?.data?.customer?.email ||
+    payload?.data?.email ||
+    payload?.user_email;
+
+  return typeof candidate === 'string' ? candidate.trim() : '';
+}
+
+/**
  * Determine credit amount and package name based on Lynk.id webhook payload.
  * Checks for product slug, product title, and price.
  */
 export function determineCredits(payload: any): LynkCreditResolution {
-  const rawAmount = payload.amount || payload.total || payload.grand_total || payload.price || payload.data?.amount || 0;
+  const rawAmount =
+    payload?.data?.message_data?.totals?.grandTotal ??
+    payload?.message_data?.totals?.grandTotal ??
+    payload?.amount ??
+    payload?.total ??
+    payload?.grand_total ??
+    payload?.price ??
+    payload?.data?.amount ??
+    0;
   const amount = Number(rawAmount) || 0;
 
   // Convert payload to string for fast keyword and slug scanning
@@ -37,16 +66,30 @@ export function determineCredits(payload: any): LynkCreditResolution {
   }
 
   // 2. Keyword & Title matches
-  if (payloadStr.includes('5 test') || payloadStr.includes('5 credit') || payloadStr.includes('intensive')) {
+  if (
+    payloadStr.includes('5 test') ||
+    payloadStr.includes('5 credit') ||
+    payloadStr.includes('5 full mock') ||
+    payloadStr.includes('intensive')
+  ) {
     return { credits: 5, packageName: '5 Test Credits (Intensive Pack)', amount: amount || 149000 };
   }
-  if (payloadStr.includes('3 test') || payloadStr.includes('3 credit') || payloadStr.includes('value pack')) {
+  if (
+    payloadStr.includes('3 test') ||
+    payloadStr.includes('3 credit') ||
+    payloadStr.includes('3 full mock') ||
+    payloadStr.includes('value pack')
+  ) {
     return { credits: 3, packageName: '3 Test Credits (Value Pack - Popular)', amount: amount || 99000 };
   }
   if (payloadStr.includes('vip') || payloadStr.includes('review session') || payloadStr.includes('coaching')) {
     return { credits: 1, packageName: 'VIP Option (1 Test + 60-min Review Session)', amount: amount || 175000 };
   }
-  if (payloadStr.includes('1 test') || payloadStr.includes('1 credit')) {
+  if (
+    payloadStr.includes('1 test') ||
+    payloadStr.includes('1 credit') ||
+    payloadStr.includes('1 full mock')
+  ) {
     return { credits: 1, packageName: '1 Test Credit', amount: amount || 49000 };
   }
 
@@ -100,18 +143,9 @@ export async function processLynkWebhook(rawPayload: any) {
   }
 
   // 2. Extract Customer Email
-  const rawEmail =
-    payload.customer_email ||
-    payload.email ||
-    payload.customer?.email ||
-    payload.buyer_email ||
-    payload.buyer?.email ||
-    payload.data?.customer_email ||
-    payload.data?.email ||
-    payload.data?.customer?.email ||
-    payload.user_email;
+  const rawEmail = extractCustomerEmail(payload);
 
-  if (!rawEmail || typeof rawEmail !== 'string') {
+  if (!rawEmail) {
     if (
       payload.type === 'ping' ||
       payload.event === 'test' ||
@@ -125,8 +159,10 @@ export async function processLynkWebhook(rawPayload: any) {
     throw new Error('Customer email is required in Lynk.id webhook payload');
   }
 
-  const email = rawEmail.trim().toLowerCase();
+  const email = rawEmail.toLowerCase();
   const displayName = (
+    payload.data?.message_data?.customer?.name ||
+    payload.message_data?.customer?.name ||
     payload.customer_name ||
     payload.name ||
     payload.customer?.name ||
@@ -139,6 +175,10 @@ export async function processLynkWebhook(rawPayload: any) {
 
   // 3. Extract or generate Transaction ID
   const transactionId = (
+    payload.data?.message_data?.ref_id ||
+    payload.data?.message_id ||
+    payload.message_data?.ref_id ||
+    payload.message_id ||
     payload.transaction_id ||
     payload.order_id ||
     payload.id ||
