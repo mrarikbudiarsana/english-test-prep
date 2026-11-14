@@ -351,7 +351,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                     {/* Hero + Section Diagnostic Grid */}
                     <div className={isPartialTest ? 'max-w-2xl mx-auto' : 'grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch'}>
                         {/* Main Score Card */}
-                        <div className={`${isPartialTest ? 'text-center' : 'lg:col-span-7 flex flex-col justify-between'} relative overflow-hidden card-premium !rounded-3xl p-7 md:p-8 border border-slate-200/90`}>
+                        <div className={`${isPartialTest ? 'text-center' : 'lg:col-span-6 flex flex-col justify-between'} min-w-0 relative overflow-hidden card-premium !rounded-3xl p-7 md:p-8 border border-slate-200/90`}>
                             <div className="pointer-events-none absolute -top-16 -left-10 h-40 w-40 rounded-full bg-blue-100/40 blur-2xl" />
                             <div className="pointer-events-none absolute -bottom-16 -right-10 h-40 w-40 rounded-full bg-slate-100/50 blur-2xl" />
 
@@ -401,7 +401,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
                         {/* Section Diagnostic Cards */}
                         {!isPartialTest && sections.length > 0 && (
-                            <div className="lg:col-span-5 flex flex-col justify-between gap-3">
+                            <div className="lg:col-span-6 min-w-0 grid grid-rows-3 gap-3.5 h-full">
                                 {sections.map((section) => {
                                     const sectionCefr = getToeflItpCefr(section.score, section.type);
                                     const isFocus = focusSection?.type === section.type;
@@ -410,43 +410,41 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                                             key={section.type}
                                             type="button"
                                             onClick={() => setViewMode('analysis')}
-                                            className={`w-full text-left rounded-2xl p-4 border transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                                            className={`w-full h-full min-w-0 text-left rounded-2xl px-5 py-4 border transition-all hover:-translate-y-0.5 hover:shadow-md flex items-center justify-between gap-4 ${
                                                 isFocus
-                                                    ? 'bg-amber-50/60 border-amber-200 shadow-sm'
+                                                    ? 'bg-amber-50/70 border-amber-200 shadow-sm'
                                                     : 'bg-white border-slate-200/90 shadow-sm'
                                             }`}
                                         >
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="text-[11px] font-bold text-[#08507f] uppercase tracking-wider truncate">
-                                                            {section.shortLabel}
-                                                        </p>
-                                                        {isFocus && (
-                                                            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 shrink-0">
-                                                                Focus Area
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                                                        {section.raw != null && (
-                                                            <span>{section.raw}/{section.total} correct</span>
-                                                        )}
-                                                        {section.raw != null && <span>·</span>}
-                                                        <span className="text-[#08507f] font-medium">Review →</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-2.5 shrink-0">
-                                                    {sectionCefr && (
-                                                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${sectionCefr.badgeClass}`}>
-                                                            CEFR {sectionCefr.level}
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <p className="text-[11px] font-bold text-[#08507f] uppercase tracking-wider">
+                                                        {section.shortLabel}
+                                                    </p>
+                                                    {isFocus && (
+                                                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 shrink-0">
+                                                            Focus Area
                                                         </span>
                                                     )}
-                                                    <span className="text-3xl font-black text-slate-800 tabular-nums w-11 text-right">
-                                                        {section.score != null ? Math.round(section.score) : '-'}
-                                                    </span>
                                                 </div>
+                                                <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-500">
+                                                    {section.raw != null && (
+                                                        <span>{section.raw}/{section.total} correct</span>
+                                                    )}
+                                                    {section.raw != null && <span>·</span>}
+                                                    <span className="text-[#08507f] font-medium">Review →</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 shrink-0">
+                                                {sectionCefr && (
+                                                    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${sectionCefr.badgeClass}`}>
+                                                        CEFR {sectionCefr.level}
+                                                    </span>
+                                                )}
+                                                <span className="text-3xl font-black text-slate-800 tabular-nums w-10 text-right">
+                                                    {section.score != null ? Math.round(section.score) : '-'}
+                                                </span>
                                             </div>
                                         </button>
                                     );
