@@ -212,6 +212,25 @@ app.all('/api/v1/system/seed-mock-5', async (req, res) => {
   }
 });
 
+// Seed Mock Test 6 (Manual trigger for production Vercel)
+app.all('/api/v1/system/seed-mock-6', async (req, res) => {
+  try {
+    const secret = req.headers['x-migration-secret'] || req.query.secret || req.body?.secret;
+    const expectedSecret = process.env.MIGRATION_SECRET || 'dev_secret_override_123';
+
+    if (secret !== expectedSecret) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid migration secret.' });
+    }
+
+    const { seedMockTest6 } = await import('./seeds/mock_test_6_seeder');
+    const result = await seedMockTest6();
+    res.json(result);
+  } catch (error: any) {
+    logger.error('Mock Test 6 seeding error', { error: error.message });
+    res.status(500).json({ error: error.message || 'Seeding failed' });
+  }
+});
+
 // Error handler
 app.use(errorHandler);
 
