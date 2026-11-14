@@ -86,9 +86,11 @@ function CefrScaleTrack({ score, cefr, compact = false }: { score: number; cefr:
 function SkillBenchmarkPanel({
     sections,
     focusSectionType,
+    onReview,
 }: {
     sections: SectionSummary[];
     focusSectionType: SectionSummary['type'] | null;
+    onReview: () => void;
 }) {
     return (
         <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm">
@@ -146,11 +148,20 @@ function SkillBenchmarkPanel({
                             {cefr && <CefrScaleTrack score={score} cefr={cefr} compact />}
 
                             {cefr && (
-                                <p className="mt-1.5 text-[11px] text-slate-500">
-                                    {cefr.nextTarget
-                                        ? `+${cefr.nextTarget.pointsNeeded} scaled ${cefr.nextTarget.pointsNeeded === 1 ? 'point' : 'points'} to reach CEFR ${cefr.nextTarget.level} (${cefr.thresholds[cefr.nextTarget.level.toLowerCase() as 'a2' | 'b1' | 'b2' | 'c1']}+)`
-                                        : `CEFR C1 threshold achieved (${cefr.thresholds.c1}+)`}
-                                </p>
+                                <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px]">
+                                    <p className="text-slate-500">
+                                        {cefr.nextTarget
+                                            ? `+${cefr.nextTarget.pointsNeeded} scaled ${cefr.nextTarget.pointsNeeded === 1 ? 'point' : 'points'} to reach CEFR ${cefr.nextTarget.level} (${cefr.thresholds[cefr.nextTarget.level.toLowerCase() as 'a2' | 'b1' | 'b2' | 'c1']}+)`
+                                            : `CEFR C1 threshold achieved (${cefr.thresholds.c1}+)`}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={onReview}
+                                        className="font-semibold text-[#08507f] hover:underline shrink-0"
+                                    >
+                                        Review →
+                                    </button>
+                                </div>
                             )}
                         </div>
                     );
@@ -315,7 +326,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
     const navyScoreClass = 'text-[#08507f] drop-shadow-[0_4px_12px_rgba(8,80,127,0.16)]';
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6">
             {/* Back link */}
             <Link href="/dashboard" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
                 <HiArrowLeft className="w-4 h-4 mr-1" />
@@ -348,44 +359,41 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
 
             {viewMode === 'overview' ? (
                 <>
-                    {/* Hero + Section Diagnostic Grid */}
-                    <div className={isPartialTest ? 'max-w-2xl mx-auto' : 'grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch'}>
-                        {/* Main Score Card */}
-                        <div className={`${isPartialTest ? 'text-center' : 'lg:col-span-6 flex flex-col justify-between'} min-w-0 relative overflow-hidden card-premium !rounded-3xl p-7 md:p-8 border border-slate-200/90`}>
-                            <div className="pointer-events-none absolute -top-16 -left-10 h-40 w-40 rounded-full bg-blue-100/40 blur-2xl" />
-                            <div className="pointer-events-none absolute -bottom-16 -right-10 h-40 w-40 rounded-full bg-slate-100/50 blur-2xl" />
+                    {/* Score Banner */}
+                    <div className="relative overflow-hidden card-premium !rounded-3xl p-7 md:p-9 text-center border border-slate-200/90">
+                        <div className="pointer-events-none absolute -top-16 -left-10 h-40 w-40 rounded-full bg-blue-100/40 blur-2xl" />
+                        <div className="pointer-events-none absolute -bottom-16 -right-10 h-40 w-40 rounded-full bg-slate-100/50 blur-2xl" />
 
-                            <div className={`relative z-10 ${isPartialTest ? 'flex flex-col items-center' : ''}`}>
-                                <div className="mb-3 inline-flex items-center rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-xs font-semibold tracking-wide text-[#08507f]">
-                                    Practice Test Result (Unofficial)
-                                </div>
+                        <div className="relative z-10 flex flex-col items-center">
+                            <div className="mb-3 inline-flex items-center rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-xs font-semibold tracking-wide text-[#08507f]">
+                                Practice Test Result (Unofficial)
+                            </div>
 
-                                <p className="text-lg md:text-xl font-semibold text-slate-600">{displayLabel}</p>
+                            <p className="text-lg md:text-xl font-semibold text-slate-600">{displayLabel}</p>
 
-                                <div className={`mt-2 flex flex-wrap items-baseline gap-3 ${isPartialTest ? 'justify-center' : ''}`}>
-                                    <span className={`font-black text-6xl md:text-7xl tracking-tight ${navyScoreClass}`}>
-                                        {formatScore(Number(displayScore), scorePrecision)}
+                            <div className="mt-2 flex flex-wrap items-baseline justify-center gap-3">
+                                <span className={`font-black text-6xl md:text-7xl tracking-tight ${navyScoreClass}`}>
+                                    {formatScore(Number(displayScore), scorePrecision)}
+                                </span>
+                                {displayCefr && (
+                                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-bold tracking-wide ${displayCefr.badgeClass}`}>
+                                        CEFR {displayCefr.level} · {displayCefr.descriptor}
                                     </span>
-                                    {displayCefr && (
-                                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-bold tracking-wide ${displayCefr.badgeClass}`}>
-                                            CEFR {displayCefr.level} · {displayCefr.descriptor}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {displayCefr && displayScore != null && (
-                                    <div className="mt-5 w-full">
-                                        <CefrScaleTrack score={Number(displayScore)} cefr={displayCefr} />
-                                        <p className="mt-2 text-xs text-slate-500">
-                                            {displayCefr.nextTarget
-                                                ? `+${displayCefr.nextTarget.pointsNeeded} points to reach CEFR ${displayCefr.nextTarget.level} (${displayCefr.thresholds[displayCefr.nextTarget.level.toLowerCase() as 'a2' | 'b1' | 'b2' | 'c1']}+)`
-                                                : `CEFR C1 Proficient threshold achieved (${displayCefr.thresholds.c1}+)`}
-                                        </p>
-                                    </div>
                                 )}
                             </div>
 
-                            <div className={`relative z-10 mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-3 ${isPartialTest ? 'justify-center' : 'justify-between'}`}>
+                            {displayCefr && displayScore != null && (
+                                <div className="mt-5 w-full max-w-lg">
+                                    <CefrScaleTrack score={Number(displayScore)} cefr={displayCefr} />
+                                    <p className="mt-2 text-xs text-slate-500">
+                                        {displayCefr.nextTarget
+                                            ? `+${displayCefr.nextTarget.pointsNeeded} points to reach CEFR ${displayCefr.nextTarget.level} (${displayCefr.thresholds[displayCefr.nextTarget.level.toLowerCase() as 'a2' | 'b1' | 'b2' | 'c1']}+)`
+                                            : `CEFR C1 Proficient threshold achieved (${displayCefr.thresholds.c1}+)`}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="mt-6 pt-4 border-t border-slate-100 w-full flex flex-wrap items-center justify-between gap-3">
                                 {attempt.completedAt ? (
                                     <p className="text-xs font-medium text-slate-500">Completed on {formatDate(attempt.completedAt)}</p>
                                 ) : <span />}
@@ -398,59 +406,6 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                                 </button>
                             </div>
                         </div>
-
-                        {/* Section Diagnostic Cards */}
-                        {!isPartialTest && sections.length > 0 && (
-                            <div className="lg:col-span-6 min-w-0 grid grid-rows-3 gap-3.5 h-full">
-                                {sections.map((section) => {
-                                    const sectionCefr = getToeflItpCefr(section.score, section.type);
-                                    const isFocus = focusSection?.type === section.type;
-                                    return (
-                                        <button
-                                            key={section.type}
-                                            type="button"
-                                            onClick={() => setViewMode('analysis')}
-                                            className={`w-full h-full min-w-0 text-left rounded-2xl px-5 py-4 border transition-all hover:-translate-y-0.5 hover:shadow-md flex items-center justify-between gap-4 ${
-                                                isFocus
-                                                    ? 'bg-amber-50/70 border-amber-200 shadow-sm'
-                                                    : 'bg-white border-slate-200/90 shadow-sm'
-                                            }`}
-                                        >
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <p className="text-[11px] font-bold text-[#08507f] uppercase tracking-wider">
-                                                        {section.shortLabel}
-                                                    </p>
-                                                    {isFocus && (
-                                                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 shrink-0">
-                                                            Focus Area
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-500">
-                                                    {section.raw != null && (
-                                                        <span>{section.raw}/{section.total} correct</span>
-                                                    )}
-                                                    {section.raw != null && <span>·</span>}
-                                                    <span className="text-[#08507f] font-medium">Review →</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-3 shrink-0">
-                                                {sectionCefr && (
-                                                    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${sectionCefr.badgeClass}`}>
-                                                        CEFR {sectionCefr.level}
-                                                    </span>
-                                                )}
-                                                <span className="text-3xl font-black text-slate-800 tabular-nums w-10 text-right">
-                                                    {section.score != null ? Math.round(section.score) : '-'}
-                                                </span>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
                     </div>
 
                     {/* CEFR Skill Benchmark */}
@@ -458,6 +413,7 @@ export default function ResultsContent({ attemptId }: ResultsContentProps) {
                         <SkillBenchmarkPanel
                             sections={sections}
                             focusSectionType={focusSection?.type ?? null}
+                            onReview={() => setViewMode('analysis')}
                         />
                     )}
 
